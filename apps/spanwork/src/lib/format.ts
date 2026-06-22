@@ -38,3 +38,32 @@ export const milestoneStatusLabels: Record<string, string> = {
   in_progress: '进行中',
   done: '已完成',
 };
+
+export const timeEntrySourceLabels: Record<string, string> = {
+  timer: '计时',
+  manual: '补录',
+};
+
+/** Format ms timestamp for datetime-local input value */
+export function msToDatetimeLocal(ms: number): string {
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Parse datetime-local input value to ms timestamp */
+export function datetimeLocalToMs(value: string): number {
+  return new Date(value).getTime();
+}
+
+/** Format ms timestamp for display */
+export function formatDateTime(ms: number): string {
+  return new Date(ms).toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}

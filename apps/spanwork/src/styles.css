@@ -172,7 +172,12 @@
   background: color-mix(in oklch, var(--background) 20%, transparent);
 }
 
-/* ── Minimized: compact overlay strip — same accent colors, no layout space ── */
+/* ── Status strip: in-flow top bar inside main column ── */
+.timer-bar-status-strip {
+  width: 100%;
+}
+
+/* ── Minimized surface: compact strip visuals (used by in-flow status bar) ── */
 .timer-bar-surface-minimized {
   border-bottom: 1px solid color-mix(in oklch, var(--primary) 18%, var(--border));
 }
@@ -210,6 +215,3 @@
   background: color-mix(in oklch, var(--background) 20%, transparent);
 }
 
-.timer-bar-surface > div {
-  z-index: 2;
-}

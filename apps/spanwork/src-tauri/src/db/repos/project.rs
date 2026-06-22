@@ -78,8 +78,9 @@ pub fn get_detail(conn: &Connection, id: &str) -> AppResult<ProjectDetailDto> {
         |row| row.get(0),
     )?;
     let open_milestone_count: i64 = conn.query_row(
-        "SELECT COUNT(*) FROM milestones
-         WHERE project_id = ?1 AND deleted_at IS NULL AND status != 'done'",
+        "SELECT COUNT(*) FROM tasks
+         WHERE project_id = ?1 AND deleted_at IS NULL
+           AND is_milestone = 1 AND status != 'done'",
         [id],
         |row| row.get(0),
     )?;

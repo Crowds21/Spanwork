@@ -12,6 +12,7 @@ export const queryKeys = {
     params ? (['projects', params] as const) : (['projects'] as const),
   project: (id: string) => ['project', id] as const,
   tasks: (projectId: string) => ['tasks', projectId] as const,
+  task: (id: string) => ['task', id] as const,
   milestones: (projectId: string) => ['milestones', projectId] as const,
   timeEntries: (params?: Record<string, unknown>) =>
     params ? (['time-entries', params] as const) : (['time-entries'] as const),

@@ -9,15 +9,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 
-import { MilestoneList } from '@/components/milestone/MilestoneList';
 import { TaskTree } from '@/components/task/TaskTree';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { listTasks } from '@/lib/tauri/task';
 import { deleteProject, getProject } from '@/lib/tauri/project';
 import { queryKeys } from '@/queries/keys';
 
@@ -32,11 +29,6 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const projectQuery = useQuery({
     queryKey: queryKeys.project(projectId),
     queryFn: () => getProject(projectId),
-  });
-
-  const tasksQuery = useQuery({
-    queryKey: queryKeys.tasks(projectId),
-    queryFn: () => listTasks({ projectId, includeSubtasks: true }),
   });
 
   const deleteMutation = useMutation({
@@ -138,7 +130,7 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>未完成里程碑</CardDescription>
+            <CardDescription>未完成里程碑任务</CardDescription>
             <CardTitle className="text-2xl">{project.openMilestoneCount ?? 0}</CardTitle>
           </CardHeader>
         </Card>
@@ -147,13 +139,6 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">任务树</h2>
         <TaskTree projectId={projectId} />
-      </section>
-
-      <Separator />
-
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold">里程碑</h2>
-        <MilestoneList projectId={projectId} tasks={tasksQuery.data ?? []} />
       </section>
     </div>
   );

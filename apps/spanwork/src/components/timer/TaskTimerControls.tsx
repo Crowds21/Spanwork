@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pause, Play, Square } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Tooltip } from '@/components/ui/tooltip';
 import { isTauri } from '@/lib/tauri/client';
 import { cancelTimer, getActiveTimer, startTimer, stopTimer } from '@/lib/tauri/timer';
 import { queryKeys } from '@/queries/keys';
@@ -46,15 +47,18 @@ export function TimerButton({
   if (isTimingThis) return null;
 
   return (
-    <Button
-      size="sm"
-      variant="outline"
-      disabled={disabled || startMutation.isPending || isTimingOther}
-      onClick={() => startMutation.mutate()}
-    >
-      <Play className="size-3.5" />
-      计时
-    </Button>
+    <Tooltip label="开始计时">
+      <Button
+        size="icon"
+        variant="outline"
+        className="size-8"
+        disabled={disabled || startMutation.isPending || isTimingOther}
+        onClick={() => startMutation.mutate()}
+        aria-label="开始计时"
+      >
+        <Play className="size-3.5" />
+      </Button>
+    </Tooltip>
   );
 }
 
@@ -106,25 +110,30 @@ export function TaskTimerControls({
     >
       <span className="text-xs font-medium text-primary">正在计时</span>
       <div className="ml-auto flex gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => stopMutation.mutate()}
-          disabled={stopMutation.isPending}
-        >
-          <Pause className="size-3.5" />
-          暂停
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-muted-foreground hover:text-destructive"
-          onClick={() => cancelMutation.mutate()}
-          disabled={cancelMutation.isPending}
-        >
-          <Square className="size-3.5" />
-          放弃
-        </Button>
+        <Tooltip label="暂停并保存">
+          <Button
+            size="icon"
+            variant="outline"
+            className="size-8"
+            onClick={() => stopMutation.mutate()}
+            disabled={stopMutation.isPending}
+            aria-label="暂停并保存"
+          >
+            <Pause className="size-3.5" />
+          </Button>
+        </Tooltip>
+        <Tooltip label="放弃本次计时">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-8 text-muted-foreground hover:text-destructive"
+            onClick={() => cancelMutation.mutate()}
+            disabled={cancelMutation.isPending}
+            aria-label="放弃本次计时"
+          >
+            <Square className="size-3.5" />
+          </Button>
+        </Tooltip>
       </div>
     </div>
   );

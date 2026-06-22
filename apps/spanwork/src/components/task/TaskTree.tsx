@@ -6,11 +6,12 @@
  * - TaskRow：子组件，Props 即入参；递归渲染子任务
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronRight, Flag, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Flag, Info, PencilLine, Trash2 } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import type { TaskDto, TaskStatus } from '@spanwork/shared-types';
 
 import { TaskCreateTrigger } from '@/components/task/TaskCreateDialog';
+import { TaskDetailDialog } from '@/components/task/TaskDetailDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip } from '@/components/ui/tooltip';
 import { TimeEntryForm } from '@/components/timer/TimeEntryForm';
 import { TaskTimerControls, TimerButton } from '@/components/timer/TimerBar';
 import { formatDuration, taskStatusLabels } from '@/lib/format';
@@ -61,6 +63,7 @@ function TaskRow({
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(true);
   const [showTimeForm, setShowTimeForm] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
   const children = byParent.get(task.id) ?? [];
   const canAddChild = task.isMilestone && depth === 0;
 
@@ -130,21 +133,49 @@ function TaskRow({
             ))}
           </SelectContent>
         </Select>
+        <Tooltip label="查看任务详情">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-8"
+            onClick={() => setShowDetail(true)}
+            aria-label="查看任务详情"
+          >
+            <Info className="size-3.5" />
+          </Button>
+        </Tooltip>
         <TimerButton projectId={projectId} targetId={task.id} />
-        <Button size="sm" variant="ghost" onClick={() => setShowTimeForm((v) => !v)}>
-          补录
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-destructive hover:text-destructive"
-          onClick={() => deleteMutation.mutate()}
-          disabled={deleteMutation.isPending}
-        >
-          <Trash2 className="size-3.5" />
-        </Button>
+        <Tooltip label="补录时间">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-8"
+            onClick={() => setShowTimeForm((v) => !v)}
+            aria-label="补录时间"
+          >
+            <PencilLine className="size-3.5" />
+          </Button>
+        </Tooltip>
+        <Tooltip label="删除任务">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-8 text-destructive hover:text-destructive"
+            onClick={() => deleteMutation.mutate()}
+            disabled={deleteMutation.isPending}
+            aria-label="删除任务"
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </Tooltip>
       </div>
       <TaskTimerControls projectId={projectId} taskId={task.id} className={depth > 0 ? 'ml-6' : undefined} />
+      <TaskDetailDialog
+        taskId={task.id}
+        projectId={projectId}
+        open={showDetail}
+        onOpenChange={setShowDetail}
+      />
       {showTimeForm && (
         <div className={cn('rounded-lg border bg-muted/30 p-3', depth > 0 && 'ml-6')}>
           <TimeEntryForm projectId={projectId} targetType="task" targetId={task.id} />

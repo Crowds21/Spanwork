@@ -11,9 +11,10 @@ interface DialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
+  contentClassName?: string;
 }
 
-export function Dialog({ open, onOpenChange, children }: DialogProps) {
+export function Dialog({ open, onOpenChange, children, contentClassName }: DialogProps) {
   React.useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -33,7 +34,11 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
         aria-label="关闭对话框"
         onClick={() => onOpenChange(false)}
       />
-      <div className={cn('relative z-10 w-full max-w-md')} role="dialog" aria-modal="true">
+      <div
+        className={cn('relative z-10 w-full max-w-md', contentClassName)}
+        role="dialog"
+        aria-modal="true"
+      >
         {children}
       </div>
     </div>,

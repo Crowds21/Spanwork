@@ -190,6 +190,7 @@ pub struct UpdateTaskInput {
     pub parent_id: Option<String>,
     pub milestone_id: Option<Option<String>>,
     pub sort_order: Option<i64>,
+    pub is_milestone: Option<bool>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

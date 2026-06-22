@@ -119,6 +119,7 @@ export interface UpdateTaskInput {
   parentId?: string;
   milestoneId?: string | null;
   sortOrder?: number;
+  isMilestone?: boolean;
 }
 
 export interface TaskBatchCompleteResult {

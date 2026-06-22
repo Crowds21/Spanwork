@@ -235,6 +235,24 @@ fn apply_update(conn: &Connection, existing: &TaskDto, patch: &UpdateTaskInput) 
         milestone_repo::get_by_id(conn, milestone_id)?;
     }
 
+    if let Some(is_milestone) = patch.is_milestone {
+        if is_milestone && existing.parent_id.is_some() {
+            return Err(AppError::Validation {
+                field: "isMilestone".into(),
+                reason: "subtasks cannot be marked as milestone".into(),
+            });
+        }
+        if !is_milestone && existing.is_milestone {
+            let (child_count, _) = child_completion_stats(conn, &existing.id)?;
+            if child_count > 0 {
+                return Err(AppError::Validation {
+                    field: "isMilestone".into(),
+                    reason: "milestone tasks with subtasks cannot be changed to regular tasks".into(),
+                });
+            }
+        }
+    }
+
     let now = now_ms();
     let title = patch.title.as_deref().unwrap_or(&existing.title);
     let description = patch.description.as_ref().or(existing.description.as_ref());
@@ -251,12 +269,18 @@ fn apply_update(conn: &Connection, existing: &TaskDto, patch: &UpdateTaskInput) 
         None => existing.milestone_id.clone(),
     };
     let sort_order = patch.sort_order.unwrap_or(existing.sort_order);
+    let is_milestone = if existing.parent_id.is_some() {
+        false
+    } else {
+        patch.is_milestone.unwrap_or(existing.is_milestone)
+    };
 
     conn.execute(
         "UPDATE tasks SET
             title = ?1, description = ?2, status = ?3, priority = ?4, due_date = ?5,
-            tags = ?6, parent_id = ?7, milestone_id = ?8, sort_order = ?9, updated_at = ?10
-         WHERE id = ?11 AND deleted_at IS NULL",
+            tags = ?6, parent_id = ?7, milestone_id = ?8, sort_order = ?9, is_milestone = ?10,
+            updated_at = ?11
+         WHERE id = ?12 AND deleted_at IS NULL",
         rusqlite::params![
             title.trim(),
             description,
@@ -267,6 +291,7 @@ fn apply_update(conn: &Connection, existing: &TaskDto, patch: &UpdateTaskInput) 
             parent_id,
             milestone_id,
             sort_order,
+            i64::from(is_milestone),
             now,
             existing.id,
         ],
@@ -351,6 +376,9 @@ pub fn recent_tasks(conn: &Connection, limit: i64) -> AppResult<Vec<TaskDto>> {
 
 fn enrich_task(conn: &Connection, task: &mut TaskDto) -> AppResult<()> {
     task.depth = Some(get_depth(conn, &task.id)?);
+    if task.parent_id.is_some() {
+        task.is_milestone = false;
+    }
     let (child_count, completed_child_count) = child_completion_stats(conn, &task.id)?;
     task.child_count = Some(child_count);
     task.completed_child_count = Some(completed_child_count);
