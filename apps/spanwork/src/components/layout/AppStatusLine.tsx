@@ -8,43 +8,86 @@ import { Button } from '@/components/ui/button';
 import { dismissAppStatus, useAppStatus } from '@/lib/status/appStatus';
 import { cn } from '@/lib/utils';
 
-export function AppStatusLine() {
+type AppStatusLinePlacement = 'desktop' | 'mobile-chrome';
+
+interface AppStatusLineProps {
+  placement?: AppStatusLinePlacement;
+}
+
+export function AppStatusLine({ placement = 'desktop' }: AppStatusLineProps) {
   const { hasError, entry } = useAppStatus();
 
+  if (placement === 'mobile-chrome' && !hasError) {
+    return null;
+  }
+
+  if (placement === 'desktop' && !hasError) {
+    return (
+      <footer
+        className={cn(
+          'hidden h-7 shrink-0 items-center gap-2 border-t border-border bg-muted/30 px-4 text-xs md:flex',
+        )}
+        role="status"
+        aria-live="polite"
+      >
+        <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" aria-hidden />
+        <span className="text-muted-foreground">就绪</span>
+      </footer>
+    );
+  }
+
+  if (placement === 'desktop' && hasError) {
+    return (
+      <footer
+        className={cn(
+          'hidden shrink-0 items-center gap-2 border-t border-destructive/20 bg-destructive/5 px-4 py-1.5 text-xs md:flex',
+        )}
+        role="status"
+        aria-live="polite"
+      >
+        <StatusErrorContent entry={entry} />
+      </footer>
+    );
+  }
+
+  if (placement === 'mobile-chrome' && hasError) {
+    return (
+      <footer
+        className="flex shrink-0 items-center gap-2 border-b border-destructive/20 bg-destructive/5 px-4 py-1.5 text-xs"
+        role="status"
+        aria-live="polite"
+      >
+        <StatusErrorContent entry={entry} />
+      </footer>
+    );
+  }
+
+  return null;
+}
+
+function StatusErrorContent({
+  entry,
+}: {
+  entry: ReturnType<typeof useAppStatus>['entry'];
+}) {
+  if (!entry) return null;
+
   return (
-    <footer
-      className={cn(
-        'flex h-7 shrink-0 items-center gap-2 border-t px-4 pb-safe text-xs md:pb-0',
-        hasError ? 'border-destructive/20 bg-destructive/5' : 'border-border bg-muted/30',
-      )}
-      role="status"
-      aria-live="polite"
-    >
-      {hasError && entry ? (
-        <>
-          <AlertCircle className="size-3.5 shrink-0 text-destructive" aria-hidden />
-          <span className="shrink-0 text-muted-foreground">{entry.source}：</span>
-          <span className="min-w-0 truncate text-destructive">{entry.message}</span>
-          <span className="hidden shrink-0 text-muted-foreground sm:inline">
-            · 已写入日志
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="ml-auto size-5 shrink-0 text-muted-foreground hover:text-foreground"
-            onClick={dismissAppStatus}
-            aria-label="关闭错误提示"
-          >
-            <X className="size-3" />
-          </Button>
-        </>
-      ) : (
-        <>
-          <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" aria-hidden />
-          <span className="text-muted-foreground">就绪</span>
-        </>
-      )}
-    </footer>
+    <>
+      <AlertCircle className="size-3.5 shrink-0 text-destructive" aria-hidden />
+      <span className="shrink-0 text-muted-foreground">{entry.source}：</span>
+      <span className="min-w-0 truncate text-destructive">{entry.message}</span>
+      <span className="hidden shrink-0 text-muted-foreground sm:inline">· 已写入日志</span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="ml-auto size-5 shrink-0 text-muted-foreground hover:text-foreground"
+        onClick={dismissAppStatus}
+        aria-label="关闭错误提示"
+      >
+        <X className="size-3" />
+      </Button>
+    </>
   );
 }

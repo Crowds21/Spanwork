@@ -11,8 +11,9 @@
     "tauri:dev": "pnpm dev:kill-port && pnpm --filter @spanwork/app tauri dev",
     "tauri:build": "pnpm --filter @spanwork/app tauri build",
     "tauri:ios:init": "pnpm --filter @spanwork/app tauri ios init",
-    "tauri:ios:dev": "pnpm --filter @spanwork/app tauri ios dev",
+    "tauri:ios:dev": "pnpm dev:kill-port && pnpm --filter @spanwork/app tauri ios dev --host $(ipconfig getifaddr en0 2>/dev/null || echo 0.0.0.0)",
     "tauri:ios:build": "pnpm --filter @spanwork/app tauri ios build",
+    "tauri:ios:build:device": "pnpm --filter @spanwork/app tauri ios build --export-method debugging --ci",
     "check": "pnpm -r run check",
     "typecheck": "pnpm -r run typecheck"
   },

@@ -136,6 +136,14 @@
   padding-right: var(--safe-right);
 }
 
+.min-h-dvh {
+  min-height: 100dvh;
+}
+
+.h-dvh {
+  height: 100dvh;
+}
+
 @keyframes timer-color-flow {
   0% {
     background-position: 0% 50%;

@@ -54,8 +54,10 @@ export function TodayPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">今日</h1>
-        <p className="mt-1 text-muted-foreground">活跃计时、最近任务与今日时间汇总</p>
+        <h1 className="text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">今日</h1>
+        <p className="mt-1 text-sm text-muted-foreground sm:text-base">
+          活跃计时、最近任务与今日时间汇总
+        </p>
       </div>
 
       {!inTauri && (

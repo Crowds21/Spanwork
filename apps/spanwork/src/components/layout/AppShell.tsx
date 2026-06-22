@@ -29,7 +29,7 @@ const navItems = [
 export function AppShell({ children }: AppShellProps) {
   return (
     <TimerBarProvider>
-      <div className="flex h-svh flex-col overflow-hidden bg-background">
+      <div className="flex h-dvh flex-col overflow-hidden bg-background pt-safe">
         <TimerBarStatusStrip />
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <aside className="relative z-0 hidden w-64 shrink-0 border-r border-sidebar-border bg-sidebar md:flex md:flex-col">
@@ -65,7 +65,7 @@ export function AppShell({ children }: AppShellProps) {
           </aside>
 
           <div className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col">
-            <header className="flex h-12 shrink-0 items-center border-b bg-card/80 px-4 pt-safe backdrop-blur md:hidden">
+            <header className="flex min-h-11 shrink-0 items-center border-b bg-card/80 px-4 py-2 backdrop-blur md:hidden">
               <div className="flex items-center gap-2">
                 <div className="flex size-8 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
                   SW
@@ -74,31 +74,37 @@ export function AppShell({ children }: AppShellProps) {
               </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto overscroll-y-contain px-3 py-4 sm:px-4 md:p-8">
+            <main className="flex-1 overflow-y-auto overscroll-y-contain px-3 py-3 sm:px-4 md:p-8">
               <div className="mx-auto max-w-6xl">{children}</div>
             </main>
 
-            <nav className="shrink-0 border-t bg-card/95 px-safe pb-safe backdrop-blur md:hidden">
-              <div className="grid grid-cols-3 gap-1 py-1.5">
-                {navItems.map(({ to, shortLabel, icon: Icon }) => (
-                  <Link
-                    key={to}
-                    to={to}
-                    className="flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors"
-                    activeProps={{
-                      className: 'bg-accent text-foreground',
-                    }}
-                  >
-                    <Icon className="size-5 shrink-0" />
-                    <span>{shortLabel}</span>
-                  </Link>
-                ))}
-              </div>
-            </nav>
+            <div className="shrink-0 border-t bg-card/95 backdrop-blur md:hidden">
+              <AppStatusLine placement="mobile-chrome" />
+              <nav className="px-safe pb-safe">
+                <div className="grid grid-cols-3 gap-0.5 py-1">
+                  {navItems.map(({ to, shortLabel, icon: Icon }) => (
+                    <Link
+                      key={to}
+                      to={to}
+                      className="flex flex-col items-center gap-0.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors"
+                      activeProps={{
+                        className:
+                          'text-foreground [&_.mobile-nav-icon]:bg-primary/12 [&_.mobile-nav-icon]:text-primary',
+                      }}
+                    >
+                      <span className="mobile-nav-icon flex size-9 items-center justify-center rounded-full">
+                        <Icon className="size-[22px] shrink-0" strokeWidth={1.75} />
+                      </span>
+                      <span className="leading-none">{shortLabel}</span>
+                    </Link>
+                  ))}
+                </div>
+              </nav>
+            </div>
           </div>
         </div>
 
-        <AppStatusLine />
+        <AppStatusLine placement="desktop" />
 
         <TimerBarExpanded />
       </div>

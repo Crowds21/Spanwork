@@ -17,7 +17,8 @@ export default defineConfig(async () => ({
   server: {
     port: 1420,
     strictPort: true,
-    host: host || false,
+    // TAURI_DEV_HOST is the LAN IP for the device; bind 0.0.0.0 so all interfaces accept traffic.
+    host: host ? '0.0.0.0' : false,
     hmr: host
       ? {
           protocol: 'ws',
