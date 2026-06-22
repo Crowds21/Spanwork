@@ -170,6 +170,7 @@ mod tests {
                 due_date: None,
                 tags: None,
                 sort_order: None,
+                is_milestone: true,
             },
         )
         .unwrap();
@@ -186,6 +187,7 @@ mod tests {
                 due_date: None,
                 tags: None,
                 sort_order: None,
+                is_milestone: false,
             },
         )
         .unwrap();
@@ -193,7 +195,7 @@ mod tests {
         assert_eq!(task_tree::get_depth(&conn, &root.id).unwrap(), 0);
         assert_eq!(task_tree::get_depth(&conn, &sub.id).unwrap(), 1);
 
-        let too_deep = task::create(
+        let depth_error = task::create(
             &conn,
             &CreateTaskInput {
                 project_id: project_id.clone(),
@@ -205,24 +207,7 @@ mod tests {
                 due_date: None,
                 tags: None,
                 sort_order: None,
-            },
-        )
-        .unwrap();
-
-        assert_eq!(task_tree::get_depth(&conn, &too_deep.id).unwrap(), 2);
-
-        let depth_error = task::create(
-            &conn,
-            &CreateTaskInput {
-                project_id,
-                parent_id: Some(too_deep.id.clone()),
-                milestone_id: None,
-                title: "Too deep".into(),
-                description: None,
-                priority: None,
-                due_date: None,
-                tags: None,
-                sort_order: None,
+                is_milestone: false,
             },
         );
         assert!(matches!(
@@ -230,11 +215,47 @@ mod tests {
             Err(AppError::Validation { field, .. }) if field == "parentId"
         ));
 
+        let plain = task::create(
+            &conn,
+            &CreateTaskInput {
+                project_id: project_id.clone(),
+                parent_id: None,
+                milestone_id: None,
+                title: "Plain".into(),
+                description: None,
+                priority: None,
+                due_date: None,
+                tags: None,
+                sort_order: None,
+                is_milestone: false,
+            },
+        )
+        .unwrap();
+
+        let parent_error = task::create(
+            &conn,
+            &CreateTaskInput {
+                project_id,
+                parent_id: Some(plain.id.clone()),
+                milestone_id: None,
+                title: "Under plain".into(),
+                description: None,
+                priority: None,
+                due_date: None,
+                tags: None,
+                sort_order: None,
+                is_milestone: false,
+            },
+        );
+        assert!(matches!(
+            parent_error,
+            Err(AppError::Validation { field, .. }) if field == "parentId"
+        ));
+
         task::delete(&conn, &root.id).unwrap();
 
         assert!(task::get_by_id(&conn, &root.id).is_err());
         assert!(task::get_by_id(&conn, &sub.id).is_err());
-        assert!(task::get_by_id(&conn, &too_deep.id).is_err());
     }
 
     #[test]
@@ -254,6 +275,7 @@ mod tests {
                 due_date: None,
                 tags: None,
                 sort_order: None,
+                is_milestone: false,
             },
         )
         .unwrap();
@@ -322,6 +344,7 @@ mod tests {
                 due_date: None,
                 tags: None,
                 sort_order: None,
+                is_milestone: false,
             },
         )
         .unwrap();
@@ -364,6 +387,7 @@ mod tests {
                 due_date: None,
                 tags: None,
                 sort_order: None,
+                is_milestone: false,
             },
         )
         .unwrap();

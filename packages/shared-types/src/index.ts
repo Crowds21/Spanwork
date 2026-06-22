@@ -73,6 +73,7 @@ export interface TaskDto {
   projectId: string;
   parentId?: string;
   milestoneId?: string;
+  isMilestone: boolean;
   title: string;
   description?: string;
   status: TaskStatus;
@@ -105,6 +106,7 @@ export interface CreateTaskInput {
   dueDate?: string;
   tags?: string[];
   sortOrder?: number;
+  isMilestone?: boolean;
 }
 
 export interface UpdateTaskInput {

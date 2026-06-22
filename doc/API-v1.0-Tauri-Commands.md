@@ -210,6 +210,7 @@ interface TaskDto {
   projectId: string;
   parentId?: string;
   milestoneId?: string;
+  isMilestone: boolean;          // 任务树里程碑节点，仅此类可挂子任务（最多 2 层）
   title: string;
   description?: string;
   status: TaskStatus;
@@ -245,8 +246,15 @@ interface CreateTaskInput {
   dueDate?: string;
   tags?: string[];
   sortOrder?: number;
+  isMilestone?: boolean;         // 根任务可设为 true；子任务不可为 true
 }
 ```
+
+**业务规则**（M1）：
+
+- 仅 `isMilestone = true` 的任务可作为 `parentId` 创建子任务
+- 子任务层级最多 2 级（根 → 子）
+- 非里程碑父任务、子任务标里程碑、超深度嵌套 → `VALIDATION` 错误
 
 ### `task_update`
 

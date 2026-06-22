@@ -15,7 +15,7 @@ pub fn list(conn: &Connection, params: &TaskListParams) -> AppResult<Vec<TaskDto
     project_repo::get_by_id(conn, &params.project_id)?;
 
     let mut sql = String::from(
-        "SELECT id, project_id, parent_id, milestone_id, title, description, status, priority,
+        "SELECT id, project_id, parent_id, milestone_id, is_milestone, title, description, status, priority,
                 due_date, tags, sort_order, created_at, updated_at
          FROM tasks
          WHERE project_id = ?1 AND deleted_at IS NULL",
@@ -61,7 +61,7 @@ fn flatten_subtasks(
     milestone_id: Option<&str>,
 ) -> AppResult<Vec<TaskDto>> {
     let mut sql = String::from(
-        "SELECT id, project_id, parent_id, milestone_id, title, description, status, priority,
+        "SELECT id, project_id, parent_id, milestone_id, is_milestone, title, description, status, priority,
                 due_date, tags, sort_order, created_at, updated_at
          FROM tasks
          WHERE project_id = ?1 AND deleted_at IS NULL",
@@ -109,7 +109,7 @@ fn append_children(
 pub fn get_by_id(conn: &Connection, id: &str) -> AppResult<TaskDto> {
     let mut task = conn
         .query_row(
-            "SELECT id, project_id, parent_id, milestone_id, title, description, status, priority,
+            "SELECT id, project_id, parent_id, milestone_id, is_milestone, title, description, status, priority,
                     due_date, tags, sort_order, created_at, updated_at
              FROM tasks
              WHERE id = ?1 AND deleted_at IS NULL",
@@ -138,6 +138,18 @@ pub fn create(conn: &Connection, input: &CreateTaskInput) -> AppResult<TaskDto> 
                 reason: "parent must belong to the same project".into(),
             });
         }
+        if !parent.is_milestone {
+            return Err(AppError::Validation {
+                field: "parentId".into(),
+                reason: "only milestone tasks can have subtasks".into(),
+            });
+        }
+        if input.is_milestone {
+            return Err(AppError::Validation {
+                field: "isMilestone".into(),
+                reason: "subtasks cannot be marked as milestone".into(),
+            });
+        }
     }
 
     validate_new_depth(conn, input.parent_id.as_deref())?;
@@ -162,14 +174,15 @@ pub fn create(conn: &Connection, input: &CreateTaskInput) -> AppResult<TaskDto> 
 
     conn.execute(
         "INSERT INTO tasks (
-            id, project_id, parent_id, milestone_id, title, description, status, priority,
+            id, project_id, parent_id, milestone_id, is_milestone, title, description, status, priority,
             due_date, tags, sort_order, created_at, updated_at, origin_device_id
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'todo', ?7, ?8, ?9, ?10, ?11, ?11, ?12)",
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'todo', ?8, ?9, ?10, ?11, ?12, ?12, ?13)",
         rusqlite::params![
             id,
             input.project_id,
             input.parent_id,
             input.milestone_id,
+            i64::from(input.is_milestone),
             input.title.trim(),
             input.description,
             priority,
@@ -318,7 +331,7 @@ pub fn batch_complete(conn: &Connection, params: &TaskBatchCompleteParams) -> Ap
 
 pub fn recent_tasks(conn: &Connection, limit: i64) -> AppResult<Vec<TaskDto>> {
     let mut stmt = conn.prepare(
-        "SELECT id, project_id, parent_id, milestone_id, title, description, status, priority,
+        "SELECT id, project_id, parent_id, milestone_id, is_milestone, title, description, status, priority,
                 due_date, tags, sort_order, created_at, updated_at
          FROM tasks
          WHERE deleted_at IS NULL
@@ -361,27 +374,29 @@ fn next_sort_order(conn: &Connection, project_id: &str, parent_id: Option<&str>)
 }
 
 fn map_task_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TaskDto> {
-    let status_str: String = row.get(6)?;
-    let tags_str: Option<String> = row.get(9)?;
+    let status_str: String = row.get(7)?;
+    let tags_str: Option<String> = row.get(10)?;
+    let is_milestone: i64 = row.get(4)?;
 
     Ok(TaskDto {
         id: row.get(0)?,
         project_id: row.get(1)?,
         parent_id: row.get(2)?,
         milestone_id: row.get(3)?,
-        title: row.get(4)?,
-        description: row.get(5)?,
+        is_milestone: is_milestone != 0,
+        title: row.get(5)?,
+        description: row.get(6)?,
         status: parse_task_status(&status_str),
-        priority: row.get(7)?,
-        due_date: row.get(8)?,
+        priority: row.get(8)?,
+        due_date: row.get(9)?,
         tags: parse_tags(tags_str),
-        sort_order: row.get(10)?,
+        sort_order: row.get(11)?,
         depth: None,
         child_count: None,
         completed_child_count: None,
         total_time_seconds: None,
-        created_at: row.get(11)?,
-        updated_at: row.get(12)?,
+        created_at: row.get(12)?,
+        updated_at: row.get(13)?,
     })
 }
 

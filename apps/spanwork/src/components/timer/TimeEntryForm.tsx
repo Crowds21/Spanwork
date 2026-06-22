@@ -2,12 +2,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { TimeTargetType } from '@spanwork/shared-types';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { getErrorMessage } from '@/lib/errors';
 import { createTimeEntry } from '@/lib/tauri/time_entry';
 import { queryKeys } from '@/queries/keys';
 
@@ -51,8 +49,6 @@ export function TimeEntryForm({
     },
   });
 
-  const errorMessage = getErrorMessage(mutation.error);
-
   return (
     <form
       className="flex flex-wrap items-end gap-3"
@@ -85,11 +81,6 @@ export function TimeEntryForm({
       <Button type="submit" disabled={mutation.isPending}>
         {mutation.isPending ? '保存中…' : '补录时间'}
       </Button>
-      {errorMessage && (
-        <Alert variant="destructive" className="w-full">
-          <AlertDescription>{errorMessage}</AlertDescription>
-        </Alert>
-      )}
     </form>
   );
 }

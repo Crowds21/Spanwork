@@ -2,7 +2,7 @@ use rusqlite::{Connection, OptionalExtension};
 
 use crate::error::{AppError, AppResult, now_ms};
 
-pub const MAX_TASK_DEPTH: i32 = 2;
+pub const MAX_TASK_DEPTH: i32 = 1;
 
 pub fn get_depth(conn: &Connection, task_id: &str) -> AppResult<i32> {
     let parent_id: Option<String> = conn

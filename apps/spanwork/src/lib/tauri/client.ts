@@ -43,7 +43,7 @@ export function parseInvokeError(error: unknown): ErrorBody {
     return { code: 'UNKNOWN', message: String(error) };
   }
 
-  return { code: 'UNKNOWN', message: '未知错误' };
+  return { code: 'UNKNOWN', message: '' };
 }
 
 function writeLogSafe(input: WriteLogInput): void {

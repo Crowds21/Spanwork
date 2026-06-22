@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getErrorMessage } from '@/lib/errors';
 import { listTasks } from '@/lib/tauri/task';
 import { deleteProject, getProject } from '@/lib/tauri/project';
 import { queryKeys } from '@/queries/keys';
@@ -42,8 +41,6 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   });
 
   const project = projectQuery.data;
-  const errorMessage =
-    getErrorMessage(projectQuery.error) || getErrorMessage(deleteMutation.error);
 
   if (projectQuery.isLoading) {
     return (
@@ -54,11 +51,17 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
     );
   }
 
-  if (projectQuery.error || !project) {
+  if (!project) {
     return (
-      <Alert variant="destructive">
-        <AlertDescription>{errorMessage || '项目不存在'}</AlertDescription>
-      </Alert>
+      <div className="space-y-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/projects">
+            <ArrowLeft className="size-4" />
+            返回
+          </Link>
+        </Button>
+        <p className="text-sm text-muted-foreground">项目不存在或暂时无法加载</p>
+      </div>
     );
   }
 
@@ -145,12 +148,6 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
         <h2 className="text-lg font-semibold">里程碑</h2>
         <MilestoneList projectId={projectId} tasks={tasksQuery.data ?? []} />
       </section>
-
-      {errorMessage && (
-        <Alert variant="destructive">
-          <AlertDescription>{errorMessage}</AlertDescription>
-        </Alert>
-      )}
     </div>
   );
 }

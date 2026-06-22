@@ -24,7 +24,7 @@
 ──────────────────────────────────────────────────────────────────►
 
 [M0 脚手架] → [M1 任务+计时] → [M2 习惯] → [M3 同步] → [M4 多端] → [M5 打磨]
-     ✅              ▶ 当前重点
+     ✅              ▶ 当前重点（核心闭环已实现）
                                                           │
                                                      V1.0 发布
                                                                → [V1.1 报告+思源]
@@ -34,7 +34,7 @@
 | 版本 | 里程碑 | 目标一句话 | 预估工期 | 状态 |
 |------|--------|------------|----------|------|
 | — | **M0** | Monorepo + SQLite + 项目 CRUD + 基础 UI | 1 周 | ✅ 已完成 |
-| **V1.0** | **M1** | 任务式项目 + 计时器 + 今日页 + 产品 Milestone | 2 周 | 🔲 待开始 |
+| **V1.0** | **M1** | 任务式项目 + 计时器 + 今日页 + 产品 Milestone | 2 周 | 🔄 进行中 |
 | **V1.0** | **M2** | 习惯式项目 + 周期规则 + 习惯日历 | 2 周 | 🔲 |
 | **V1.0** | **M3** | 局域网无主同步（mDNS + changeset） | 2–3 周 | 🔲 |
 | **V1.0** | **M4** | macOS / Windows / Android / iOS 可构建运行 | 2 周 | 🔲 |
@@ -61,14 +61,36 @@
 | 质量 | Rust 单元测试 2 项；`pnpm build` / `tauri:build` 通过 | ✅ |
 | 工程 | pnpm 11 策略配置；`tauri:dev` 端口与 SQLite PRAGMA 修复 | ✅ |
 
-### 3.2 M0 遗留 / 移入 M1
+### 3.2 M1 已完成项（2026-06-22）
+
+| 类别 | 交付物 | 状态 |
+|------|--------|------|
+| Rust API | `task_*` · `milestone_*` · `time_entry_*` · `timer_*` · `today_get_dashboard` | ✅ |
+| Rust API | `project_update` / `project_delete` | ✅ |
+| 数据库 | migration `002_task_is_milestone.sql` | ✅ |
+| 领域 | `task_tree` 级联删除、`timer` 冲突检测 | ✅ |
+| 前端 | 项目详情页 `/projects/$projectId`、任务树 | ✅ |
+| 前端 | 弹窗创建任务 `TaskCreateDialog`（替代内联 `TaskForm`） | ✅ |
+| 前端 | 全局计时顶栏 `TimerBar`（fixed 浮层，展开/收起） | ✅ |
+| 前端 | 任务行计时控制 `TaskTimerControls`（暂停/放弃） | ✅ |
+| 前端 | 今日页 Dashboard、底部状态栏 `AppStatusLine` | ✅ |
+| 质量 | Rust 集成测试 6 项（task / timer / milestone / today） | ✅ |
+
+### 3.3 M1 遗留 / 待验收
 
 | 项 | 说明 |
 |----|------|
-| `project_update/delete` | API 文档已定义，实现延至 M1 |
-| 项目详情页 | 仅有列表，无 `/projects/:id` 详情 |
-| 今日页 | 路由存在占位，无计时/任务聚合 |
+| M1 验收清单 | §4.4 部分 UI 细节与边界场景待走查 |
+| `task_reorder` UI | API 已实现，拖拽排序 UI 未做 |
 | cr-sqlite 集成 | schema 已建，扩展加载延至 M3 |
+
+### 3.4 M0 遗留（已移入 M1 并完成）
+
+| 项 | 说明 |
+|----|------|
+| ~~`project_update/delete`~~ | ✅ M1 已实现 |
+| ~~项目详情页~~ | ✅ M1 已实现 |
+| ~~今日页~~ | ✅ M1 已实现 |
 
 ---
 
@@ -125,23 +147,28 @@ src/
 ├── routes/projects/$projectId.tsx     # 项目详情
 ├── pages/ProjectDetailPage.tsx
 ├── components/task/TaskTree.tsx
-├── components/task/TaskForm.tsx
+├── components/task/TaskCreateDialog.tsx   # 弹窗创建（根/子任务）
 ├── components/milestone/MilestoneList.tsx
-├── components/timer/TimerBar.tsx      # 全局悬浮/顶栏计时条
+├── components/timer/TimerBar.tsx          # 全局 fixed 浮层计时栏
+├── components/timer/TaskTimerControls.tsx # 任务行暂停/放弃
 ├── components/timer/TimeEntryForm.tsx
-├── pages/TodayPage.tsx                # 替换 index 占位逻辑
-└── lib/tauri/{task,milestone,time_entry,timer}.ts
+├── components/layout/AppStatusLine.tsx    # 底部状态/错误栏
+├── pages/TodayPage.tsx
+└── lib/tauri/{task,milestone,time_entry,timer,today}.ts
 ```
 
 ### 4.4 验收标准
 
-- [ ] 任务式项目下可创建 ≥2 级子任务，支持排序与状态流转
-- [ ] 全局同时仅一个活跃计时器；停止后生成 `time_entry`
-- [ ] 可手动补录时长（仅 duration 或起止时间）
-- [ ] 项目内可创建 Milestone，可选关联任务
-- [ ] 首页展示：活跃计时器、最近任务、今日时间汇总
-- [ ] 全部 M1 Commands 有对应 UI 入口；错误 toast 可读
-- [ ] Rust：`task_tree` + `timer` 相关单元测试 ≥4 个
+- [x] 任务式项目下可创建 ≥2 级子任务，支持排序与状态流转
+- [x] 仅 `is_milestone` 任务可添加子任务（migration 002）
+- [x] 全局同时仅一个活跃计时器；停止后生成 `time_entry`
+- [x] 可手动补录时长（仅 duration 或起止时间）
+- [x] 项目内可创建 Milestone，可选关联任务
+- [x] 首页展示：活跃计时器、最近任务、今日时间汇总
+- [x] 全部 M1 Commands 有对应 UI 入口；错误在底部状态栏展示
+- [x] Rust：`task_tree` + `timer` + `milestone` + `today` 相关测试 6 项
+- [ ] `task_reorder` 拖拽排序 UI
+- [ ] 计时栏展开/收起交互走查与视觉打磨
 
 ### 4.5 建议周计划
 
@@ -397,6 +424,7 @@ flowchart LR
 | 版本 | 日期 | 变更 |
 |------|------|------|
 | v1.0 | 2026-06-22 | 初稿：M0–V2 里程碑、任务分解、验收标准、日历 |
+| v1.1 | 2026-06-22 | M1 核心闭环完成进度同步；前端目录与验收清单更新 |
 
 ---
 

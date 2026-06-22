@@ -130,6 +130,7 @@ pub struct TaskDto {
     pub parent_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub milestone_id: Option<String>,
+    pub is_milestone: bool,
     pub title: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
@@ -173,6 +174,8 @@ pub struct CreateTaskInput {
     pub due_date: Option<String>,
     pub tags: Option<Vec<String>>,
     pub sort_order: Option<i64>,
+    #[serde(default)]
+    pub is_milestone: bool,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]

@@ -3,6 +3,7 @@ import type { ErrorBody } from '@spanwork/shared-types';
 import { parseInvokeError } from '@/lib/tauri/client';
 
 export function getErrorMessage(error: unknown, fallback = '未知错误'): string {
+  if (error == null) return '';
   const parsed = parseInvokeError(error);
   if (parsed.message.trim().length > 0) {
     return parsed.message;

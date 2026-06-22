@@ -111,3 +111,105 @@
       sans-serif;
   }
 }
+
+@keyframes timer-color-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.timer-bar-shell {
+  position: fixed;
+  background: transparent;
+}
+
+.timer-bar-shell--expanded {
+  overflow: hidden;
+  border-radius: 0 0 1rem 1rem;
+}
+
+/* ── Expanded: frosted glass panel with flowing accent ── */
+.timer-bar-surface-expanded {
+  border-radius: 0 0 1rem 1rem;
+  box-shadow: 0 6px 20px -8px color-mix(in oklch, var(--foreground) 12%, transparent);
+}
+
+.timer-bar-surface-expanded::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  opacity: 0.6;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--primary) 28%, transparent),
+    color-mix(in oklch, var(--primary) 38%, transparent),
+    color-mix(in oklch, var(--primary) 32%, transparent),
+    color-mix(in oklch, var(--primary) 40%, transparent),
+    color-mix(in oklch, var(--primary) 34%, transparent),
+    color-mix(in oklch, var(--primary) 28%, transparent)
+  );
+  background-size: 200% 100%;
+  animation: timer-color-flow 10s linear infinite;
+}
+
+.timer-bar-surface-expanded::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: color-mix(in oklch, var(--background) 24%, transparent);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+}
+
+.dark .timer-bar-surface-expanded::after {
+  background: color-mix(in oklch, var(--background) 20%, transparent);
+}
+
+/* ── Minimized: compact overlay strip — same accent colors, no layout space ── */
+.timer-bar-surface-minimized {
+  border-bottom: 1px solid color-mix(in oklch, var(--primary) 18%, var(--border));
+}
+
+.timer-bar-surface-minimized::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.6;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--primary) 28%, transparent),
+    color-mix(in oklch, var(--primary) 38%, transparent),
+    color-mix(in oklch, var(--primary) 32%, transparent),
+    color-mix(in oklch, var(--primary) 40%, transparent),
+    color-mix(in oklch, var(--primary) 34%, transparent),
+    color-mix(in oklch, var(--primary) 28%, transparent)
+  );
+  background-size: 200% 100%;
+  animation: timer-color-flow 10s linear infinite;
+}
+
+.timer-bar-surface-minimized::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: color-mix(in oklch, var(--background) 24%, transparent);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+}
+
+.dark .timer-bar-surface-minimized::after {
+  background: color-mix(in oklch, var(--background) 20%, transparent);
+}
+
+.timer-bar-surface > div {
+  z-index: 2;
+}

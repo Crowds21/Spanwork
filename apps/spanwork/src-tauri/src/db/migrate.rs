@@ -3,7 +3,8 @@ use rusqlite::Connection;
 use crate::error::{now_ms, AppResult};
 
 const MIGRATION_001: &str = include_str!("../../migrations/001_initial.sql");
-const SCHEMA_VERSION: i32 = 1;
+const MIGRATION_002: &str = include_str!("../../migrations/002_task_is_milestone.sql");
+const SCHEMA_VERSION: i32 = 2;
 
 pub fn run_migrations(conn: &Connection) -> AppResult<()> {
     conn.execute(
@@ -29,6 +30,10 @@ pub fn run_migrations(conn: &Connection) -> AppResult<()> {
 
     if current < 1 {
         apply_migration(conn, 1, MIGRATION_001)?;
+    }
+
+    if current < 2 {
+        apply_migration(conn, 2, MIGRATION_002)?;
     }
 
     Ok(())

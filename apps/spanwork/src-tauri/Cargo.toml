@@ -3,7 +3,8 @@ name = "spanwork"
 version = "0.1.0"
 description = "Spanwork personal project management"
 authors = ["Spanwork"]
-edition = "2021"
+edition = "2024"
+rust-version = "1.88"
 
 [lib]
 name = "spanwork_lib"

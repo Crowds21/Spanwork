@@ -98,6 +98,7 @@ CREATE TABLE tasks (
   project_id        TEXT NOT NULL,
   parent_id         TEXT,           -- NULL = 根任务
   milestone_id      TEXT,
+  is_milestone      INTEGER NOT NULL DEFAULT 0,  -- 1 = 可包含子任务的里程碑任务节点（migration 002）
   title             TEXT NOT NULL,
   description       TEXT,
   status            TEXT NOT NULL DEFAULT 'todo'
@@ -361,8 +362,9 @@ VALUES (...);
 
 | 版本 | 文件 | 内容 |
 |------|------|------|
-| 1 | `m001_initial.sql` | 全部 V1 表 |
-| 2+ | `m00N_*.sql` | 增量 ALTER |
+| 1 | `001_initial.sql` | 全部 V1 表 |
+| 2 | `002_task_is_milestone.sql` | `tasks.is_milestone`；已有父任务回填为 1 |
+| 3+ | `00N_*.sql` | 增量 ALTER |
 
 - 使用 `schema_migrations(version INTEGER PRIMARY KEY)`
 - 启动时顺序执行未应用迁移

@@ -56,7 +56,7 @@
 ### 2.2 数据流示例：创建任务
 
 ```
-User → TaskForm → invoke('task_create', dto)
+User → TaskCreateDialog → invoke('task_create', dto)
   → commands::task::create
   → domain::task::validate
   → db::repos::task::insert (触发 cr-sqlite changes)

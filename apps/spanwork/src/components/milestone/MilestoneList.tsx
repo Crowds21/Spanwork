@@ -3,7 +3,6 @@ import { Flag, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { MilestoneStatus, TaskDto } from '@spanwork/shared-types';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +17,6 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { milestoneStatusLabels } from '@/lib/format';
-import { getErrorMessage } from '@/lib/errors';
 import {
   createMilestone,
   deleteMilestone,
@@ -38,7 +36,7 @@ export function MilestoneList({ projectId, tasks }: MilestoneListProps) {
   const [title, setTitle] = useState('');
   const [linkTaskId, setLinkTaskId] = useState<string>('');
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: queryKeys.milestones(projectId),
     queryFn: () => listMilestones(projectId),
   });
@@ -74,18 +72,8 @@ export function MilestoneList({ projectId, tasks }: MilestoneListProps) {
     },
   });
 
-  const formErrorMessage = getErrorMessage(createMutation.error);
-
   if (isLoading) {
     return <Skeleton className="h-40 w-full rounded-xl" />;
-  }
-
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>无法加载里程碑：{getErrorMessage(error)}</AlertDescription>
-      </Alert>
-    );
   }
 
   return (
@@ -127,11 +115,6 @@ export function MilestoneList({ projectId, tasks }: MilestoneListProps) {
           添加
         </Button>
       </form>
-      {formErrorMessage && (
-        <Alert variant="destructive">
-          <AlertDescription>{formErrorMessage}</AlertDescription>
-        </Alert>
-      )}
 
       {!data?.length ? (
         <p className="text-sm text-muted-foreground">暂无里程碑</p>

@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight, Flag, Trash2 } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
 import type { TaskDto, TaskStatus } from '@spanwork/shared-types';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { TaskCreateTrigger } from '@/components/task/TaskCreateDialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -13,12 +14,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TaskForm } from '@/components/task/TaskForm';
 import { TimeEntryForm } from '@/components/timer/TimeEntryForm';
-import { TimerButton } from '@/components/timer/TimerBar';
+import { TaskTimerControls, TimerButton } from '@/components/timer/TimerBar';
 import { formatDuration, taskStatusLabels } from '@/lib/format';
-import { getErrorMessage } from '@/lib/errors';
 import { deleteTask, listTasks, updateTask } from '@/lib/tauri/task';
+import { consumeTaskFocus, scrollToTaskElement } from '@/lib/timer/timerFocus';
 import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
 
@@ -55,7 +55,7 @@ function TaskRow({
   const [expanded, setExpanded] = useState(true);
   const [showTimeForm, setShowTimeForm] = useState(false);
   const children = byParent.get(task.id) ?? [];
-  const canAddChild = depth < 2;
+  const canAddChild = task.isMilestone && depth === 0;
 
   const updateMutation = useMutation({
     mutationFn: (status: TaskStatus) => updateTask(task.id, { status }),
@@ -73,11 +73,8 @@ function TaskRow({
     },
   });
 
-  const errorMessage =
-    getErrorMessage(updateMutation.error) || getErrorMessage(deleteMutation.error);
-
   return (
-    <li className="space-y-2">
+    <li id={`task-${task.id}`} className="scroll-mt-24 space-y-2">
       <div
         className={cn(
           'flex flex-wrap items-center gap-2 rounded-lg border bg-card p-3',
@@ -96,7 +93,15 @@ function TaskRow({
           <span className="size-4" />
         )}
         <div className="min-w-0 flex-1">
-          <p className="font-medium">{task.title}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-medium">{task.title}</p>
+            {task.isMilestone && (
+              <Badge variant="secondary" className="gap-1">
+                <Flag className="size-3" />
+                里程碑
+              </Badge>
+            )}
+          </div>
           {task.totalTimeSeconds != null && task.totalTimeSeconds > 0 && (
             <p className="text-xs text-muted-foreground">
               已记录 {formatDuration(task.totalTimeSeconds)}
@@ -132,19 +137,20 @@ function TaskRow({
           <Trash2 className="size-3.5" />
         </Button>
       </div>
-      {errorMessage && (
-        <Alert variant="destructive">
-          <AlertDescription>{errorMessage}</AlertDescription>
-        </Alert>
-      )}
+      <TaskTimerControls projectId={projectId} taskId={task.id} className={depth > 0 ? 'ml-6' : undefined} />
       {showTimeForm && (
         <div className={cn('rounded-lg border bg-muted/30 p-3', depth > 0 && 'ml-6')}>
           <TimeEntryForm projectId={projectId} targetType="task" targetId={task.id} />
         </div>
       )}
       {canAddChild && (
-        <div className={cn('ml-6', depth > 0 && 'ml-12')}>
-          <TaskForm projectId={projectId} parentId={task.id} />
+        <div className="ml-6">
+          <TaskCreateTrigger
+            projectId={projectId}
+            parentId={task.id}
+            parentTitle={task.title}
+            variant="outline"
+          />
         </div>
       )}
       {expanded && children.length > 0 && (
@@ -165,13 +171,26 @@ function TaskRow({
 }
 
 export function TaskTree({ projectId }: TaskTreeProps) {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: queryKeys.tasks(projectId),
     queryFn: () => listTasks({ projectId, includeSubtasks: true }),
   });
 
   const byParent = useMemo(() => buildTree(data ?? []), [data]);
   const roots = byParent.get(null) ?? [];
+
+  useEffect(() => {
+    if (!data?.length) return;
+    const taskId = consumeTaskFocus();
+    if (!taskId) return;
+
+    const attempt = () => scrollToTaskElement(taskId);
+    window.requestAnimationFrame(() => {
+      if (!attempt()) {
+        window.setTimeout(attempt, 200);
+      }
+    });
+  }, [data, projectId]);
 
   if (isLoading) {
     return (
@@ -183,19 +202,16 @@ export function TaskTree({ projectId }: TaskTreeProps) {
     );
   }
 
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>无法加载任务：{getErrorMessage(error)}</AlertDescription>
-      </Alert>
-    );
-  }
-
   return (
     <div className="space-y-4">
-      <TaskForm projectId={projectId} />
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          里程碑任务可包含子任务，普通任务不可展开
+        </p>
+        <TaskCreateTrigger projectId={projectId} size="default" />
+      </div>
       {roots.length === 0 ? (
-        <p className="text-sm text-muted-foreground">暂无任务，在上方添加第一个任务</p>
+        <p className="text-sm text-muted-foreground">暂无任务，点击「添加任务」创建第一个</p>
       ) : (
         <ul className="space-y-3">
           {roots.map((task) => (

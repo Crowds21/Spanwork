@@ -4,7 +4,6 @@ import { CalendarClock, ListTodo, Repeat2 } from 'lucide-react';
 import { useState } from 'react';
 import type { CreateProjectInput, ProjectDetailDto, ProjectType } from '@spanwork/shared-types';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,7 +26,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { createProject, listProjects } from '@/lib/tauri/project';
-import { getErrorMessage } from '@/lib/errors';
 import { cn } from '@/lib/utils';
 import { queryKeys } from '@/queries/keys';
 
@@ -104,13 +102,6 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
               placeholder="简要说明项目目标"
             />
           </div>
-          {mutation.error && (
-            <Alert variant="destructive">
-              <AlertDescription>
-                {(mutation.error as { message?: string }).message ?? '创建失败'}
-              </AlertDescription>
-            </Alert>
-          )}
         </CardContent>
         <CardFooter>
           <Button type="submit" disabled={mutation.isPending || !name.trim()} className="w-full">
@@ -147,11 +138,13 @@ export function ProjectList() {
 
   if (error) {
     return (
-      <Alert variant="destructive">
-        <AlertDescription>
-          无法加载项目：{getErrorMessage(error)}
-        </AlertDescription>
-      </Alert>
+      <Card className="border-dashed">
+        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+          <ListTodo className="mb-3 size-10 text-muted-foreground/60" />
+          <p className="font-medium">无法加载项目列表</p>
+          <p className="mt-1 text-sm text-muted-foreground">请查看底部状态栏了解详情</p>
+        </CardContent>
+      </Card>
     );
   }
 
