@@ -10,6 +10,9 @@
     "tauri": "pnpm --filter @spanwork/app tauri",
     "tauri:dev": "pnpm dev:kill-port && pnpm --filter @spanwork/app tauri dev",
     "tauri:build": "pnpm --filter @spanwork/app tauri build",
+    "tauri:ios:init": "pnpm --filter @spanwork/app tauri ios init",
+    "tauri:ios:dev": "pnpm --filter @spanwork/app tauri ios dev",
+    "tauri:ios:build": "pnpm --filter @spanwork/app tauri ios build",
     "check": "pnpm -r run check",
     "typecheck": "pnpm -r run typecheck"
   },

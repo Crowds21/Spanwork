@@ -8,7 +8,7 @@ export function ProjectsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">项目</h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">项目</h1>
         <p className="mt-1 text-muted-foreground">管理任务式与习惯式长期项目</p>
       </div>
 

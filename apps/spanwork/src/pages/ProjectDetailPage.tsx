@@ -125,7 +125,7 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
           </Button>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{project.name}</h1>
               <Badge>任务式</Badge>
               {project.categoryName && (
                 <Badge variant="outline" className="gap-1.5">

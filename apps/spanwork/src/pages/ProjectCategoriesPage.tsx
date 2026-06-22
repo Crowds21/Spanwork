@@ -159,7 +159,7 @@ export function ProjectCategoriesPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Tags className="size-6 text-primary" />
-            <h1 className="text-3xl font-bold tracking-tight">项目分类</h1>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">项目分类</h1>
           </div>
           <p className="text-muted-foreground">管理项目分类，便于筛选与组织</p>
         </div>

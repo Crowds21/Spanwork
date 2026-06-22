@@ -92,38 +92,41 @@ function TaskRow({
     <li id={`task-${task.id}`} className="scroll-mt-24 space-y-2">
       <div
         className={cn(
-          'flex flex-wrap items-center gap-2 rounded-lg border bg-card p-3',
-          depth > 0 && 'ml-6 border-dashed',
+          'flex flex-col gap-3 rounded-lg border bg-card p-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2',
+          depth > 0 && 'ml-3 border-dashed sm:ml-6',
         )}
       >
-        {children.length > 0 ? (
-          <button
-            type="button"
-            className="text-muted-foreground hover:text-foreground"
-            onClick={() => setExpanded((v) => !v)}
-          >
-            {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-          </button>
-        ) : (
-          <span className="size-4" />
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="font-medium">{task.title}</p>
-            {task.isMilestone && (
-              <Badge variant="secondary" className="gap-1">
-                <Flag className="size-3" />
-                里程碑
-              </Badge>
+        <div className="flex min-w-0 items-start gap-2 sm:flex-1">
+          {children.length > 0 ? (
+            <button
+              type="button"
+              className="mt-0.5 text-muted-foreground hover:text-foreground"
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+            </button>
+          ) : (
+            <span className="size-4 shrink-0" />
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-medium leading-snug">{task.title}</p>
+              {task.isMilestone && (
+                <Badge variant="secondary" className="gap-1">
+                  <Flag className="size-3" />
+                  里程碑
+                </Badge>
+              )}
+            </div>
+            {task.totalTimeSeconds != null && task.totalTimeSeconds > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {isMilestoneRoot && hasChildren ? '子任务合计 ' : '已记录 '}
+                {formatDuration(task.totalTimeSeconds)}
+              </p>
             )}
           </div>
-          {task.totalTimeSeconds != null && task.totalTimeSeconds > 0 && (
-            <p className="text-xs text-muted-foreground">
-              {isMilestoneRoot && hasChildren ? '子任务合计 ' : '已记录 '}
-              {formatDuration(task.totalTimeSeconds)}
-            </p>
-          )}
         </div>
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
         <TaskStatusSelect
           value={task.status}
           onValueChange={(status) => updateMutation.mutate(status)}
@@ -182,6 +185,7 @@ function TaskRow({
               <Trash2 className="size-4" />
             </Button>
           </Tooltip>
+        </div>
         </div>
       </div>
       {canTimer && (

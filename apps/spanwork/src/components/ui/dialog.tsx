@@ -27,7 +27,7 @@ export function Dialog({ open, onOpenChange, children, contentClassName }: Dialo
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
       <button
         type="button"
         className="absolute inset-0 bg-black/50"
@@ -35,7 +35,11 @@ export function Dialog({ open, onOpenChange, children, contentClassName }: Dialo
         onClick={() => onOpenChange(false)}
       />
       <div
-        className={cn('relative z-10 w-full max-w-md', contentClassName)}
+        className={cn(
+          'relative z-10 w-full max-h-[92dvh] overflow-y-auto sm:max-w-md',
+          'rounded-t-2xl sm:rounded-2xl',
+          contentClassName,
+        )}
         role="dialog"
         aria-modal="true"
       >

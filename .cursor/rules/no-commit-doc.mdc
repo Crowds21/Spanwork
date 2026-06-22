@@ -1,0 +1,18 @@
+---
+description: doc/ 目录为本地文档，禁止纳入 git 提交
+alwaysApply: true
+---
+
+# 禁止提交 doc/ 目录
+
+`doc/` 目录下的内容为**本地文档**，**不需要、也不应该**进行 git commit。
+
+## 必须遵守
+
+- 创建或修改 `doc/` 下文件后，**不要** `git add doc/` 或将其包含在任何 commit 中。
+- 用户要求「提交全部改动」「commit 所有文件」时，**仍须排除** `doc/`。
+- 用户仅要求提交 doc 时，应提醒：`doc/` 为本地文档、已在 `.gitignore` 中忽略，不应纳入版本库；若需共享文档请另选路径或流程。
+
+## 说明
+
+- 仓库已在 `.gitignore` 中配置 `doc/`，但 Agent 在协助 commit 时须主动跳过该目录，避免误 add。

@@ -21,9 +21,9 @@ interface AppShellProps {
 }
 
 const navItems = [
-  { to: '/', label: '今日', icon: Home },
-  { to: '/projects', label: '项目', icon: FolderKanban },
-  { to: '/project-categories', label: '项目分类', icon: Tags },
+  { to: '/', label: '今日', shortLabel: '今日', icon: Home },
+  { to: '/projects', label: '项目', shortLabel: '项目', icon: FolderKanban },
+  { to: '/project-categories', label: '项目分类', shortLabel: '分类', icon: Tags },
 ] as const;
 
 export function AppShell({ children }: AppShellProps) {
@@ -65,30 +65,36 @@ export function AppShell({ children }: AppShellProps) {
           </aside>
 
           <div className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col">
-            <header className="flex h-14 shrink-0 items-center border-b bg-card/80 px-4 backdrop-blur md:hidden">
+            <header className="flex h-12 shrink-0 items-center border-b bg-card/80 px-4 pt-safe backdrop-blur md:hidden">
               <div className="flex items-center gap-2">
                 <div className="flex size-8 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
                   SW
                 </div>
                 <span className="font-semibold">Spanwork</span>
               </div>
-              <nav className="ml-auto flex gap-1">
-                {navItems.map(({ to, label }) => (
+            </header>
+
+            <main className="flex-1 overflow-y-auto overscroll-y-contain px-3 py-4 sm:px-4 md:p-8">
+              <div className="mx-auto max-w-6xl">{children}</div>
+            </main>
+
+            <nav className="shrink-0 border-t bg-card/95 px-safe pb-safe backdrop-blur md:hidden">
+              <div className="grid grid-cols-3 gap-1 py-1.5">
+                {navItems.map(({ to, shortLabel, icon: Icon }) => (
                   <Link
                     key={to}
                     to={to}
-                    className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    activeProps={{ className: 'bg-accent text-foreground font-medium' }}
+                    className="flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors"
+                    activeProps={{
+                      className: 'bg-accent text-foreground',
+                    }}
                   >
-                    {label}
+                    <Icon className="size-5 shrink-0" />
+                    <span>{shortLabel}</span>
                   </Link>
                 ))}
-              </nav>
-            </header>
-
-            <main className="flex-1 overflow-y-auto p-4 md:p-8">
-              <div className="mx-auto max-w-6xl">{children}</div>
-            </main>
+              </div>
+            </nav>
           </div>
         </div>
 

@@ -26,7 +26,8 @@ export function TimerBarExpanded() {
   return (
     <header
       className={cn(
-        'timer-bar-shell timer-bar-shell--expanded pointer-events-none fixed inset-x-0 top-0 z-40 h-[7.75rem] overflow-hidden',
+        'timer-bar-shell timer-bar-shell--expanded pointer-events-none fixed inset-x-0 top-0 z-40 overflow-hidden pt-safe',
+        'h-[6.5rem] sm:h-[7.75rem]',
         'transition-[opacity,transform] duration-300 ease-in-out',
         isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0',
       )}
@@ -40,17 +41,17 @@ export function TimerBarExpanded() {
         )}
       >
         <div className="relative z-[2] flex h-full items-center">
-          <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 py-3 text-center">
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1 py-2 text-center sm:gap-1.5 sm:py-3">
             <div
               className={cn(
-                'flex items-center gap-2 text-sm font-semibold',
+                'flex items-center gap-2 text-xs font-semibold sm:text-sm',
                 isPaused ? 'text-amber-700 dark:text-amber-300' : 'text-primary',
               )}
             >
               <Timer className={cn('size-4', !isPaused && 'animate-pulse')} aria-hidden />
               <span>{isPaused ? '已暂停' : '计时中'}</span>
             </div>
-            <p className="font-mono text-4xl font-bold tabular-nums tracking-tight text-foreground">
+            <p className="font-mono text-3xl font-bold tabular-nums tracking-tight text-foreground sm:text-4xl">
               {formatDurationLive(elapsed)}
             </p>
             <button

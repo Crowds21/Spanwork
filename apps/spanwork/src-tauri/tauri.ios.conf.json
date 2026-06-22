@@ -1,0 +1,8 @@
+{
+  "identifier": "com.spanwork.app",
+  "bundle": {
+    "iOS": {
+      "developmentTeam": "REPLACE_WITH_YOUR_TEAM_ID"
+    }
+  }
+}

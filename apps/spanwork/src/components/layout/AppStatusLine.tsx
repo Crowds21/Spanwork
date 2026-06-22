@@ -14,7 +14,7 @@ export function AppStatusLine() {
   return (
     <footer
       className={cn(
-        'flex h-7 shrink-0 items-center gap-2 border-t px-4 text-xs',
+        'flex h-7 shrink-0 items-center gap-2 border-t px-4 pb-safe text-xs md:pb-0',
         hasError ? 'border-destructive/20 bg-destructive/5' : 'border-border bg-muted/30',
       )}
       role="status"

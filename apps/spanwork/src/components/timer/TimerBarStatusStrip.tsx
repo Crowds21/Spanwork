@@ -38,8 +38,8 @@ export function TimerBarStatusStrip() {
           isPaused && 'timer-bar-surface--paused',
         )}
       >
-        <div className="relative z-[2] flex h-full items-center">
-          <div className="flex w-full items-center justify-center gap-2 text-xs">
+        <div className="relative z-[2] flex h-full items-center px-safe">
+          <div className="flex w-full min-w-0 items-center justify-center gap-1.5 overflow-x-auto text-xs sm:gap-2">
             <Timer
               className={cn(
                 'size-3.5 shrink-0',
@@ -47,15 +47,8 @@ export function TimerBarStatusStrip() {
               )}
               aria-hidden
             />
-            <span
-              className={cn(
-                'shrink-0 font-medium',
-                isPaused ? 'text-amber-700 dark:text-amber-300' : 'text-primary',
-              )}
-            >
-              {isPaused ? '已暂停' : '计时中'}
-            </span>
-            <span className={cn('shrink-0', isPaused ? 'text-amber-600/35' : 'text-primary/35')}>
+            <span className="hidden shrink-0 sm:inline">{isPaused ? '已暂停' : '计时中'}</span>
+            <span className={cn('hidden shrink-0 sm:inline', isPaused ? 'text-amber-600/35' : 'text-primary/35')}>
               ·
             </span>
             <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-foreground">
