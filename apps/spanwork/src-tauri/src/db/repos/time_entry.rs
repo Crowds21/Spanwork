@@ -1,0 +1,267 @@
+use rusqlite::{Connection, OptionalExtension};
+
+use crate::dto::{
+    CreateTimeEntryInput, TimeEntryDto, TimeEntryListParams, TimeEntrySource, TimeEntryUpdateParams,
+    TimeTargetType, UpdateTimeEntryInput,
+};
+use crate::error::{new_id, now_ms, AppError, AppResult};
+
+pub fn list(conn: &Connection, params: &TimeEntryListParams) -> AppResult<Vec<TimeEntryDto>> {
+    let limit = params.limit.unwrap_or(100);
+    let offset = params.offset.unwrap_or(0);
+
+    let mut sql = String::from(
+        "SELECT id, project_id, target_type, target_id, start_at, end_at, duration_seconds,
+                note, source, created_at, updated_at
+         FROM time_entries
+         WHERE deleted_at IS NULL",
+    );
+    let mut bind_values: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+
+    if let Some(project_id) = &params.project_id {
+        sql.push_str(" AND project_id = ?");
+        bind_values.push(Box::new(project_id.clone()));
+    }
+    if let Some(target_type) = params.target_type {
+        sql.push_str(" AND target_type = ?");
+        bind_values.push(Box::new(target_type_to_str(target_type).to_string()));
+    }
+    if let Some(target_id) = &params.target_id {
+        sql.push_str(" AND target_id = ?");
+        bind_values.push(Box::new(target_id.clone()));
+    }
+    if let Some(from_ms) = params.from_ms {
+        sql.push_str(" AND start_at >= ?");
+        bind_values.push(Box::new(from_ms));
+    }
+    if let Some(to_ms) = params.to_ms {
+        sql.push_str(" AND start_at <= ?");
+        bind_values.push(Box::new(to_ms));
+    }
+
+    sql.push_str(" ORDER BY start_at DESC LIMIT ? OFFSET ?");
+    bind_values.push(Box::new(limit));
+    bind_values.push(Box::new(offset));
+
+    let mut stmt = conn.prepare(&sql)?;
+    let rows = stmt.query_map(rusqlite::params_from_iter(bind_values.iter()), map_time_entry_row)?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+}
+
+pub fn get_by_id(conn: &Connection, id: &str) -> AppResult<TimeEntryDto> {
+    conn.query_row(
+        "SELECT id, project_id, target_type, target_id, start_at, end_at, duration_seconds,
+                note, source, created_at, updated_at
+         FROM time_entries
+         WHERE id = ?1 AND deleted_at IS NULL",
+        [id],
+        map_time_entry_row,
+    )
+    .optional()?
+    .ok_or_else(|| AppError::NotFound {
+        entity: "time_entry",
+        id: id.to_string(),
+    })
+}
+
+pub fn create(conn: &Connection, input: &CreateTimeEntryInput) -> AppResult<TimeEntryDto> {
+    crate::db::repos::project::get_by_id(conn, &input.project_id)?;
+
+    let (end_at, duration_seconds) = resolve_duration(input.start_at, input.end_at, input.duration_seconds)?;
+
+    let origin = crate::db::repos::device::origin_device_id(conn)?;
+    let id = new_id();
+    let now = now_ms();
+
+    conn.execute(
+        "INSERT INTO time_entries (
+            id, project_id, target_type, target_id, start_at, end_at, duration_seconds,
+            note, source, created_at, updated_at, origin_device_id
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'manual', ?9, ?9, ?10)",
+        rusqlite::params![
+            id,
+            input.project_id,
+            target_type_to_str(input.target_type),
+            input.target_id,
+            input.start_at,
+            end_at,
+            duration_seconds,
+            input.note,
+            now,
+            origin,
+        ],
+    )?;
+
+    get_by_id(conn, &id)
+}
+
+pub fn create_from_timer(
+    conn: &Connection,
+    project_id: &str,
+    target_type: TimeTargetType,
+    target_id: &str,
+    start_at: i64,
+    end_at: i64,
+    note: Option<&str>,
+) -> AppResult<TimeEntryDto> {
+    let duration_seconds = ((end_at - start_at) / 1000).max(0);
+    let origin = crate::db::repos::device::origin_device_id(conn)?;
+    let id = new_id();
+    let now = now_ms();
+
+    conn.execute(
+        "INSERT INTO time_entries (
+            id, project_id, target_type, target_id, start_at, end_at, duration_seconds,
+            note, source, created_at, updated_at, origin_device_id
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'timer', ?9, ?9, ?10)",
+        rusqlite::params![
+            id,
+            project_id,
+            target_type_to_str(target_type),
+            target_id,
+            start_at,
+            end_at,
+            duration_seconds,
+            note,
+            now,
+            origin,
+        ],
+    )?;
+
+    get_by_id(conn, &id)
+}
+
+pub fn update(conn: &Connection, params: &TimeEntryUpdateParams) -> AppResult<TimeEntryDto> {
+    let existing = get_by_id(conn, &params.id)?;
+    apply_update(conn, &existing, &params.patch)?;
+    get_by_id(conn, &params.id)
+}
+
+fn apply_update(
+    conn: &Connection,
+    existing: &TimeEntryDto,
+    patch: &UpdateTimeEntryInput,
+) -> AppResult<()> {
+    let start_at = patch.start_at.unwrap_or(existing.start_at);
+    let end_at = patch.end_at.or(existing.end_at);
+    let duration_seconds = if patch.duration_seconds.is_some() || patch.end_at.is_some() || patch.start_at.is_some() {
+        let (resolved_end, resolved_duration) =
+            resolve_duration(start_at, end_at, patch.duration_seconds.or(Some(existing.duration_seconds)))?;
+        let _ = resolved_end;
+        resolved_duration
+    } else {
+        existing.duration_seconds
+    };
+
+    let note = patch.note.as_ref().or(existing.note.as_ref());
+    let now = now_ms();
+
+    conn.execute(
+        "UPDATE time_entries SET
+            start_at = ?1, end_at = ?2, duration_seconds = ?3, note = ?4, updated_at = ?5
+         WHERE id = ?6 AND deleted_at IS NULL",
+        rusqlite::params![start_at, end_at, duration_seconds, note, now, existing.id],
+    )?;
+
+    Ok(())
+}
+
+pub fn delete(conn: &Connection, id: &str) -> AppResult<()> {
+    let now = now_ms();
+    let updated = conn.execute(
+        "UPDATE time_entries SET deleted_at = ?1, updated_at = ?1 WHERE id = ?2 AND deleted_at IS NULL",
+        rusqlite::params![now, id],
+    )?;
+
+    if updated == 0 {
+        return Err(AppError::NotFound {
+            entity: "time_entry",
+            id: id.to_string(),
+        });
+    }
+
+    Ok(())
+}
+
+pub fn sum_for_target(conn: &Connection, target_type: TimeTargetType, target_id: &str) -> AppResult<i64> {
+    conn.query_row(
+        "SELECT COALESCE(SUM(duration_seconds), 0) FROM time_entries
+         WHERE target_type = ?1 AND target_id = ?2 AND deleted_at IS NULL",
+        rusqlite::params![target_type_to_str(target_type), target_id],
+        |row| row.get(0),
+    )
+    .map_err(Into::into)
+}
+
+pub fn sum_today(conn: &Connection, day_start_ms: i64, day_end_ms: i64) -> AppResult<i64> {
+    conn.query_row(
+        "SELECT COALESCE(SUM(duration_seconds), 0) FROM time_entries
+         WHERE deleted_at IS NULL AND start_at >= ?1 AND start_at < ?2",
+        rusqlite::params![day_start_ms, day_end_ms],
+        |row| row.get(0),
+    )
+    .map_err(Into::into)
+}
+
+fn resolve_duration(
+    start_at: i64,
+    end_at: Option<i64>,
+    duration_seconds: Option<i64>,
+) -> AppResult<(Option<i64>, i64)> {
+    match (end_at, duration_seconds) {
+        (Some(end), _) if end < start_at => Err(AppError::Validation {
+            field: "endAt".into(),
+            reason: "must be after startAt".into(),
+        }),
+        (Some(end), _) => Ok((Some(end), ((end - start_at) / 1000).max(0))),
+        (None, Some(duration)) if duration >= 0 => Ok((None, duration)),
+        (None, Some(_)) => Err(AppError::Validation {
+            field: "durationSeconds".into(),
+            reason: "must be non-negative".into(),
+        }),
+        (None, None) => Err(AppError::Validation {
+            field: "durationSeconds".into(),
+            reason: "either endAt or durationSeconds is required".into(),
+        }),
+    }
+}
+
+fn map_time_entry_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TimeEntryDto> {
+    let target_type_str: String = row.get(2)?;
+    let source_str: String = row.get(8)?;
+
+    Ok(TimeEntryDto {
+        id: row.get(0)?,
+        project_id: row.get(1)?,
+        target_type: parse_target_type(&target_type_str),
+        target_id: row.get(3)?,
+        start_at: row.get(4)?,
+        end_at: row.get(5)?,
+        duration_seconds: row.get(6)?,
+        note: row.get(7)?,
+        source: parse_source(&source_str),
+        created_at: row.get(9)?,
+        updated_at: row.get(10)?,
+    })
+}
+
+pub fn target_type_to_str(value: TimeTargetType) -> &'static str {
+    match value {
+        TimeTargetType::Task => "task",
+        TimeTargetType::HabitOccurrence => "habit_occurrence",
+    }
+}
+
+pub fn parse_target_type(value: &str) -> TimeTargetType {
+    match value {
+        "habit_occurrence" => TimeTargetType::HabitOccurrence,
+        _ => TimeTargetType::Task,
+    }
+}
+
+pub fn parse_source(value: &str) -> TimeEntrySource {
+    match value {
+        "timer" => TimeEntrySource::Timer,
+        _ => TimeEntrySource::Manual,
+    }
+}

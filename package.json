@@ -1,0 +1,20 @@
+{
+  "name": "spanwork",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Spanwork — personal long-term project management",
+  "scripts": {
+    "dev": "pnpm --filter @spanwork/app dev",
+    "dev:kill-port": "lsof -ti :1420 | xargs kill -9 2>/dev/null; lsof -ti :1421 | xargs kill -9 2>/dev/null; true",
+    "build": "pnpm --filter @spanwork/app build",
+    "tauri": "pnpm --filter @spanwork/app tauri",
+    "tauri:dev": "pnpm dev:kill-port && pnpm --filter @spanwork/app tauri dev",
+    "tauri:build": "pnpm --filter @spanwork/app tauri build",
+    "check": "pnpm -r run check",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@11.8.0"
+}

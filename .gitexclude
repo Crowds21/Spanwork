@@ -1,0 +1,22 @@
+# Local-only git excludes (not shared via .gitignore).
+# Enabled automatically after clone via: git config --local core.excludesFile .gitexclude
+#
+# Use this file for machine-specific paths that should never be committed.
+
+# Cursor / agent runtime (keep shared .cursor/mcp.json if team-aligned)
+.cursor/projects/
+.cursor/plans/
+.cursor/rules/**/local/
+
+# Personal notes & scratch
+*.local.md
+scratch/
+tmp/
+.temp/
+
+# Local override configs
+.env.local
+.env.*.local
+
+# macOS extended attributes sidecars
+*.DS_Store
