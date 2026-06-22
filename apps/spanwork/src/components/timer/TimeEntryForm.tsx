@@ -1,3 +1,7 @@
+/**
+ * 手动补录时间表单（按分钟数倒推 startAt/endAt）
+ * 嵌在 TaskTree 每行任务下，onCreated 可选回调关闭面板
+ */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { TimeTargetType } from '@spanwork/shared-types';

@@ -1,3 +1,9 @@
+/**
+ * 欢迎页（M0 遗留，当前默认路由已指向 TodayPage）
+ *
+ * 页面组件 = 纯函数，返回 JSX（HTML 模板语法）
+ * useQuery = 带缓存的 GET 请求，enabled 控制是否发起调用
+ */
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Cpu, Info, MonitorSmartphone, Sparkles } from 'lucide-react';

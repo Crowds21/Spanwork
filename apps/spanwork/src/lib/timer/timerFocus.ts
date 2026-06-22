@@ -1,6 +1,10 @@
+/**
+ * 计时栏「查看项目」后的任务定位（跨页面滚动高亮）
+ *
+ * 模块级 pendingTaskId：路由跳转时 TaskTree 尚未挂载，先暂存意图再消费
+ */
 let pendingTaskId: string | null = null;
 
-/** 跨路由保留「查看项目」后的任务定位意图（项目页加载完再消费）。 */
 export function requestTaskFocus(taskId: string): void {
   pendingTaskId = taskId;
 }

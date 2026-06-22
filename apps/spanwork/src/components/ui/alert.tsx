@@ -1,3 +1,4 @@
+/** shadcn/ui：提示框，用于页面级警告信息 */
 import { cva, type VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 

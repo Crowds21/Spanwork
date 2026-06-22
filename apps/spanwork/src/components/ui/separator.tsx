@@ -1,3 +1,4 @@
+/** shadcn/ui：水平/垂直分割线 */
 import * as SeparatorPrimitive from '@radix-ui/react-separator';
 import * as React from 'react';
 

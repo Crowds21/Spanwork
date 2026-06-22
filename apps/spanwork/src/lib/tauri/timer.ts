@@ -1,3 +1,4 @@
+/** 全局计时器 IPC 封装（start/stop/cancel/get_active） */
 import type { ActiveTimerDto, StartTimerInput, TimeEntryDto } from '@spanwork/shared-types';
 
 import { tauriInvoke } from './client';

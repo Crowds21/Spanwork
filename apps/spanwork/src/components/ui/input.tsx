@@ -1,3 +1,4 @@
+/** shadcn/ui：单行文本输入框，透传原生 input 属性 */
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';

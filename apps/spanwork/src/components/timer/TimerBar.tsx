@@ -1,3 +1,11 @@
+/**
+ * 全局计时顶栏（fixed 浮层，不占文档流）
+ *
+ * - useQuery(activeTimer)：订阅后端当前计时状态
+ * - useState(minimized)：展开大面板 / 收起细条，仅 UI 状态
+ * - useEffect(sessionKey)：计时开始/结束时控制入场/退场动画
+ * - cn()：按状态合并 Tailwind className
+ */
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { ChevronDown, ChevronUp, Timer } from 'lucide-react';
@@ -13,7 +21,6 @@ import { cn } from '@/lib/utils';
 
 const ENTER_EXIT_MS = 320;
 
-/** 全局计时顶栏：fixed 浮层，展开为磨砂下拉面板，收起为顶部细条，均不占文档流布局。 */
 export function TimerBar() {
   const navigate = useNavigate();
   const inTauri = isTauri();

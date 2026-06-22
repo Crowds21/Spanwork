@@ -1,3 +1,4 @@
+/** shadcn/ui：按钮。variant 控制样式（default/outline/ghost），size 控制尺寸。 */
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import * as React from 'react';

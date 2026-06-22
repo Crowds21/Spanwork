@@ -1,3 +1,10 @@
+/**
+ * 项目详情页（任务式）
+ *
+ * Props projectId：由路由层传入的动态参数
+ * useMutation：写操作（删除项目），onSuccess 后 navigate 跳转并刷新缓存
+ * 加载/空态/错误态：isLoading、!data 分支渲染不同 UI
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { ArrowLeft, Trash2 } from 'lucide-react';

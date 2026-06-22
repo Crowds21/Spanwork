@@ -1,3 +1,4 @@
+/** shadcn/ui：下拉选择，基于 Radix Select，value/onValueChange 受控 */
 import * as SelectPrimitive from '@radix-ui/react-select';
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import * as React from 'react';

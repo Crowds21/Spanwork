@@ -1,3 +1,7 @@
+/**
+ * 项目列表页：左侧新建表单 + 右侧项目卡片列表
+ * 组合多个子组件，自身不直接调 API
+ */
 import { CreateProjectForm, ProjectList } from '@/components/project/ProjectPanel';
 
 export function ProjectsPage() {

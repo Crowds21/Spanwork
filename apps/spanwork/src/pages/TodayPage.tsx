@@ -1,3 +1,9 @@
+/**
+ * 今日页：展示今日累计时间、活跃计时、最近任务
+ *
+ * useQuery + refetchInterval：类似定时轮询刷新 Dashboard
+ * 条件渲染：{condition && <Component />} 为 true 时才渲染
+ */
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Clock, FileText, ListTodo, Timer } from 'lucide-react';

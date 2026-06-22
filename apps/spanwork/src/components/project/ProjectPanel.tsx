@@ -1,3 +1,7 @@
+/**
+ * 项目面板：CreateProjectForm（新建）+ ProjectList（列表卡片）
+ * mutation 成功后 invalidateQueries 刷新 projects 缓存
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { CalendarClock, ListTodo, Repeat2 } from 'lucide-react';

@@ -1,3 +1,4 @@
+/** 展示层格式化：时长、任务/里程碑状态中文标签 */
 export function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);

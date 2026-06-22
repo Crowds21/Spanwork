@@ -1,8 +1,8 @@
 {
-  "rust-analyzer.linkedProjects": ["apps/spanwork/src-tauri/Cargo.toml"],
+  "rust-analyzer.linkedProjects": ["${workspaceFolder}/Cargo.toml"],
   "rust-analyzer.cargo.buildScripts.enable": true,
   "rust-analyzer.procMacro.enable": true,
-  "rust-analyzer.check.command": "clippy",
+  "rust-analyzer.check.command": "check",
   "files.watcherExclude": {
     "**/target/**": true,
     "**/node_modules/**": true,

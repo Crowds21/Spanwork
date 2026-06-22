@@ -1,3 +1,10 @@
+/**
+ * 任务树：扁平列表 → 父子树形展示，含计时/补录/状态切换
+ *
+ * - useMemo：派生数据缓存，tasks 不变时不重复 buildTree
+ * - useState：组件内 UI 状态（展开折叠、显示补录表单）
+ * - TaskRow：子组件，Props 即入参；递归渲染子任务
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight, Flag, Trash2 } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';

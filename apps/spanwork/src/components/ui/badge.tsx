@@ -1,3 +1,4 @@
+/** shadcn/ui：小标签徽章，展示状态/类型文字 */
 import { cva, type VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 

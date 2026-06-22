@@ -1,3 +1,4 @@
+/** shadcn/ui：卡片容器，CardHeader/CardTitle/CardContent 等组合使用 */
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';

@@ -1,3 +1,9 @@
+/**
+ * 创建任务弹窗（根任务 / 子任务）
+ *
+ * open + onOpenChange：受控组件模式，父组件持有开关状态
+ * useState(title)：表单字段本地状态，提交后 mutation 调 createTask
+ */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Flag, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';

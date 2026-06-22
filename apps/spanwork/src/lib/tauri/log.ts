@@ -1,3 +1,4 @@
+/** 运行日志 IPC 封装 */
 import type { LogInfoDto, WriteLogInput } from '@spanwork/shared-types';
 
 import { tauriInvoke } from './client';

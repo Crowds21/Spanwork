@@ -1,3 +1,4 @@
+/** 设备与应用信息 IPC 封装 */
 import type { AppInfoDto, DeviceDto } from '@spanwork/shared-types';
 
 import { tauriInvoke } from './client';

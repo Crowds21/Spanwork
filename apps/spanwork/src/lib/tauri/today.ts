@@ -1,3 +1,4 @@
+/** 今日 Dashboard IPC 封装 */
 import type { TodayDashboardDto } from '@spanwork/shared-types';
 
 import { tauriInvoke } from './client';

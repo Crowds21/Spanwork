@@ -1,3 +1,4 @@
+/** 任务相关 IPC 封装 */
 import type {
   CreateTaskInput,
   TaskBatchCompleteResult,

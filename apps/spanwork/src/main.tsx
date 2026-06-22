@@ -1,3 +1,11 @@
+/**
+ * 应用入口（类比后端 main / Spring Boot Application）
+ *
+ * - createRoot：把 React 组件树挂载到 index.html 的 #root DOM 节点
+ * - QueryClientProvider：全局注入 TanStack Query 客户端（带缓存的异步数据层）
+ * - RouterProvider：前端路由，根据 URL 渲染对应页面组件
+ * - StrictMode：开发模式下双重渲染，帮助发现副作用问题
+ */
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';

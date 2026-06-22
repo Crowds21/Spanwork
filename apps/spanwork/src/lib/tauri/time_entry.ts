@@ -1,3 +1,4 @@
+/** 时间记录（手动补录）IPC 封装 */
 import type {
   CreateTimeEntryInput,
   TimeEntryDto,

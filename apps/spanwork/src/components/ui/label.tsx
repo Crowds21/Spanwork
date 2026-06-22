@@ -1,3 +1,4 @@
+/** shadcn/ui：表单标签，与 Input 的 htmlFor/id 配对 */
 import * as LabelPrimitive from '@radix-ui/react-label';
 import * as React from 'react';
 

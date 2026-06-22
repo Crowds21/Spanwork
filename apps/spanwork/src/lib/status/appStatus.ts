@@ -1,3 +1,9 @@
+/**
+ * 全局应用状态（类比单例 EventBus / 状态栏消息队列）
+ *
+ * 模块级变量 + subscribe 模式，供 AppStatusLine 订阅显示错误
+ * useSyncExternalStore：React 18 钩子，连接外部 store 与组件重渲染
+ */
 import { useSyncExternalStore } from 'react';
 
 import { getErrorCode, getErrorMessage } from '@/lib/errors';

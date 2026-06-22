@@ -1,3 +1,4 @@
+/** 项目相关 IPC 封装，一函数对应一个 Tauri command */
 import type {
   CreateProjectInput,
   ProjectDetailDto,

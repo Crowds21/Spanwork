@@ -1,3 +1,4 @@
+/** shadcn/ui：多行文本输入 */
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';

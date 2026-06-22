@@ -1,10 +1,13 @@
+/**
+ * 底部状态栏：正常显示「就绪」，IPC/操作失败时显示错误并可关闭
+ * useAppStatus 订阅 lib/status/appStatus 全局 store
+ */
 import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { dismissAppStatus, useAppStatus } from '@/lib/status/appStatus';
 import { cn } from '@/lib/utils';
 
-/** 应用底部状态栏：就绪提示与 IPC/操作错误（替代各表单内联 Alert）。 */
 export function AppStatusLine() {
   const { hasError, entry } = useAppStatus();
 

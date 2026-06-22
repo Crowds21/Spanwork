@@ -1,3 +1,7 @@
+/**
+ * 弹窗：open 受控 + createPortal 挂到 document.body（脱离父级 overflow 裁剪）
+ * 点击遮罩或 Esc 关闭
+ */
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 

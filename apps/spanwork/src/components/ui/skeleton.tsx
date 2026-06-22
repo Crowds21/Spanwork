@@ -1,3 +1,4 @@
+/** shadcn/ui：加载占位骨架屏，数据请求中替代真实内容 */
 import type { ComponentProps } from 'react';
 
 import { cn } from '@/lib/utils';

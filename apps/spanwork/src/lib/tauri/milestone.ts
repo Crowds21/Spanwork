@@ -1,3 +1,4 @@
+/** 产品里程碑（Milestone）IPC 封装 */
 import type {
   CreateMilestoneInput,
   MilestoneDto,

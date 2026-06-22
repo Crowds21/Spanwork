@@ -15,7 +15,7 @@
 
 - Node.js 20+
 - pnpm 9+
-- Rust stable（见 `apps/spanwork/src-tauri/rust-toolchain.toml`）
+- Rust stable（见根目录 `rust-toolchain.toml`）
 - Tauri 2 系统依赖（macOS: Xcode CLT）
 
 ## 开发

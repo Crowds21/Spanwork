@@ -27,3 +27,14 @@
 | M2 习惯 | 🔲 待开始 |
 
 详见 [MILESTONE §3–4](./MILESTONE-开发里程碑与计划.md#3-当前进度截至-2026-06-22)。
+
+## 前端代码（`apps/spanwork/src`）
+
+每个 `.ts`/`.tsx` 文件顶部有注释，说明该文件职责及关键 React 概念（组件、Props、useQuery 等）。阅读顺序建议：
+
+1. `main.tsx` → `routes/` → `pages/`
+2. `components/layout/` → 业务 `components/`
+3. `lib/tauri/`（IPC 客户端）→ `queries/keys.ts`
+4. `components/ui/`（shadcn 基础 UI，按需查阅）
+
+`routeTree.gen.ts` 为 TanStack Router 自动生成，勿手动修改。

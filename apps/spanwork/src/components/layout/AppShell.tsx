@@ -1,3 +1,10 @@
+/**
+ * 应用外壳布局（类比后端 layout.html + 全局导航）
+ *
+ * - children：子路由页面内容，由 __root.tsx 的 Outlet 注入
+ * - TimerBar / AppStatusLine：fixed/底栏浮层，不参与主内容 flex 布局
+ * - Link：路由链接，activeProps 为当前路由高亮样式
+ */
 import { Link } from '@tanstack/react-router';
 import { FolderKanban, Home } from 'lucide-react';
 import type { ReactNode } from 'react';

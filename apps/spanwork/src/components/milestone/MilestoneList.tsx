@@ -1,3 +1,7 @@
+/**
+ * 产品里程碑列表：创建、状态更新、关联任务、删除
+ * tasks Props 来自父页面已加载的任务列表，用于关联下拉选项
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Flag, Trash2 } from 'lucide-react';
 import { useState } from 'react';

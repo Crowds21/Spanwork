@@ -1,3 +1,9 @@
+/**
+ * 任务行计时控件
+ *
+ * TimerButton：开始计时（useMutation → setQueryData 乐观更新顶栏）
+ * TaskTimerControls：计时中时显示暂停/放弃，仅当前任务行渲染
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pause, Play, Square } from 'lucide-react';
 
@@ -7,7 +13,6 @@ import { cancelTimer, getActiveTimer, startTimer, stopTimer } from '@/lib/tauri/
 import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
 
-/** 任务行「计时」入口：开始后由顶部 TimerBar 展示全局状态。 */
 export function TimerButton({
   projectId,
   targetId,
@@ -53,7 +58,6 @@ export function TimerButton({
   );
 }
 
-/** 正在计时的任务行内控制：暂停（生成 time_entry）与放弃。 */
 export function TaskTimerControls({
   projectId,
   taskId,

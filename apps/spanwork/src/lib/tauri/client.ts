@@ -1,3 +1,9 @@
+/**
+ * Tauri IPC 统一入口（类比 gRPC/Feign Client）
+ *
+ * tauriInvoke(command, args) → Rust #[tauri::command] 同名函数
+ * 失败时解析为 ErrorBody 并写入日志，再 throw 给上层（Query/Mutation 捕获）
+ */
 import { invoke } from '@tauri-apps/api/core';
 import type { ErrorBody, WriteLogInput } from '@spanwork/shared-types';
 

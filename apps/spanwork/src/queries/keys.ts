@@ -1,3 +1,9 @@
+/**
+ * React Query 缓存键（类比 Redis key 命名规范）
+ *
+ * 每个 useQuery({ queryKey, queryFn }) 用唯一 key 标识一份缓存；
+ * invalidateQueries({ queryKey }) 使相关缓存失效并自动重新请求。
+ */
 export const queryKeys = {
   device: ['device'] as const,
   appInfo: ['app-info'] as const,
