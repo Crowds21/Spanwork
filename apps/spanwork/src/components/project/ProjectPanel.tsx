@@ -8,6 +8,7 @@ import { CalendarClock, ListTodo, Repeat2 } from 'lucide-react';
 import { useState } from 'react';
 import type { CreateProjectInput, ProjectDetailDto, ProjectType } from '@spanwork/shared-types';
 
+import { CategorySelect } from '@/components/project/CategorySelect';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,6 +31,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { createProject, listProjects } from '@/lib/tauri/project';
+import { listProjectCategories } from '@/lib/tauri/project_category';
 import { cn } from '@/lib/utils';
 import { queryKeys } from '@/queries/keys';
 
@@ -42,6 +44,7 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
   const [name, setName] = useState('');
   const [projectType, setProjectType] = useState<ProjectType>('task');
   const [description, setDescription] = useState('');
+  const [categoryId, setCategoryId] = useState<string | undefined>();
 
   const mutation = useMutation({
     mutationFn: (input: CreateProjectInput) => createProject(input),
@@ -49,6 +52,7 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
       queryClient.invalidateQueries({ queryKey: queryKeys.projectsRoot });
       setName('');
       setDescription('');
+      setCategoryId(undefined);
       onCreated?.(project);
     },
   });
@@ -60,6 +64,7 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
       name: name.trim(),
       projectType,
       description: description.trim() || undefined,
+      categoryId,
     });
   }
 
@@ -69,7 +74,7 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
         <CardTitle>新建项目</CardTitle>
         <CardDescription>创建任务式或习惯式长期项目</CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
+      <form className="contents" onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="project-name">名称</Label>
@@ -95,6 +100,14 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
                 <SelectItem value="habit">习惯式 — 周期性养成</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="project-category">分类（可选）</Label>
+            <CategorySelect
+              id="project-category"
+              value={categoryId}
+              onValueChange={setCategoryId}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="project-desc">描述（可选）</Label>
@@ -124,10 +137,26 @@ const statusLabels: Record<string, string> = {
 };
 
 export function ProjectList() {
+  const [categoryFilter, setCategoryFilter] = useState<string | 'all' | 'uncategorized'>('all');
+
+  const listParams =
+    categoryFilter === 'all'
+      ? { status: 'all' as const, sortBy: 'updated' as const, sortOrder: 'desc' as const }
+      : {
+          status: 'all' as const,
+          sortBy: 'updated' as const,
+          sortOrder: 'desc' as const,
+          categoryId: categoryFilter,
+        };
+
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.projects({ status: 'all' }),
-    queryFn: () =>
-      listProjects({ status: 'all', sortBy: 'updated', sortOrder: 'desc' }),
+    queryKey: queryKeys.projects(listParams),
+    queryFn: () => listProjects(listParams),
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: queryKeys.projectCategories,
+    queryFn: listProjectCategories,
   });
 
   if (isLoading) {
@@ -152,20 +181,61 @@ export function ProjectList() {
     );
   }
 
-  if (!data?.length) {
-    return (
-      <Card className="border-dashed">
-        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <ListTodo className="mb-3 size-10 text-muted-foreground/60" />
-          <p className="font-medium">还没有项目</p>
-          <p className="mt-1 text-sm text-muted-foreground">在左侧表单创建你的第一个项目</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  const emptyMessage =
+    categoryFilter === 'all'
+      ? { title: '还没有项目', description: '在左侧表单创建你的第一个项目' }
+      : categoryFilter === 'uncategorized'
+        ? { title: '暂无未分类项目', description: '切换其他分类或创建新项目' }
+        : { title: '该分类下暂无项目', description: '切换其他分类查看项目' };
 
   return (
-    <ul className="space-y-3">
+    <div className="space-y-4">
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={categoryFilter === 'all' ? 'default' : 'outline'}
+            onClick={() => setCategoryFilter('all')}
+          >
+            全部
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={categoryFilter === 'uncategorized' ? 'default' : 'outline'}
+            onClick={() => setCategoryFilter('uncategorized')}
+          >
+            未分类
+          </Button>
+          {categories.map((cat) => (
+            <Button
+              key={cat.id}
+              type="button"
+              size="sm"
+              variant={categoryFilter === cat.id ? 'default' : 'outline'}
+              className="gap-1.5"
+              onClick={() => setCategoryFilter(cat.id)}
+            >
+              {cat.color && (
+                <span className="size-2 rounded-full" style={{ backgroundColor: cat.color }} />
+              )}
+              {cat.name}
+            </Button>
+          ))}
+        </div>
+      )}
+
+      {!data?.length ? (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <ListTodo className="mb-3 size-10 text-muted-foreground/60" />
+            <p className="font-medium">{emptyMessage.title}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{emptyMessage.description}</p>
+          </CardContent>
+        </Card>
+      ) : (
+      <ul className="space-y-3">
       {data.map((project) => (
         <li key={project.id}>
           <Link to="/projects/$projectId" params={{ projectId: project.id }}>
@@ -184,6 +254,17 @@ export function ProjectList() {
                     {project.projectType === 'task' ? '任务式' : '习惯式'}
                   </Badge>
                   <Badge variant="outline">{statusLabels[project.status] ?? project.status}</Badge>
+                  {project.categoryName && (
+                    <Badge variant="secondary" className="gap-1">
+                      {project.categoryColor && (
+                        <span
+                          className="size-2 rounded-full"
+                          style={{ backgroundColor: project.categoryColor }}
+                        />
+                      )}
+                      {project.categoryName}
+                    </Badge>
+                  )}
                 </div>
                 <CardTitle className="text-lg">{project.name}</CardTitle>
                 {project.description && (
@@ -203,6 +284,8 @@ export function ProjectList() {
           </Link>
         </li>
       ))}
-    </ul>
+      </ul>
+      )}
+    </div>
   );
 }

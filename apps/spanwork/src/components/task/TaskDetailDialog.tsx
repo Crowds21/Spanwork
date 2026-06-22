@@ -34,7 +34,7 @@ import { isTauri } from '@/lib/tauri/client';
 import { getActiveTimer } from '@/lib/tauri/timer';
 import { listTimeEntries } from '@/lib/tauri/time_entry';
 import { getTask, updateTask } from '@/lib/tauri/task';
-import { useLiveElapsedSeconds } from '@/lib/timer/useLiveElapsed';
+import { useActiveTimerElapsed } from '@/lib/timer/useActiveTimerElapsed';
 import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
 
@@ -84,12 +84,14 @@ export function TaskDetailDialog({
   });
 
   const task = taskQuery.data;
+  const isSubtask = Boolean(task?.parentId);
+  const isMilestoneRoot = Boolean(task?.isMilestone && !task?.parentId);
   const isActiveTask = activeTimerQuery.data?.targetId === taskId;
   const activeTimer = isActiveTask ? activeTimerQuery.data : null;
-  const activeElapsed = useLiveElapsedSeconds(activeTimer?.startedAt);
+  const activeElapsed = useActiveTimerElapsed(activeTimer);
 
-  const isSubtask = Boolean(task?.parentId);
   const hasSubtasks = (task?.childCount ?? 0) > 0;
+  const isMilestoneContainer = isMilestoneRoot && hasSubtasks;
   const canToggleMilestone = !isSubtask && !(task?.isMilestone && hasSubtasks);
   const milestoneDisabledReason = isSubtask
     ? '里程碑的子任务不能标记为里程碑'
@@ -258,7 +260,9 @@ export function TaskDetailDialog({
                     </span>
                     <span className="block text-xs text-muted-foreground">
                       {milestoneDisabledReason ??
-                        '里程碑任务可以包含子任务，适合阶段性目标'}
+                        (hasSubtasks
+                          ? '里程碑任务可以包含子任务，时间由子任务汇总'
+                          : '里程碑任务可以包含子任务，无子任务时可直接记时')}
                     </span>
                   </span>
                 </label>
@@ -267,10 +271,13 @@ export function TaskDetailDialog({
                   <span>创建于 {formatDateTime(task.createdAt)}</span>
                   <span>·</span>
                   <span>更新于 {formatDateTime(task.updatedAt)}</span>
-                  {task.totalTimeSeconds != null && task.totalTimeSeconds > 0 && (
+                  {task.totalTimeSeconds != null && (
                     <>
                       <span>·</span>
-                      <span>累计 {formatDuration(task.totalTimeSeconds)}</span>
+                      <span>
+                        {isMilestoneContainer ? '子任务合计 ' : '累计 '}
+                        {formatDuration(task.totalTimeSeconds)}
+                      </span>
                     </>
                   )}
                 </div>
@@ -300,6 +307,15 @@ export function TaskDetailDialog({
                   <>
                     {entriesQuery.isLoading ? (
                       <Skeleton className="h-24 w-full" />
+                    ) : isMilestoneContainer ? (
+                      <div className="rounded-lg border bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+                        里程碑时间由子任务汇总，不支持直接记时。请在子任务上记录时间。
+                        {task.totalTimeSeconds != null && task.totalTimeSeconds > 0 && (
+                          <p className="mt-2 font-medium text-foreground">
+                            当前合计 {formatDuration(task.totalTimeSeconds)}
+                          </p>
+                        )}
+                      </div>
                     ) : (
                       <div className="overflow-x-auto rounded-lg border">
                         <table className="w-full min-w-[36rem] text-left text-sm">
@@ -316,9 +332,11 @@ export function TaskDetailDialog({
                             {showActiveOnPage && activeTimer && (
                               <tr className="border-b bg-primary/5">
                                 <td className="px-3 py-2 tabular-nums">
-                                  {formatDateTime(activeTimer.startedAt)}
+                                  {formatDateTime(activeTimer.sessionStartedAt)}
                                 </td>
-                                <td className="px-3 py-2 text-primary">计时中…</td>
+                                <td className="px-3 py-2 text-primary">
+                                  {activeTimer?.isPaused ? '已暂停' : '计时中…'}
+                                </td>
                                 <td className="px-3 py-2 font-mono tabular-nums">
                                   {formatDurationLive(activeElapsed)}
                                 </td>
@@ -374,7 +392,7 @@ export function TaskDetailDialog({
                       </div>
                     )}
 
-                    {entries.length > TIME_ENTRIES_PAGE_SIZE && (
+                    {!isMilestoneContainer && entries.length > TIME_ENTRIES_PAGE_SIZE && (
                       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                         <span>
                           第 {safePage + 1} / {totalPages} 页
@@ -412,7 +430,7 @@ export function TaskDetailDialog({
               </section>
             </CardContent>
 
-            <CardFooter className="gap-2 border-t pt-4 pb-6">
+            <CardFooter className="pb-6">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 取消
               </Button>

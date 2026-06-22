@@ -18,4 +18,6 @@ export const queryKeys = {
     params ? (['time-entries', params] as const) : (['time-entries'] as const),
   activeTimer: ['active-timer'] as const,
   todayDashboard: ['today-dashboard'] as const,
+  projectCategories: ['project-categories'] as const,
+  projectCategory: (id: string) => ['project-category', id] as const,
 };

@@ -6,9 +6,13 @@
  * 加载/空态/错误态：isLoading、!data 分支渲染不同 UI
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { ArrowLeft, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
+import { TaskCalendarView } from '@/components/task/views/TaskCalendarView';
+import { TaskKanbanView } from '@/components/task/views/TaskKanbanView';
+import { TaskViewSwitcher } from '@/components/task/views/TaskViewSwitcher';
 import { TaskTree } from '@/components/task/TaskTree';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -16,15 +20,44 @@ import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { deleteProject, getProject } from '@/lib/tauri/project';
+import type { ProjectViewMode } from '@/lib/taskUtils';
+import { readStoredViewMode, storeViewMode } from '@/lib/taskUtils';
 import { queryKeys } from '@/queries/keys';
 
 interface ProjectDetailPageProps {
   projectId: string;
+  initialView?: ProjectViewMode;
 }
 
-export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
+export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const search = useSearch({ strict: false }) as { view?: ProjectViewMode };
+
+  const [viewMode, setViewMode] = useState<ProjectViewMode>(() => {
+    if (search.view === 'list' || search.view === 'kanban' || search.view === 'calendar') {
+      return search.view;
+    }
+    if (initialView) return initialView;
+    return readStoredViewMode(projectId);
+  });
+
+  useEffect(() => {
+    if (search.view === 'list' || search.view === 'kanban' || search.view === 'calendar') {
+      setViewMode(search.view);
+    }
+  }, [search.view]);
+
+  function handleViewChange(mode: ProjectViewMode) {
+    setViewMode(mode);
+    storeViewMode(projectId, mode);
+    navigate({
+      to: '/projects/$projectId',
+      params: { projectId },
+      search: { view: mode },
+      replace: true,
+    });
+  }
 
   const projectQuery = useQuery({
     queryKey: queryKeys.project(projectId),
@@ -94,6 +127,17 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
               <Badge>任务式</Badge>
+              {project.categoryName && (
+                <Badge variant="outline" className="gap-1.5">
+                  {project.categoryColor && (
+                    <span
+                      className="size-2 rounded-full"
+                      style={{ backgroundColor: project.categoryColor }}
+                    />
+                  )}
+                  {project.categoryName}
+                </Badge>
+              )}
             </div>
             {project.description && (
               <p className="mt-1 text-muted-foreground">{project.description}</p>
@@ -137,8 +181,13 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
       </div>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold">任务树</h2>
-        <TaskTree projectId={projectId} />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold">任务</h2>
+          <TaskViewSwitcher value={viewMode} onChange={handleViewChange} />
+        </div>
+        {viewMode === 'list' && <TaskTree projectId={projectId} />}
+        {viewMode === 'kanban' && <TaskKanbanView projectId={projectId} />}
+        {viewMode === 'calendar' && <TaskCalendarView projectId={projectId} />}
       </section>
     </div>
   );

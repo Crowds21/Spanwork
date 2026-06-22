@@ -20,7 +20,8 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createTask } from '@/lib/tauri/task';
+import { Tooltip } from '@/components/ui/tooltip';
+import { createTask, updateTask } from '@/lib/tauri/task';
 import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +29,7 @@ interface TaskCreateDialogProps {
   projectId: string;
   parentId?: string;
   parentTitle?: string;
+  defaultDueDate?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -36,6 +38,7 @@ export function TaskCreateDialog({
   projectId,
   parentId,
   parentTitle,
+  defaultDueDate,
   open,
   onOpenChange,
 }: TaskCreateDialogProps) {
@@ -57,6 +60,7 @@ export function TaskCreateDialog({
         projectId,
         parentId,
         title: title.trim(),
+        dueDate: defaultDueDate,
         isMilestone: isSubtask ? false : isMilestone,
       }),
     meta: { errorSource: isSubtask ? '添加子任务' : '添加任务' },
@@ -82,6 +86,7 @@ export function TaskCreateDialog({
           </CardDescription>
         </CardHeader>
         <form
+          className="contents"
           onSubmit={(e) => {
             e.preventDefault();
             if (!canSubmit) return;
@@ -124,7 +129,7 @@ export function TaskCreateDialog({
               </label>
             )}
           </CardContent>
-          <CardFooter className="gap-2">
+          <CardFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               取消
             </Button>
@@ -178,6 +183,98 @@ export function TaskCreateTrigger({
         parentTitle={parentTitle}
         open={open}
         onOpenChange={setOpen}
+      />
+    </>
+  );
+}
+
+interface TaskAddSubtaskTriggerProps {
+  projectId: string;
+  parentId: string;
+  parentTitle: string;
+  isMilestone: boolean;
+  className?: string;
+}
+
+/** 根任务行内「添加子任务」：非里程碑时先确认转换 */
+export function TaskAddSubtaskTrigger({
+  projectId,
+  parentId,
+  parentTitle,
+  isMilestone,
+  className,
+}: TaskAddSubtaskTriggerProps) {
+  const queryClient = useQueryClient();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const convertMutation = useMutation({
+    mutationFn: () => updateTask(parentId, { isMilestone: true }),
+    meta: { errorSource: '转换为里程碑任务' },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(parentId) });
+      setConfirmOpen(false);
+      setCreateOpen(true);
+    },
+  });
+
+  function handleClick() {
+    if (isMilestone) {
+      setCreateOpen(true);
+      return;
+    }
+    setConfirmOpen(true);
+  }
+
+  return (
+    <>
+      <Tooltip label="添加子任务">
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className={cn(
+            'size-8 rounded-lg text-muted-foreground/45 shadow-none hover:bg-muted/40 hover:text-muted-foreground',
+            className,
+          )}
+          onClick={handleClick}
+          aria-label="添加子任务"
+        >
+          <Plus className="size-3.5" />
+        </Button>
+      </Tooltip>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>转换为里程碑任务</CardTitle>
+            <CardDescription>
+              需要将当前任务「{parentTitle}」转换为里程碑任务，才能添加子任务。
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>
+              取消
+            </Button>
+            <Button
+              type="button"
+              disabled={convertMutation.isPending}
+              onClick={() => convertMutation.mutate()}
+            >
+              {convertMutation.isPending ? '转换中…' : '确定'}
+            </Button>
+          </CardFooter>
+        </Card>
+      </Dialog>
+
+      <TaskCreateDialog
+        projectId={projectId}
+        parentId={parentId}
+        parentTitle={parentTitle}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
       />
     </>
   );

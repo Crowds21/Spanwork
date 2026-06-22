@@ -5,12 +5,25 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { ProjectDetailPage } from '@/pages/ProjectDetailPage';
+import type { ProjectViewMode } from '@/lib/taskUtils';
+
+type ProjectDetailSearch = {
+  view?: ProjectViewMode;
+};
 
 export const Route = createFileRoute('/projects/$projectId')({
+  validateSearch: (search: Record<string, unknown>): ProjectDetailSearch => {
+    const view = search.view;
+    if (view === 'list' || view === 'kanban' || view === 'calendar') {
+      return { view };
+    }
+    return {};
+  },
   component: ProjectDetailRoute,
 });
 
 function ProjectDetailRoute() {
   const { projectId } = Route.useParams();
-  return <ProjectDetailPage projectId={projectId} />;
+  const { view } = Route.useSearch();
+  return <ProjectDetailPage projectId={projectId} initialView={view} />;
 }

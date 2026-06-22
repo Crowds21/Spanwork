@@ -50,6 +50,11 @@ pub fn run() {
             commands::project::project_update,
             commands::project::project_delete,
             commands::project::project_reorder,
+            commands::project_category::project_category_list,
+            commands::project_category::project_category_create,
+            commands::project_category::project_category_update,
+            commands::project_category::project_category_delete,
+            commands::project_category::project_category_reorder,
             commands::task::task_list,
             commands::task::task_get,
             commands::task::task_create,
@@ -68,6 +73,8 @@ pub fn run() {
             commands::time_entry::time_entry_delete,
             commands::timer::timer_get_active,
             commands::timer::timer_start,
+            commands::timer::timer_pause,
+            commands::timer::timer_resume,
             commands::timer::timer_stop,
             commands::timer::timer_cancel,
             commands::today::today_get_dashboard,
@@ -82,10 +89,10 @@ mod tests {
 
     use crate::commands::today::utc_day_bounds;
     use crate::db::migrate::run_migrations;
-    use crate::db::repos::{milestone, project, task, time_entry};
+    use crate::db::repos::{milestone, project, project_category, task, time_entry};
     use crate::domain::task_tree;
     use crate::dto::{
-        CreateMilestoneInput, CreateProjectInput, CreateTaskInput, CreateTimeEntryInput,
+        CreateMilestoneInput, CreateProjectCategoryInput, CreateProjectInput, CreateTaskInput, CreateTimeEntryInput,
         MilestoneLinkInput, MilestoneLinkSetParams, MilestoneLinkType, ProjectType,
         StartTimerInput, TimeTargetType,
     };
@@ -117,6 +124,7 @@ mod tests {
                 icon: None,
                 start_date: None,
                 target_end_date: None,
+                category_id: None,
             },
         )
         .unwrap()
@@ -136,6 +144,7 @@ mod tests {
                 icon: None,
                 start_date: None,
                 target_end_date: None,
+                category_id: None,
             },
         )
         .unwrap();
@@ -314,6 +323,54 @@ mod tests {
     }
 
     #[test]
+    fn timer_pause_resume_and_complete() {
+        let conn = test_conn();
+        let project_id = create_test_project(&conn);
+
+        let root = task::create(
+            &conn,
+            &CreateTaskInput {
+                project_id: project_id.clone(),
+                parent_id: None,
+                milestone_id: None,
+                title: "Work".into(),
+                description: None,
+                priority: None,
+                due_date: None,
+                tags: None,
+                sort_order: None,
+                is_milestone: false,
+            },
+        )
+        .unwrap();
+
+        let started = timer::start(
+            &conn,
+            &StartTimerInput {
+                project_id: project_id.clone(),
+                target_type: TimeTargetType::Task,
+                target_id: root.id.clone(),
+                note: None,
+                force: None,
+            },
+        )
+        .unwrap();
+        assert!(!started.is_paused);
+        assert_eq!(started.accumulated_seconds, 0);
+
+        let paused = timer::pause(&conn).unwrap();
+        assert!(paused.is_paused);
+        assert_eq!(paused.elapsed_seconds, paused.accumulated_seconds);
+
+        let resumed = timer::resume(&conn).unwrap();
+        assert!(!resumed.is_paused);
+
+        let entry = timer::stop(&conn).unwrap();
+        assert_eq!(entry.source, crate::dto::TimeEntrySource::Timer);
+        assert!(timer::get_active(&conn).unwrap().is_none());
+    }
+
+    #[test]
     fn milestone_crud_and_links() {
         let conn = test_conn();
         let project_id = create_test_project(&conn);
@@ -422,5 +479,244 @@ mod tests {
         };
         assert!(dashboard.habit_occurrences_today.is_empty());
         assert_eq!(dashboard.recent_tasks.len(), 1);
+    }
+
+    #[test]
+    fn milestone_timer_rejected_and_rollup() {
+        let conn = test_conn();
+        let project_id = create_test_project(&conn);
+
+        let milestone = task::create(
+            &conn,
+            &CreateTaskInput {
+                project_id: project_id.clone(),
+                parent_id: None,
+                milestone_id: None,
+                title: "Phase 1".into(),
+                description: None,
+                priority: None,
+                due_date: None,
+                tags: None,
+                sort_order: None,
+                is_milestone: true,
+            },
+        )
+        .unwrap();
+
+        let sub = task::create(
+            &conn,
+            &CreateTaskInput {
+                project_id: project_id.clone(),
+                parent_id: Some(milestone.id.clone()),
+                milestone_id: None,
+                title: "Sub task".into(),
+                description: None,
+                priority: None,
+                due_date: None,
+                tags: None,
+                sort_order: None,
+                is_milestone: false,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(milestone.time_trackable, Some(false));
+
+        let timer_error = timer::start(
+            &conn,
+            &StartTimerInput {
+                project_id: project_id.clone(),
+                target_type: TimeTargetType::Task,
+                target_id: milestone.id.clone(),
+                note: None,
+                force: None,
+            },
+        );
+        assert!(matches!(
+            timer_error,
+            Err(AppError::TimeTargetNotTrackable { .. })
+        ));
+
+        time_entry::create(
+            &conn,
+            &CreateTimeEntryInput {
+                project_id: project_id.clone(),
+                target_type: TimeTargetType::Task,
+                target_id: sub.id.clone(),
+                start_at: now_ms() - 7200_000,
+                end_at: Some(now_ms()),
+                duration_seconds: None,
+                note: None,
+            },
+        )
+        .unwrap();
+
+        let fetched = task::get_by_id(&conn, &milestone.id).unwrap();
+        assert_eq!(fetched.total_time_seconds, Some(7200));
+        assert_eq!(fetched.time_trackable, Some(false));
+
+        let sub_fetched = task::get_by_id(&conn, &sub.id).unwrap();
+        assert_eq!(sub_fetched.time_trackable, Some(true));
+        assert_eq!(sub_fetched.timer_startable, Some(true));
+    }
+
+    #[test]
+    fn empty_milestone_is_trackable() {
+        let conn = test_conn();
+        let project_id = create_test_project(&conn);
+
+        let milestone = task::create(
+            &conn,
+            &CreateTaskInput {
+                project_id: project_id.clone(),
+                parent_id: None,
+                milestone_id: None,
+                title: "Solo milestone".into(),
+                description: None,
+                priority: None,
+                due_date: None,
+                tags: None,
+                sort_order: None,
+                is_milestone: true,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(milestone.time_trackable, Some(true));
+        assert_eq!(milestone.timer_startable, Some(true));
+        assert_eq!(milestone.child_count, Some(0));
+
+        timer::start(
+            &conn,
+            &StartTimerInput {
+                project_id: project_id.clone(),
+                target_type: TimeTargetType::Task,
+                target_id: milestone.id.clone(),
+                note: None,
+                force: None,
+            },
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn done_task_blocks_timer_but_allows_manual_entry() {
+        let conn = test_conn();
+        let project_id = create_test_project(&conn);
+
+        let done_task = task::create(
+            &conn,
+            &CreateTaskInput {
+                project_id: project_id.clone(),
+                parent_id: None,
+                milestone_id: None,
+                title: "Finished".into(),
+                description: None,
+                priority: None,
+                due_date: None,
+                tags: None,
+                sort_order: None,
+                is_milestone: false,
+            },
+        )
+        .unwrap();
+
+        task::update(
+            &conn,
+            &crate::dto::TaskUpdateParams {
+                id: done_task.id.clone(),
+                patch: crate::dto::UpdateTaskInput {
+                    status: Some(crate::dto::TaskStatus::Done),
+                    ..Default::default()
+                },
+            },
+        )
+        .unwrap();
+
+        let fetched = task::get_by_id(&conn, &done_task.id).unwrap();
+        assert_eq!(fetched.time_trackable, Some(true));
+        assert_eq!(fetched.timer_startable, Some(false));
+
+        let timer_error = timer::start(
+            &conn,
+            &StartTimerInput {
+                project_id: project_id.clone(),
+                target_type: TimeTargetType::Task,
+                target_id: done_task.id.clone(),
+                note: None,
+                force: None,
+            },
+        );
+        assert!(matches!(
+            timer_error,
+            Err(AppError::TimerTargetNotStartable { .. })
+        ));
+
+        let entry = time_entry::create(
+            &conn,
+            &CreateTimeEntryInput {
+                project_id,
+                target_type: TimeTargetType::Task,
+                target_id: done_task.id,
+                start_at: now_ms() - 3600_000,
+                end_at: Some(now_ms()),
+                duration_seconds: None,
+                note: None,
+            },
+        );
+        assert!(entry.is_ok());
+    }
+
+    #[test]
+    fn project_category_crud() {
+        let conn = test_conn();
+
+        let created = project_category::create(
+            &conn,
+            &CreateProjectCategoryInput {
+                name: "工作".into(),
+                color: Some("#3b82f6".into()),
+                icon: None,
+                sort_order: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(created.name, "工作");
+        assert_eq!(created.project_count, Some(0));
+
+        let dup = project_category::create(
+            &conn,
+            &CreateProjectCategoryInput {
+                name: "工作".into(),
+                color: None,
+                icon: None,
+                sort_order: None,
+            },
+        );
+        assert!(matches!(dup, Err(AppError::CategoryNameExists { .. })));
+
+        let project_id = project::create(
+            &conn,
+            &CreateProjectInput {
+                name: "Cat Project".into(),
+                description: None,
+                project_type: ProjectType::Task,
+                color: None,
+                icon: None,
+                start_date: None,
+                target_end_date: None,
+                category_id: Some(created.id.clone()),
+            },
+        )
+        .unwrap()
+        .id;
+
+        let listed = project_category::list(&conn).unwrap();
+        assert_eq!(listed[0].project_count, Some(1));
+
+        project_category::delete(&conn, &created.id).unwrap();
+
+        let project_after = project::get_by_id(&conn, &project_id).unwrap();
+        assert!(project_after.category_id.is_none());
     }
 }

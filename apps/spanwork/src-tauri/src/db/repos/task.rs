@@ -1,7 +1,7 @@
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::domain::task_tree::{
-    cascade_soft_delete, child_completion_stats, get_depth, is_descendant, validate_new_depth,
+    cascade_soft_delete, child_completion_stats, is_descendant, validate_new_depth,
 };
 use crate::dto::{
     CreateTaskInput, TaskBatchCompleteParams, TaskBatchStatus, TaskDto, TaskListParams, TaskStatus,
@@ -375,18 +375,37 @@ pub fn recent_tasks(conn: &Connection, limit: i64) -> AppResult<Vec<TaskDto>> {
 }
 
 fn enrich_task(conn: &Connection, task: &mut TaskDto) -> AppResult<()> {
-    task.depth = Some(get_depth(conn, &task.id)?);
+    task.depth = Some(crate::domain::task_tree::get_depth(conn, &task.id)?);
     if task.parent_id.is_some() {
         task.is_milestone = false;
     }
-    let (child_count, completed_child_count) = child_completion_stats(conn, &task.id)?;
+    let (child_count, completed_child_count) =
+        crate::domain::task_tree::child_completion_stats(conn, &task.id)?;
     task.child_count = Some(child_count);
     task.completed_child_count = Some(completed_child_count);
-    task.total_time_seconds = Some(time_entry_repo::sum_for_target(
-        conn,
-        crate::dto::TimeTargetType::Task,
-        &task.id,
-    )?);
+
+    let trackable = crate::domain::task_time::is_time_trackable(
+        task.is_milestone,
+        task.parent_id.as_deref(),
+        child_count,
+    );
+    task.time_trackable = Some(trackable);
+    task.timer_startable = Some(crate::domain::task_time::is_timer_startable(
+        task.is_milestone,
+        task.parent_id.as_deref(),
+        task.status,
+        child_count,
+    ));
+
+    task.total_time_seconds = Some(if task.is_milestone && task.parent_id.is_none() && child_count > 0 {
+        crate::domain::task_time::sum_child_time_seconds(conn, &task.id)?
+    } else {
+        time_entry_repo::sum_for_target(
+            conn,
+            crate::dto::TimeTargetType::Task,
+            &task.id,
+        )?
+    });
     Ok(())
 }
 
@@ -423,6 +442,8 @@ fn map_task_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TaskDto> {
         child_count: None,
         completed_child_count: None,
         total_time_seconds: None,
+        time_trackable: None,
+        timer_startable: None,
         created_at: row.get(12)?,
         updated_at: row.get(13)?,
     })

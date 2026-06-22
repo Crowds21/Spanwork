@@ -12,6 +12,15 @@ pub enum AppError {
     #[error("conflict: {message}")]
     Conflict { message: String },
 
+    #[error("time target not trackable: {task_id}")]
+    TimeTargetNotTrackable { task_id: String },
+
+    #[error("timer target not startable: {task_id}")]
+    TimerTargetNotStartable { task_id: String },
+
+    #[error("category name already exists: {name}")]
+    CategoryNameExists { name: String },
+
     #[error("database error: {0}")]
     Db(#[from] rusqlite::Error),
 
@@ -37,6 +46,18 @@ impl AppError {
                 format!("{field}: {reason}"),
             ),
             AppError::Conflict { message } => ("CONFLICT".to_string(), message.clone()),
+            AppError::TimeTargetNotTrackable { .. } => (
+                "TIME_TARGET_NOT_TRACKABLE".to_string(),
+                "此里程碑任务不支持直接记时，请在子任务上记录时间".to_string(),
+            ),
+            AppError::TimerTargetNotStartable { .. } => (
+                "TIMER_TARGET_NOT_STARTABLE".to_string(),
+                "已完成任务不支持启动计时，请使用补录时间".to_string(),
+            ),
+            AppError::CategoryNameExists { name } => (
+                "CATEGORY_NAME_EXISTS".to_string(),
+                format!("分类名称已存在: {name}"),
+            ),
             AppError::Db(err) => ("DB_ERROR".to_string(), err.to_string()),
             AppError::Internal(msg) => ("INTERNAL_ERROR".to_string(), msg.clone()),
         };
@@ -84,6 +105,23 @@ pub fn validate_milestone_title(title: &str) -> AppResult<()> {
         return Err(AppError::Validation {
             field: "title".into(),
             reason: "must be at most 256 characters".into(),
+        });
+    }
+    Ok(())
+}
+
+pub fn validate_category_name(name: &str) -> AppResult<()> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return Err(AppError::Validation {
+            field: "name".into(),
+            reason: "must not be empty".into(),
+        });
+    }
+    if trimmed.len() > 64 {
+        return Err(AppError::Validation {
+            field: "name".into(),
+            reason: "must be at most 64 characters".into(),
         });
     }
     Ok(())

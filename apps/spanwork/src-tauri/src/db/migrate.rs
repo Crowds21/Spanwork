@@ -5,7 +5,9 @@ use crate::error::{now_ms, AppResult};
 const MIGRATION_001: &str = include_str!("../../migrations/001_initial.sql");
 const MIGRATION_002: &str = include_str!("../../migrations/002_task_is_milestone.sql");
 const MIGRATION_003: &str = include_str!("../../migrations/003_fix_subtask_milestone_flag.sql");
-const SCHEMA_VERSION: i32 = 3;
+const MIGRATION_004: &str = include_str!("../../migrations/004_project_categories.sql");
+const MIGRATION_005: &str = include_str!("../../migrations/005_active_timer_pause.sql");
+const SCHEMA_VERSION: i32 = 5;
 
 pub fn run_migrations(conn: &Connection) -> AppResult<()> {
     conn.execute(
@@ -39,6 +41,14 @@ pub fn run_migrations(conn: &Connection) -> AppResult<()> {
 
     if current < 3 {
         apply_migration(conn, 3, MIGRATION_003)?;
+    }
+
+    if current < 4 {
+        apply_migration(conn, 4, MIGRATION_004)?;
+    }
+
+    if current < 5 {
+        apply_migration(conn, 5, MIGRATION_005)?;
     }
 
     Ok(())

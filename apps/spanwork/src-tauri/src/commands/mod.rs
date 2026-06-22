@@ -2,6 +2,7 @@ pub mod device;
 pub mod log;
 pub mod milestone;
 pub mod project;
+pub mod project_category;
 pub mod task;
 pub mod time_entry;
 pub mod timer;

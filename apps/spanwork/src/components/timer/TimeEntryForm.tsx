@@ -84,7 +84,7 @@ export function TimeEntryForm({
 
   return (
     <form
-      className="space-y-3"
+      className="space-y-4"
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);

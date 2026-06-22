@@ -66,6 +66,11 @@ pub fn get_by_id(conn: &Connection, id: &str) -> AppResult<TimeEntryDto> {
 
 pub fn create(conn: &Connection, input: &CreateTimeEntryInput) -> AppResult<TimeEntryDto> {
     crate::db::repos::project::get_by_id(conn, &input.project_id)?;
+    crate::domain::task_time::validate_manual_time_target(
+        conn,
+        input.target_type,
+        &input.target_id,
+    )?;
 
     let (end_at, duration_seconds) = resolve_duration(input.start_at, input.end_at, input.duration_seconds)?;
 
@@ -103,8 +108,13 @@ pub fn create_from_timer(
     start_at: i64,
     end_at: i64,
     note: Option<&str>,
+    duration_seconds_override: Option<i64>,
 ) -> AppResult<TimeEntryDto> {
-    let duration_seconds = ((end_at - start_at) / 1000).max(0);
+    crate::domain::task_time::validate_manual_time_target(conn, target_type, target_id)?;
+
+    let duration_seconds = duration_seconds_override.unwrap_or_else(|| {
+        ((end_at - start_at) / 1000).max(0)
+    });
     let origin = crate::db::repos::device::origin_device_id(conn)?;
     let id = new_id();
     let now = now_ms();
@@ -133,6 +143,11 @@ pub fn create_from_timer(
 
 pub fn update(conn: &Connection, params: &TimeEntryUpdateParams) -> AppResult<TimeEntryDto> {
     let existing = get_by_id(conn, &params.id)?;
+    crate::domain::task_time::validate_manual_time_target(
+        conn,
+        existing.target_type,
+        &existing.target_id,
+    )?;
     apply_update(conn, &existing, &params.patch)?;
     get_by_id(conn, &params.id)
 }

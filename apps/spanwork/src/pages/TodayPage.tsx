@@ -20,14 +20,16 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { TaskStatusBadge } from '@/components/task/TaskStatusSelect';
 import { formatDuration } from '@/lib/format';
-import { useLiveElapsedSeconds } from '@/lib/timer/useLiveElapsed';
+import { useActiveTimerElapsed } from '@/lib/timer/useActiveTimerElapsed';
 import { isTauri } from '@/lib/tauri/env';
 import { getLogInfo } from '@/lib/tauri/log';
 import { getTodayDashboard } from '@/lib/tauri/today';
 import { queryKeys } from '@/queries/keys';
 
-function ActiveTimerDuration({ startedAt }: { startedAt: number }) {
-  const elapsed = useLiveElapsedSeconds(startedAt);
+import type { ActiveTimerDto } from '@spanwork/shared-types';
+
+function ActiveTimerDuration({ active }: { active: ActiveTimerDto }) {
+  const elapsed = useActiveTimerElapsed(active);
   return <>{formatDuration(elapsed)}</>;
 }
 
@@ -91,11 +93,13 @@ export function TodayPage() {
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2 text-primary">
                   <Timer className="size-4" />
-                  <CardDescription>活跃计时</CardDescription>
+                  <CardDescription>
+                    {dashboard.activeTimer?.isPaused ? '已暂停' : '活跃计时'}
+                  </CardDescription>
                 </div>
                 <CardTitle className="text-2xl">
                   {dashboard.activeTimer ? (
-                    <ActiveTimerDuration startedAt={dashboard.activeTimer.startedAt} />
+                    <ActiveTimerDuration active={dashboard.activeTimer} />
                   ) : (
                     '无'
                   )}

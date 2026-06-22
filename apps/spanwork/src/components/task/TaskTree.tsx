@@ -10,7 +10,7 @@ import { ChevronDown, ChevronRight, ClockPlus, Flag, ScrollText, Trash2 } from '
 import { useMemo, useState, useEffect } from 'react';
 import type { TaskDto, TaskStatus } from '@spanwork/shared-types';
 
-import { TaskCreateTrigger } from '@/components/task/TaskCreateDialog';
+import { TaskAddSubtaskTrigger, TaskCreateTrigger } from '@/components/task/TaskCreateDialog';
 import { TaskDetailDialog } from '@/components/task/TaskDetailDialog';
 import { TaskStatusSelect } from '@/components/task/TaskStatusSelect';
 import { taskRowActionStyles } from '@/components/task/taskRowActionStyles';
@@ -20,7 +20,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip } from '@/components/ui/tooltip';
 import { TimeEntryForm } from '@/components/timer/TimeEntryForm';
 import { TaskTimerControls, TimerButton } from '@/components/timer/TimerBar';
-import { formatDuration } from '@/lib/format';
+import { formatDuration, TASK_STATUSES, taskStatusMeta } from '@/lib/format';
+import {
+  filterTasksForTree,
+  isManualTimeEntryAllowed,
+  canStartTimer,
+  type TaskStatusFilter,
+} from '@/lib/taskUtils';
 import { deleteTask, listTasks, updateTask } from '@/lib/tauri/task';
 import { consumeTaskFocus, scrollToTaskElement } from '@/lib/timer/timerFocus';
 import { queryKeys } from '@/queries/keys';
@@ -60,7 +66,11 @@ function TaskRow({
   const [showTimeForm, setShowTimeForm] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const children = byParent.get(task.id) ?? [];
-  const canAddChild = task.isMilestone && depth === 0;
+  const canAddChild = depth === 0;
+  const canManualEntry = isManualTimeEntryAllowed(task);
+  const canTimer = canStartTimer(task);
+  const isMilestoneRoot = task.isMilestone && !task.parentId;
+  const hasChildren = children.length > 0;
 
   const updateMutation = useMutation({
     mutationFn: (status: TaskStatus) => updateTask(task.id, { status }),
@@ -109,7 +119,8 @@ function TaskRow({
           </div>
           {task.totalTimeSeconds != null && task.totalTimeSeconds > 0 && (
             <p className="text-xs text-muted-foreground">
-              已记录 {formatDuration(task.totalTimeSeconds)}
+              {isMilestoneRoot && hasChildren ? '子任务合计 ' : '已记录 '}
+              {formatDuration(task.totalTimeSeconds)}
             </p>
           )}
         </div>
@@ -133,20 +144,31 @@ function TaskRow({
           <TimerButton
             projectId={projectId}
             targetId={task.id}
+            startable={canTimer}
             className={taskRowActionStyles.timer}
           />
-          <Tooltip label="补录时间">
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className={cn(taskRowActionStyles.timeEntry, showTimeForm && 'ring-2 ring-amber-400/60')}
-              onClick={() => setShowTimeForm((v) => !v)}
-              aria-label="补录时间"
-            >
-              <ClockPlus className="size-4" />
-            </Button>
-          </Tooltip>
+          {canManualEntry && (
+            <Tooltip label="补录时间">
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className={cn(taskRowActionStyles.timeEntry, showTimeForm && 'ring-2 ring-amber-400/60')}
+                onClick={() => setShowTimeForm((v) => !v)}
+                aria-label="补录时间"
+              >
+                <ClockPlus className="size-4" />
+              </Button>
+            </Tooltip>
+          )}
+          {canAddChild && (
+            <TaskAddSubtaskTrigger
+              projectId={projectId}
+              parentId={task.id}
+              parentTitle={task.title}
+              isMilestone={task.isMilestone}
+            />
+          )}
           <Tooltip label="删除任务">
             <Button
               type="button"
@@ -162,26 +184,18 @@ function TaskRow({
           </Tooltip>
         </div>
       </div>
-      <TaskTimerControls projectId={projectId} taskId={task.id} className={depth > 0 ? 'ml-6' : undefined} />
+      {canTimer && (
+        <TaskTimerControls projectId={projectId} taskId={task.id} className={depth > 0 ? 'ml-6' : undefined} />
+      )}
       <TaskDetailDialog
         taskId={task.id}
         projectId={projectId}
         open={showDetail}
         onOpenChange={setShowDetail}
       />
-      {showTimeForm && (
+      {canManualEntry && showTimeForm && (
         <div className={cn('rounded-lg border bg-muted/30 p-3', depth > 0 && 'ml-6')}>
           <TimeEntryForm projectId={projectId} targetType="task" targetId={task.id} />
-        </div>
-      )}
-      {canAddChild && (
-        <div className="ml-6">
-          <TaskCreateTrigger
-            projectId={projectId}
-            parentId={task.id}
-            parentTitle={task.title}
-            variant="outline"
-          />
         </div>
       )}
       {expanded && children.length > 0 && (
@@ -202,12 +216,18 @@ function TaskRow({
 }
 
 export function TaskTree({ projectId }: TaskTreeProps) {
+  const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('all');
+
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.tasks(projectId),
     queryFn: () => listTasks({ projectId, includeSubtasks: true }),
   });
 
-  const byParent = useMemo(() => buildTree(data ?? []), [data]);
+  const filteredTasks = useMemo(
+    () => filterTasksForTree(data ?? [], statusFilter),
+    [data, statusFilter],
+  );
+  const byParent = useMemo(() => buildTree(filteredTasks), [filteredTasks]);
   const roots = byParent.get(null) ?? [];
 
   useEffect(() => {
@@ -235,14 +255,43 @@ export function TaskTree({ projectId }: TaskTreeProps) {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant={statusFilter === 'all' ? 'default' : 'outline'}
+          onClick={() => setStatusFilter('all')}
+        >
+          全部
+        </Button>
+        {TASK_STATUSES.map((status) => {
+          const meta = taskStatusMeta[status];
+          return (
+            <Button
+              key={status}
+              type="button"
+              size="sm"
+              variant={statusFilter === status ? 'default' : 'outline'}
+              className="gap-1.5"
+              onClick={() => setStatusFilter(status)}
+            >
+              <span className={cn('size-2 rounded-full', meta.dot)} />
+              {meta.label}
+            </Button>
+          );
+        })}
+      </div>
+
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          里程碑任务可包含子任务，普通任务不可展开
+          根任务可通过 + 添加子任务；非里程碑任务会先提示转换
         </p>
         <TaskCreateTrigger projectId={projectId} size="default" />
       </div>
       {roots.length === 0 ? (
-        <p className="text-sm text-muted-foreground">暂无任务，点击「添加任务」创建第一个</p>
+        <p className="text-sm text-muted-foreground">
+          {statusFilter === 'all' ? '暂无任务，点击「添加任务」创建第一个' : '当前筛选下暂无任务'}
+        </p>
       ) : (
         <ul className="space-y-3">
           {roots.map((task) => (

@@ -1,10 +1,13 @@
 use rusqlite::{Connection, OptionalExtension};
 
-use crate::dto::{
-    CreateProjectInput, ProjectDetailDto, ProjectDto, ProjectListParams, ProjectType, ProjectStatus,
-    UpdateProjectInput,
-};
+use crate::dto::{CreateProjectInput, ProjectDetailDto, ProjectDto, ProjectListParams, ProjectType, ProjectStatus, UpdateProjectInput};
 use crate::error::{new_id, now_ms, validate_project_name, AppError, AppResult};
+
+const PROJECT_SELECT: &str = "SELECT p.id, p.name, p.description, p.project_type, p.status, p.color, p.icon,
+        p.start_date, p.target_end_date, p.sort_order, p.category_id,
+        c.name, c.color, p.created_at, p.updated_at
+ FROM projects p
+ LEFT JOIN project_categories c ON c.id = p.category_id AND c.deleted_at IS NULL";
 
 pub fn list(conn: &Connection, params: &ProjectListParams) -> AppResult<Vec<ProjectDto>> {
     let status = params.status.as_deref().unwrap_or("active");
@@ -12,48 +15,42 @@ pub fn list(conn: &Connection, params: &ProjectListParams) -> AppResult<Vec<Proj
     let sort_order = params.sort_order.as_deref().unwrap_or("desc");
 
     let order_col = match sort_by {
-        "created" => "created_at",
-        "name" => "name COLLATE NOCASE",
-        _ => "updated_at",
+        "created" => "p.created_at",
+        "name" => "p.name COLLATE NOCASE",
+        _ => "p.updated_at",
     };
     let order_dir = if sort_order == "asc" { "ASC" } else { "DESC" };
 
-    let sql = if status == "all" {
-        format!(
-            "SELECT id, name, description, project_type, status, color, icon,
-                    start_date, target_end_date, sort_order, created_at, updated_at
-             FROM projects
-             WHERE deleted_at IS NULL
-             ORDER BY {order_col} {order_dir}"
-        )
-    } else {
-        format!(
-            "SELECT id, name, description, project_type, status, color, icon,
-                    start_date, target_end_date, sort_order, created_at, updated_at
-             FROM projects
-             WHERE deleted_at IS NULL AND status = ?1
-             ORDER BY {order_col} {order_dir}"
-        )
-    };
+    let mut sql = format!(
+        "{PROJECT_SELECT}
+         WHERE p.deleted_at IS NULL"
+    );
+    let mut bind_values: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+
+    if status != "all" {
+        sql.push_str(" AND p.status = ?");
+        bind_values.push(Box::new(status.to_string()));
+    }
+
+    if let Some(category_id) = &params.category_id {
+        if category_id == "uncategorized" {
+            sql.push_str(" AND p.category_id IS NULL");
+        } else {
+            sql.push_str(" AND p.category_id = ?");
+            bind_values.push(Box::new(category_id.clone()));
+        }
+    }
+
+    sql.push_str(&format!(" ORDER BY {order_col} {order_dir}"));
 
     let mut stmt = conn.prepare(&sql)?;
-    let map_row = |row: &rusqlite::Row<'_>| map_project_row(row);
-
-    let rows = if status == "all" {
-        stmt.query_map([], map_row)?
-    } else {
-        stmt.query_map([status], map_row)?
-    };
-
+    let rows = stmt.query_map(rusqlite::params_from_iter(bind_values.iter()), map_project_row)?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
 
 pub fn get_by_id(conn: &Connection, id: &str) -> AppResult<ProjectDto> {
     conn.query_row(
-        "SELECT id, name, description, project_type, status, color, icon,
-                start_date, target_end_date, sort_order, created_at, updated_at
-         FROM projects
-         WHERE id = ?1 AND deleted_at IS NULL",
+        &format!("{PROJECT_SELECT} WHERE p.id = ?1 AND p.deleted_at IS NULL"),
         [id],
         map_project_row,
     )
@@ -96,6 +93,10 @@ pub fn get_detail(conn: &Connection, id: &str) -> AppResult<ProjectDetailDto> {
 pub fn create(conn: &Connection, input: &CreateProjectInput) -> AppResult<ProjectDto> {
     validate_project_name(&input.name)?;
 
+    if let Some(category_id) = &input.category_id {
+        crate::db::repos::project_category::get_by_id(conn, category_id)?;
+    }
+
     let origin = crate::db::repos::device::origin_device_id(conn)?;
     let id = new_id();
     let now = now_ms();
@@ -114,9 +115,9 @@ pub fn create(conn: &Connection, input: &CreateProjectInput) -> AppResult<Projec
     conn.execute(
         "INSERT INTO projects (
             id, name, description, project_type, status, color, icon,
-            start_date, target_end_date, sort_order,
+            start_date, target_end_date, sort_order, category_id,
             created_at, updated_at, origin_device_id
-         ) VALUES (?1, ?2, ?3, ?4, 'active', ?5, ?6, ?7, ?8, ?9, ?10, ?10, ?11)",
+         ) VALUES (?1, ?2, ?3, ?4, 'active', ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?11, ?12)",
         rusqlite::params![
             id,
             input.name.trim(),
@@ -127,6 +128,7 @@ pub fn create(conn: &Connection, input: &CreateProjectInput) -> AppResult<Projec
             input.start_date,
             input.target_end_date,
             sort_order,
+            input.category_id,
             now,
             origin,
         ],
@@ -142,6 +144,10 @@ pub fn update(conn: &Connection, id: &str, patch: &UpdateProjectInput) -> AppRes
         validate_project_name(name)?;
     }
 
+    if let Some(Some(category_id)) = &patch.category_id {
+        crate::db::repos::project_category::get_by_id(conn, category_id)?;
+    }
+
     let now = now_ms();
     let name = patch.name.as_deref().unwrap_or(&existing.name);
     let description = patch.description.as_ref().or(existing.description.as_ref());
@@ -155,11 +161,17 @@ pub fn update(conn: &Connection, id: &str, patch: &UpdateProjectInput) -> AppRes
         .or(existing.target_end_date.as_ref());
     let sort_order = patch.sort_order.unwrap_or(existing.sort_order);
 
+    let category_id = match &patch.category_id {
+        None => existing.category_id.clone(),
+        Some(inner) => inner.clone(),
+    };
+
     conn.execute(
         "UPDATE projects SET
             name = ?1, description = ?2, status = ?3, color = ?4, icon = ?5,
-            start_date = ?6, target_end_date = ?7, sort_order = ?8, updated_at = ?9
-         WHERE id = ?10 AND deleted_at IS NULL",
+            start_date = ?6, target_end_date = ?7, sort_order = ?8, category_id = ?9,
+            updated_at = ?10
+         WHERE id = ?11 AND deleted_at IS NULL",
         rusqlite::params![
             name.trim(),
             description,
@@ -169,6 +181,7 @@ pub fn update(conn: &Connection, id: &str, patch: &UpdateProjectInput) -> AppRes
             start_date,
             target_end_date,
             sort_order,
+            category_id,
             now,
             id,
         ],
@@ -229,8 +242,11 @@ fn map_project_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<ProjectDto> {
         start_date: row.get(7)?,
         target_end_date: row.get(8)?,
         sort_order: row.get(9)?,
-        created_at: row.get(10)?,
-        updated_at: row.get(11)?,
+        category_id: row.get(10)?,
+        category_name: row.get(11)?,
+        category_color: row.get(12)?,
+        created_at: row.get(13)?,
+        updated_at: row.get(14)?,
     })
 }
 

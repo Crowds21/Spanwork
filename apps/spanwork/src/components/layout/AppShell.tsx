@@ -8,7 +8,7 @@
  * - Link：路由链接，activeProps 为当前路由高亮样式
  */
 import { Link } from '@tanstack/react-router';
-import { FolderKanban, Home } from 'lucide-react';
+import { FolderKanban, Home, Tags } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { AppStatusLine } from '@/components/layout/AppStatusLine';
@@ -23,6 +23,7 @@ interface AppShellProps {
 const navItems = [
   { to: '/', label: '今日', icon: Home },
   { to: '/projects', label: '项目', icon: FolderKanban },
+  { to: '/project-categories', label: '项目分类', icon: Tags },
 ] as const;
 
 export function AppShell({ children }: AppShellProps) {

@@ -17,8 +17,8 @@ import {
 
 import { isTauri } from '@/lib/tauri/client';
 import { getActiveTimer } from '@/lib/tauri/timer';
+import { useActiveTimerElapsed } from '@/lib/timer/useActiveTimerElapsed';
 import { focusTask } from '@/lib/timer/timerFocus';
-import { useLiveElapsedSeconds } from '@/lib/timer/useLiveElapsed';
 import { queryKeys } from '@/queries/keys';
 
 export const TIMER_BAR_ENTER_EXIT_MS = 320;
@@ -27,6 +27,7 @@ interface TimerBarContextValue {
   inTauri: boolean;
   active: ActiveTimerDto | null;
   elapsed: number;
+  isPaused: boolean;
   minimized: boolean;
   setMinimized: (value: boolean) => void;
   rendered: boolean;
@@ -52,8 +53,11 @@ export function TimerBarProvider({ children }: { children: ReactNode }) {
   });
 
   const active = timerQuery.data ?? null;
-  const sessionKey = active ? `${active.targetId}:${active.startedAt}` : null;
-  const elapsed = useLiveElapsedSeconds(active?.startedAt);
+  const sessionKey = active
+    ? `${active.targetId}:${active.sessionStartedAt}`
+    : null;
+  const elapsed = useActiveTimerElapsed(active);
+  const isPaused = active?.isPaused ?? false;
 
   useEffect(() => {
     if (!sessionKey) {
@@ -95,13 +99,14 @@ export function TimerBarProvider({ children }: { children: ReactNode }) {
       inTauri,
       active,
       elapsed,
+      isPaused,
       minimized,
       setMinimized,
       rendered,
       isVisible,
       handleViewProject,
     }),
-    [inTauri, active, elapsed, minimized, rendered, isVisible, handleViewProject],
+    [inTauri, active, elapsed, isPaused, minimized, rendered, isVisible, handleViewProject],
   );
 
   return <TimerBarContext.Provider value={value}>{children}</TimerBarContext.Provider>;

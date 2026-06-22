@@ -31,6 +31,9 @@ export interface ProjectDto {
   startDate?: string;
   targetEndDate?: string;
   sortOrder: number;
+  categoryId?: string;
+  categoryName?: string;
+  categoryColor?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -49,6 +52,7 @@ export interface CreateProjectInput {
   icon?: string;
   startDate?: string;
   targetEndDate?: string;
+  categoryId?: string;
 }
 
 export interface UpdateProjectInput {
@@ -60,12 +64,39 @@ export interface UpdateProjectInput {
   startDate?: string;
   targetEndDate?: string;
   sortOrder?: number;
+  categoryId?: string | null;
+}
+
+export interface ProjectCategoryDto {
+  id: string;
+  name: string;
+  color?: string;
+  icon?: string;
+  sortOrder: number;
+  projectCount?: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface CreateProjectCategoryInput {
+  name: string;
+  color?: string;
+  icon?: string;
+  sortOrder?: number;
+}
+
+export interface UpdateProjectCategoryInput {
+  name?: string;
+  color?: string;
+  icon?: string;
+  sortOrder?: number;
 }
 
 export interface ProjectListParams {
   status?: ProjectStatus | 'all';
   sortBy?: 'updated' | 'created' | 'name';
   sortOrder?: 'asc' | 'desc';
+  categoryId?: string | 'uncategorized';
 }
 
 export interface TaskDto {
@@ -85,6 +116,8 @@ export interface TaskDto {
   childCount?: number;
   completedChildCount?: number;
   totalTimeSeconds?: number;
+  timeTrackable?: boolean;
+  timerStartable?: boolean;
   createdAt: number;
   updatedAt: number;
 }
@@ -208,7 +241,10 @@ export interface ActiveTimerDto {
   projectId: string;
   targetType: TimeTargetType;
   targetId: string;
+  sessionStartedAt: number;
   startedAt: number;
+  accumulatedSeconds: number;
+  isPaused: boolean;
   note?: string;
   elapsedSeconds: number;
 }

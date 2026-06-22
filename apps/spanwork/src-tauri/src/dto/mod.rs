@@ -49,6 +49,12 @@ pub struct ProjectDto {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub target_end_date: Option<String>,
     pub sort_order: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category_color: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -63,6 +69,7 @@ pub struct CreateProjectInput {
     pub icon: Option<String>,
     pub start_date: Option<String>,
     pub target_end_date: Option<String>,
+    pub category_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -71,6 +78,7 @@ pub struct ProjectListParams {
     pub status: Option<String>,
     pub sort_by: Option<String>,
     pub sort_order: Option<String>,
+    pub category_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -97,6 +105,7 @@ pub struct UpdateProjectInput {
     pub start_date: Option<String>,
     pub target_end_date: Option<String>,
     pub sort_order: Option<i64>,
+    pub category_id: Option<Option<String>>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -109,6 +118,53 @@ pub struct ProjectUpdateParams {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectReorderParams {
+    pub ordered_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectCategoryDto {
+    pub id: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
+    pub sort_order: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_count: Option<i64>,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateProjectCategoryInput {
+    pub name: String,
+    pub color: Option<String>,
+    pub icon: Option<String>,
+    pub sort_order: Option<i64>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateProjectCategoryInput {
+    pub name: Option<String>,
+    pub color: Option<String>,
+    pub icon: Option<String>,
+    pub sort_order: Option<i64>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectCategoryUpdateParams {
+    pub id: String,
+    pub patch: UpdateProjectCategoryInput,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectCategoryReorderParams {
     pub ordered_ids: Vec<String>,
 }
 
@@ -148,6 +204,10 @@ pub struct TaskDto {
     pub completed_child_count: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub total_time_seconds: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub time_trackable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timer_startable: Option<bool>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -392,7 +452,10 @@ pub struct ActiveTimerDto {
     pub project_id: String,
     pub target_type: TimeTargetType,
     pub target_id: String,
+    pub session_started_at: i64,
     pub started_at: i64,
+    pub accumulated_seconds: i64,
+    pub is_paused: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
     pub elapsed_seconds: i64,

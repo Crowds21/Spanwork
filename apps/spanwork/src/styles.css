@@ -215,3 +215,21 @@
   background: color-mix(in oklch, var(--background) 20%, transparent);
 }
 
+/* ── Paused: amber/orange accent instead of primary blue ── */
+.timer-bar-surface--paused::before {
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklch, oklch(0.78 0.14 75) 28%, transparent),
+    color-mix(in oklch, oklch(0.82 0.16 80) 38%, transparent),
+    color-mix(in oklch, oklch(0.8 0.15 78) 32%, transparent),
+    color-mix(in oklch, oklch(0.84 0.17 82) 40%, transparent),
+    color-mix(in oklch, oklch(0.81 0.15 79) 34%, transparent),
+    color-mix(in oklch, oklch(0.78 0.14 75) 28%, transparent)
+  );
+  animation: none;
+}
+
+.timer-bar-surface--paused {
+  border-bottom-color: color-mix(in oklch, oklch(0.75 0.14 75) 35%, var(--border));
+}
+

@@ -4,39 +4,75 @@ use crate::db::repos::time_entry as time_entry_repo;
 use crate::dto::{ActiveTimerDto, StartTimerInput, TimeEntryDto};
 use crate::error::{now_ms, AppError, AppResult};
 
-pub fn get_active(conn: &Connection) -> AppResult<Option<ActiveTimerDto>> {
-    let row = conn
-        .query_row(
-            "SELECT project_id, target_type, target_id, started_at, note
-             FROM active_timer WHERE id = 1",
-            [],
-            |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
-                    row.get::<_, i64>(3)?,
-                    row.get::<_, Option<String>>(4)?,
-                ))
-            },
-        )
-        .optional()?;
+struct ActiveTimerRow {
+    project_id: String,
+    target_type: String,
+    target_id: String,
+    session_started_at: i64,
+    started_at: i64,
+    accumulated_seconds: i64,
+    is_paused: bool,
+    note: Option<String>,
+}
 
-    Ok(row.map(|(project_id, target_type_str, target_id, started_at, note)| {
-        let now = now_ms();
-        ActiveTimerDto {
-            project_id,
-            target_type: time_entry_repo::parse_target_type(&target_type_str),
-            target_id,
-            started_at,
-            note,
-            elapsed_seconds: ((now - started_at) / 1000).max(0),
-        }
-    }))
+fn load_active_row(conn: &Connection) -> AppResult<Option<ActiveTimerRow>> {
+    conn.query_row(
+        "SELECT project_id, target_type, target_id,
+                COALESCE(session_started_at, started_at), started_at,
+                accumulated_seconds, is_paused, note
+         FROM active_timer WHERE id = 1",
+        [],
+        |row| {
+            Ok(ActiveTimerRow {
+                project_id: row.get(0)?,
+                target_type: row.get(1)?,
+                target_id: row.get(2)?,
+                session_started_at: row.get(3)?,
+                started_at: row.get(4)?,
+                accumulated_seconds: row.get(5)?,
+                is_paused: row.get::<_, i64>(6)? != 0,
+                note: row.get(7)?,
+            })
+        },
+    )
+    .optional()
+    .map_err(Into::into)
+}
+
+fn elapsed_seconds(row: &ActiveTimerRow, now: i64) -> i64 {
+    if row.is_paused {
+        return row.accumulated_seconds;
+    }
+    row.accumulated_seconds + ((now - row.started_at) / 1000).max(0)
+}
+
+fn row_to_dto(row: ActiveTimerRow) -> ActiveTimerDto {
+    let now = now_ms();
+    let elapsed = elapsed_seconds(&row, now);
+    ActiveTimerDto {
+        project_id: row.project_id,
+        target_type: time_entry_repo::parse_target_type(&row.target_type),
+        target_id: row.target_id,
+        session_started_at: row.session_started_at,
+        started_at: row.started_at,
+        accumulated_seconds: row.accumulated_seconds,
+        is_paused: row.is_paused,
+        note: row.note,
+        elapsed_seconds: elapsed,
+    }
+}
+
+pub fn get_active(conn: &Connection) -> AppResult<Option<ActiveTimerDto>> {
+    Ok(load_active_row(conn)?.map(row_to_dto))
 }
 
 pub fn start(conn: &Connection, input: &StartTimerInput) -> AppResult<ActiveTimerDto> {
     crate::db::repos::project::get_by_id(conn, &input.project_id)?;
+    crate::domain::task_time::validate_timer_start_time_target(
+        conn,
+        input.target_type,
+        &input.target_id,
+    )?;
 
     let existing = get_active(conn)?;
     let force = input.force.unwrap_or(false);
@@ -53,14 +89,19 @@ pub fn start(conn: &Connection, input: &StartTimerInput) -> AppResult<ActiveTime
 
     let started_at = now_ms();
     conn.execute(
-        "INSERT INTO active_timer (id, project_id, target_type, target_id, started_at, note)
-         VALUES (1, ?1, ?2, ?3, ?4, ?5)
+        "INSERT INTO active_timer (
+            id, project_id, target_type, target_id, started_at, note,
+            session_started_at, accumulated_seconds, is_paused
+         ) VALUES (1, ?1, ?2, ?3, ?4, ?5, ?4, 0, 0)
          ON CONFLICT(id) DO UPDATE SET
             project_id = excluded.project_id,
             target_type = excluded.target_type,
             target_id = excluded.target_id,
             started_at = excluded.started_at,
-            note = excluded.note",
+            note = excluded.note,
+            session_started_at = excluded.session_started_at,
+            accumulated_seconds = 0,
+            is_paused = 0",
         rusqlite::params![
             input.project_id,
             time_entry_repo::target_type_to_str(input.target_type),
@@ -70,30 +111,63 @@ pub fn start(conn: &Connection, input: &StartTimerInput) -> AppResult<ActiveTime
         ],
     )?;
 
-    Ok(ActiveTimerDto {
-        project_id: input.project_id.clone(),
-        target_type: input.target_type,
-        target_id: input.target_id.clone(),
-        started_at,
-        note: input.note.clone(),
-        elapsed_seconds: 0,
-    })
+    get_active(conn)?.ok_or_else(|| AppError::Internal("timer start failed".into()))
+}
+
+pub fn pause(conn: &Connection) -> AppResult<ActiveTimerDto> {
+    let row = load_active_row(conn)?.ok_or_else(|| AppError::Conflict {
+        message: "no active timer".into(),
+    })?;
+
+    if row.is_paused {
+        return Ok(row_to_dto(row));
+    }
+
+    let now = now_ms();
+    let accumulated = elapsed_seconds(&row, now);
+
+    conn.execute(
+        "UPDATE active_timer SET accumulated_seconds = ?1, is_paused = 1 WHERE id = 1",
+        [accumulated],
+    )?;
+
+    get_active(conn)?.ok_or_else(|| AppError::Internal("timer pause failed".into()))
+}
+
+pub fn resume(conn: &Connection) -> AppResult<ActiveTimerDto> {
+    let row = load_active_row(conn)?.ok_or_else(|| AppError::Conflict {
+        message: "no active timer".into(),
+    })?;
+
+    if !row.is_paused {
+        return Ok(row_to_dto(row));
+    }
+
+    let now = now_ms();
+    conn.execute(
+        "UPDATE active_timer SET started_at = ?1, is_paused = 0 WHERE id = 1",
+        [now],
+    )?;
+
+    get_active(conn)?.ok_or_else(|| AppError::Internal("timer resume failed".into()))
 }
 
 pub fn stop(conn: &Connection) -> AppResult<TimeEntryDto> {
-    let active = get_active(conn)?.ok_or_else(|| AppError::Conflict {
+    let row = load_active_row(conn)?.ok_or_else(|| AppError::Conflict {
         message: "no active timer".into(),
     })?;
 
     let end_at = now_ms();
+    let duration_seconds = elapsed_seconds(&row, end_at);
     let entry = time_entry_repo::create_from_timer(
         conn,
-        &active.project_id,
-        active.target_type,
-        &active.target_id,
-        active.started_at,
+        &row.project_id,
+        time_entry_repo::parse_target_type(&row.target_type),
+        &row.target_id,
+        row.session_started_at,
         end_at,
-        active.note.as_deref(),
+        row.note.as_deref(),
+        Some(duration_seconds),
     )?;
 
     clear_active(conn)?;
@@ -112,17 +186,19 @@ pub fn cancel(conn: &Connection) -> AppResult<()> {
 }
 
 fn stop_internal(conn: &Connection) -> AppResult<()> {
-    let active = get_active(conn)?;
-    if let Some(timer) = active {
+    let row = load_active_row(conn)?;
+    if let Some(row) = row {
         let end_at = now_ms();
+        let duration_seconds = elapsed_seconds(&row, end_at);
         time_entry_repo::create_from_timer(
             conn,
-            &timer.project_id,
-            timer.target_type,
-            &timer.target_id,
-            timer.started_at,
+            &row.project_id,
+            time_entry_repo::parse_target_type(&row.target_type),
+            &row.target_id,
+            row.session_started_at,
             end_at,
-            timer.note.as_deref(),
+            row.note.as_deref(),
+            Some(duration_seconds),
         )?;
         clear_active(conn)?;
     }

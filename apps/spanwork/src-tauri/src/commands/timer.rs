@@ -16,6 +16,16 @@ pub fn timer_start(state: State<'_, AppState>, input: StartTimerInput) -> AppRes
 }
 
 #[tauri::command]
+pub fn timer_pause(state: State<'_, AppState>) -> AppResult<ActiveTimerDto> {
+    state.with_db("timer_pause", |conn| timer::pause(conn))
+}
+
+#[tauri::command]
+pub fn timer_resume(state: State<'_, AppState>) -> AppResult<ActiveTimerDto> {
+    state.with_db("timer_resume", |conn| timer::resume(conn))
+}
+
+#[tauri::command]
 pub fn timer_stop(state: State<'_, AppState>) -> AppResult<TimeEntryDto> {
     state.with_db("timer_stop", |conn| timer::stop(conn))
 }
