@@ -18,10 +18,12 @@ export function TimerButton({
   projectId,
   targetId,
   disabled,
+  className,
 }: {
   projectId: string;
   targetId: string;
   disabled?: boolean;
+  className?: string;
 }) {
   const queryClient = useQueryClient();
   const inTauri = isTauri();
@@ -49,14 +51,15 @@ export function TimerButton({
   return (
     <Tooltip label="开始计时">
       <Button
+        type="button"
         size="icon"
-        variant="outline"
-        className="size-8"
+        variant="ghost"
+        className={cn('size-8', className)}
         disabled={disabled || startMutation.isPending || isTimingOther}
         onClick={() => startMutation.mutate()}
         aria-label="开始计时"
       >
-        <Play className="size-3.5" />
+        <Play className="size-4 fill-current" />
       </Button>
     </Tooltip>
   );

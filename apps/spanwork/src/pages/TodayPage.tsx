@@ -9,7 +9,6 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Clock, FileText, ListTodo, Timer } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -19,11 +18,18 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDuration, taskStatusLabels } from '@/lib/format';
+import { TaskStatusBadge } from '@/components/task/TaskStatusSelect';
+import { formatDuration } from '@/lib/format';
+import { useLiveElapsedSeconds } from '@/lib/timer/useLiveElapsed';
 import { isTauri } from '@/lib/tauri/env';
 import { getLogInfo } from '@/lib/tauri/log';
 import { getTodayDashboard } from '@/lib/tauri/today';
 import { queryKeys } from '@/queries/keys';
+
+function ActiveTimerDuration({ startedAt }: { startedAt: number }) {
+  const elapsed = useLiveElapsedSeconds(startedAt);
+  return <>{formatDuration(elapsed)}</>;
+}
 
 export function TodayPage() {
   const inTauri = isTauri();
@@ -88,9 +94,11 @@ export function TodayPage() {
                   <CardDescription>活跃计时</CardDescription>
                 </div>
                 <CardTitle className="text-2xl">
-                  {dashboard.activeTimer
-                    ? formatDuration(dashboard.activeTimer.elapsedSeconds)
-                    : '无'}
+                  {dashboard.activeTimer ? (
+                    <ActiveTimerDuration startedAt={dashboard.activeTimer.startedAt} />
+                  ) : (
+                    '无'
+                  )}
                 </CardTitle>
               </CardHeader>
               {dashboard.activeTimer && (
@@ -135,7 +143,7 @@ export function TodayPage() {
                           更新 {new Date(task.updatedAt).toLocaleString()}
                         </p>
                       </div>
-                      <Badge variant="outline">{taskStatusLabels[task.status]}</Badge>
+                      <TaskStatusBadge status={task.status} />
                       <Button size="sm" variant="ghost" asChild>
                         <Link to="/projects/$projectId" params={{ projectId: task.projectId }}>
                           打开

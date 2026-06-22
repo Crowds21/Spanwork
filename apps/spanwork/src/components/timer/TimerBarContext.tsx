@@ -18,6 +18,7 @@ import {
 import { isTauri } from '@/lib/tauri/client';
 import { getActiveTimer } from '@/lib/tauri/timer';
 import { focusTask } from '@/lib/timer/timerFocus';
+import { useLiveElapsedSeconds } from '@/lib/timer/useLiveElapsed';
 import { queryKeys } from '@/queries/keys';
 
 export const TIMER_BAR_ENTER_EXIT_MS = 320;
@@ -38,7 +39,6 @@ const TimerBarContext = createContext<TimerBarContextValue | null>(null);
 export function TimerBarProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const inTauri = isTauri();
-  const [tick, setTick] = useState(0);
   const [minimized, setMinimized] = useState(false);
   const [rendered, setRendered] = useState(false);
   const [open, setOpen] = useState(false);
@@ -53,12 +53,7 @@ export function TimerBarProvider({ children }: { children: ReactNode }) {
 
   const active = timerQuery.data ?? null;
   const sessionKey = active ? `${active.targetId}:${active.startedAt}` : null;
-
-  useEffect(() => {
-    if (!sessionKey) return;
-    const id = window.setInterval(() => setTick((t) => t + 1), 1000);
-    return () => window.clearInterval(id);
-  }, [sessionKey]);
+  const elapsed = useLiveElapsedSeconds(active?.startedAt);
 
   useEffect(() => {
     if (!sessionKey) {
@@ -79,13 +74,11 @@ export function TimerBarProvider({ children }: { children: ReactNode }) {
     }
 
     setOpen(false);
-    setTick(0);
     setMinimized(false);
     const timer = window.setTimeout(() => setRendered(false), TIMER_BAR_ENTER_EXIT_MS);
     return () => window.clearTimeout(timer);
   }, [sessionKey]);
 
-  const elapsed = (active?.elapsedSeconds ?? 0) + tick;
   const isVisible = open && Boolean(active);
 
   const handleViewProject = useCallback(() => {

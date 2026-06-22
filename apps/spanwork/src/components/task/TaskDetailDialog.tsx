@@ -19,13 +19,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { TaskStatusSelect } from '@/components/task/TaskStatusSelect';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,13 +28,13 @@ import {
   formatDateTime,
   formatDuration,
   formatDurationLive,
-  taskStatusLabels,
   timeEntrySourceLabels,
 } from '@/lib/format';
 import { isTauri } from '@/lib/tauri/client';
 import { getActiveTimer } from '@/lib/tauri/timer';
 import { listTimeEntries } from '@/lib/tauri/time_entry';
 import { getTask, updateTask } from '@/lib/tauri/task';
+import { useLiveElapsedSeconds } from '@/lib/timer/useLiveElapsed';
 import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
 
@@ -87,12 +81,12 @@ export function TaskDetailDialog({
     queryKey: queryKeys.activeTimer,
     queryFn: getActiveTimer,
     enabled: open && inTauri,
-    refetchInterval: open ? 1000 : false,
   });
 
   const task = taskQuery.data;
   const isActiveTask = activeTimerQuery.data?.targetId === taskId;
   const activeTimer = isActiveTask ? activeTimerQuery.data : null;
+  const activeElapsed = useLiveElapsedSeconds(activeTimer?.startedAt);
 
   const isSubtask = Boolean(task?.parentId);
   const hasSubtasks = (task?.childCount ?? 0) > 0;
@@ -229,18 +223,7 @@ export function TaskDetailDialog({
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>状态</Label>
-                    <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(['todo', 'in_progress', 'done', 'cancelled'] as const).map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {taskStatusLabels[s]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <TaskStatusSelect value={status} onValueChange={setStatus} className="w-full" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="task-detail-due">截止日期</Label>
@@ -337,7 +320,7 @@ export function TaskDetailDialog({
                                 </td>
                                 <td className="px-3 py-2 text-primary">计时中…</td>
                                 <td className="px-3 py-2 font-mono tabular-nums">
-                                  {formatDurationLive(activeTimer.elapsedSeconds)}
+                                  {formatDurationLive(activeElapsed)}
                                 </td>
                                 <td className="px-3 py-2">
                                   <Badge variant="outline">计时</Badge>

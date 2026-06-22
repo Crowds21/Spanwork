@@ -6,26 +6,21 @@
  * - TaskRow：子组件，Props 即入参；递归渲染子任务
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronRight, Flag, Info, PencilLine, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, ClockPlus, Flag, ScrollText, Trash2 } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import type { TaskDto, TaskStatus } from '@spanwork/shared-types';
 
 import { TaskCreateTrigger } from '@/components/task/TaskCreateDialog';
 import { TaskDetailDialog } from '@/components/task/TaskDetailDialog';
+import { TaskStatusSelect } from '@/components/task/TaskStatusSelect';
+import { taskRowActionStyles } from '@/components/task/taskRowActionStyles';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip } from '@/components/ui/tooltip';
 import { TimeEntryForm } from '@/components/timer/TimeEntryForm';
 import { TaskTimerControls, TimerButton } from '@/components/timer/TimerBar';
-import { formatDuration, taskStatusLabels } from '@/lib/format';
+import { formatDuration } from '@/lib/format';
 import { deleteTask, listTasks, updateTask } from '@/lib/tauri/task';
 import { consumeTaskFocus, scrollToTaskElement } from '@/lib/timer/timerFocus';
 import { queryKeys } from '@/queries/keys';
@@ -118,56 +113,54 @@ function TaskRow({
             </p>
           )}
         </div>
-        <Select
+        <TaskStatusSelect
           value={task.status}
-          onValueChange={(v) => updateMutation.mutate(v as TaskStatus)}
-        >
-          <SelectTrigger className="w-28">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(['todo', 'in_progress', 'done', 'cancelled'] as const).map((s) => (
-              <SelectItem key={s} value={s}>
-                {taskStatusLabels[s]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Tooltip label="查看任务详情">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="size-8"
-            onClick={() => setShowDetail(true)}
-            aria-label="查看任务详情"
-          >
-            <Info className="size-3.5" />
-          </Button>
-        </Tooltip>
-        <TimerButton projectId={projectId} targetId={task.id} />
-        <Tooltip label="补录时间">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="size-8"
-            onClick={() => setShowTimeForm((v) => !v)}
-            aria-label="补录时间"
-          >
-            <PencilLine className="size-3.5" />
-          </Button>
-        </Tooltip>
-        <Tooltip label="删除任务">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="size-8 text-destructive hover:text-destructive"
-            onClick={() => deleteMutation.mutate()}
-            disabled={deleteMutation.isPending}
-            aria-label="删除任务"
-          >
-            <Trash2 className="size-3.5" />
-          </Button>
-        </Tooltip>
+          onValueChange={(status) => updateMutation.mutate(status)}
+        />
+        <div className="flex items-center gap-1.5 rounded-xl border border-border/60 bg-muted/20 p-1">
+          <Tooltip label="查看任务详情">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className={taskRowActionStyles.detail}
+              onClick={() => setShowDetail(true)}
+              aria-label="查看任务详情"
+            >
+              <ScrollText className="size-4" />
+            </Button>
+          </Tooltip>
+          <TimerButton
+            projectId={projectId}
+            targetId={task.id}
+            className={taskRowActionStyles.timer}
+          />
+          <Tooltip label="补录时间">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className={cn(taskRowActionStyles.timeEntry, showTimeForm && 'ring-2 ring-amber-400/60')}
+              onClick={() => setShowTimeForm((v) => !v)}
+              aria-label="补录时间"
+            >
+              <ClockPlus className="size-4" />
+            </Button>
+          </Tooltip>
+          <Tooltip label="删除任务">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className={taskRowActionStyles.delete}
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
+              aria-label="删除任务"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </Tooltip>
+        </div>
       </div>
       <TaskTimerControls projectId={projectId} taskId={task.id} className={depth > 0 ? 'ml-6' : undefined} />
       <TaskDetailDialog

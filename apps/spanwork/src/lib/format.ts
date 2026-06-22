@@ -26,11 +26,54 @@ export function formatDurationLive(seconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-export const taskStatusLabels: Record<string, string> = {
-  todo: '待办',
-  in_progress: '进行中',
-  done: '已完成',
-  cancelled: '已取消',
+import type { TaskStatus } from '@spanwork/shared-types';
+
+export const TASK_STATUSES: TaskStatus[] = ['todo', 'in_progress', 'done', 'cancelled'];
+
+export const taskStatusLabels: Record<TaskStatus, string> = {
+  todo: 'TODO',
+  in_progress: 'DOING',
+  done: 'DONE',
+  cancelled: 'CANCELED',
+};
+
+/** 任务状态展示：英文标签 + 圆角下拉/徽章用色 */
+export const taskStatusMeta: Record<
+  TaskStatus,
+  { label: string; dot: string; trigger: string; item: string; badge: string }
+> = {
+  todo: {
+    label: 'TODO',
+    dot: 'bg-slate-500',
+    trigger:
+      'border-slate-300/80 bg-slate-100 text-slate-800 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-100',
+    item: 'focus:bg-slate-100 dark:focus:bg-slate-800',
+    badge: 'border-slate-300 bg-slate-100 text-slate-700',
+  },
+  in_progress: {
+    label: 'DOING',
+    dot: 'bg-blue-500',
+    trigger:
+      'border-blue-300/80 bg-blue-50 text-blue-800 hover:bg-blue-50 dark:border-blue-700 dark:bg-blue-950/50 dark:text-blue-200',
+    item: 'focus:bg-blue-50 dark:focus:bg-blue-950/50',
+    badge: 'border-blue-300 bg-blue-50 text-blue-800',
+  },
+  done: {
+    label: 'DONE',
+    dot: 'bg-emerald-500',
+    trigger:
+      'border-emerald-300/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200',
+    item: 'focus:bg-emerald-50 dark:focus:bg-emerald-950/50',
+    badge: 'border-emerald-300 bg-emerald-50 text-emerald-800',
+  },
+  cancelled: {
+    label: 'CANCELED',
+    dot: 'bg-rose-500',
+    trigger:
+      'border-rose-300/80 bg-rose-50 text-rose-800 hover:bg-rose-50 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-200',
+    item: 'focus:bg-rose-50 dark:focus:bg-rose-950/50',
+    badge: 'border-rose-300 bg-rose-50 text-rose-800',
+  },
 };
 
 export const milestoneStatusLabels: Record<string, string> = {

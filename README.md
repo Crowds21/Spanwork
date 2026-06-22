@@ -39,14 +39,17 @@ pnpm dev          # 仅浏览器预览（无 Tauri IPC）
 - SQLite 本地存储 + 初始迁移
 - 设备身份、项目 CRUD、项目列表 UI
 
-### M1（进行中）
+### M1（进行中 → 收尾）
 
-- 任务 CRUD、2 级子任务树（`is_milestone` 里程碑任务才可展开子任务）
-- 项目详情页、产品 Milestone CRUD
-- 全局计时器（start / stop / cancel）+ 顶部浮层计时栏
-- 时间记录手动补录、今日 Dashboard
-- 底部状态栏统一错误提示（`AppStatusLine`）
-- 弹窗创建任务（`TaskCreateDialog`）
+- 任务 CRUD、2 级子任务树（`is_milestone` 里程碑任务才可展开子任务；创建/详情页可切换）
+- 项目详情页、任务详情弹窗（ID、编辑、分页时间记录）
+- 全局计时器（start / stop / cancel）+ 双模式顶栏（展开浮层 / 全宽收缩条）
+- 时间记录：计时停止写入起止时间；补录支持开始/结束时间
+- 今日 Dashboard、底部状态栏（`AppStatusLine`）
+- 弹窗创建任务（`TaskCreateDialog`）、任务行图标按钮 + Tooltip
+- Rust workspace 化（根目录 `Cargo.toml` + `Cargo.lock`）；schema migration v3
+
+**M1 遗留**：`task_reorder` 拖拽 UI；时间记录单条编辑/删除 UI
 
 ## 文档
 
