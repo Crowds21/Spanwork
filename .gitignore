@@ -22,6 +22,7 @@ apps/spanwork/node_modules/.vite/
 .env
 .env.*
 !.env.example
+apps/spanwork/src-tauri/tauri.ios.conf.json
 
 # --- Logs & debug ---
 *.log
