@@ -1,3 +1,6 @@
+//! 今日 Dashboard 聚合 IPC，组合活跃计时器、最近任务与当日总时长。
+//! 依赖 timer、db/repos/task 与 db/repos/time_entry。
+
 use tauri::State;
 
 use crate::db::repos::{task as task_repo, time_entry as time_entry_repo};

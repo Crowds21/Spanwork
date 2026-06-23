@@ -1,3 +1,6 @@
+//! 设备信息与应用元数据 IPC（device_get、device_update_name、app_get_info）。
+//! 委托 db/repos/device 读写 device_config，schema 版本来自 db/migrate。
+
 use tauri::State;
 
 use crate::db::migrate::schema_version;

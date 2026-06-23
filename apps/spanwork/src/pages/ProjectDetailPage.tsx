@@ -1,9 +1,7 @@
 /**
- * 项目详情页（任务式）
+ * 项目详情页：任务树 / 看板 / 日历视图切换
  *
- * Props projectId：由路由层传入的动态参数
- * useMutation：写操作（删除项目），onSuccess 后 navigate 跳转并刷新缓存
- * 加载/空态/错误态：isLoading、!data 分支渲染不同 UI
+ * projectId 来自路由 params；view 搜索参数持久化到 localStorage；删除项目后 navigate 回列表。
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';

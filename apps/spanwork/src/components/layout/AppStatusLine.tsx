@@ -1,6 +1,8 @@
 /**
- * 底部状态栏：正常显示「就绪」，IPC/操作失败时显示错误并可关闭
- * useAppStatus 订阅 lib/status/appStatus 全局 store
+ * 底部状态栏：就绪提示与 IPC/操作错误展示
+ *
+ * placement 区分 desktop 底栏与 mobile-chrome（嵌在 Tab 栏上方，仅错误时显示）；
+ * 订阅 lib/status/appStatus，配合 AppShell 的 pb-safe 布局。
  */
 import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 

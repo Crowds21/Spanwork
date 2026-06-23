@@ -1,3 +1,8 @@
+/**
+ * 项目分类管理页：新建、编辑、删除分类及预设颜色
+ *
+ * useMutation 写操作成功后 invalidate queryKeys.projectCategories。
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Plus, Tags, Trash2 } from 'lucide-react';
 import { useState } from 'react';

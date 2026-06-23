@@ -1,6 +1,7 @@
 /**
- * 路由：URL `/projects/:projectId` → 项目详情页
- * `$projectId` 为动态路径参数，通过 Route.useParams() 读取（类比 @PathVariable）
+ * 路由：URL `/projects/:projectId` → ProjectDetailPage
+ *
+ * `$projectId` 为动态路径参数；validateSearch 解析 view（list | kanban | calendar）。
  */
 import { createFileRoute } from '@tanstack/react-router';
 

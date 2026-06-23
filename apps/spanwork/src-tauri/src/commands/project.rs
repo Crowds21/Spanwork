@@ -1,3 +1,6 @@
+//! 项目 CRUD 与排序 IPC，参数/返回值使用 dto 中的 Project 相关类型。
+//! 业务逻辑委托 db/repos/project，经 AppState.with_db 访问数据库。
+
 use tauri::State;
 
 use crate::db::repos::project as project_repo;

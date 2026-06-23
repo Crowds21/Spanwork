@@ -1,3 +1,8 @@
+/**
+ * 项目任务列表 Hook（useProjectTasks）
+ *
+ * React Query 拉取含子任务的扁平列表，派生 trackableTasks / tasksByStatus 供看板与筛选使用。
+ */
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { TaskDto, TaskStatus } from '@spanwork/shared-types';

@@ -1,3 +1,6 @@
+//! 里程碑 CRUD 与关联设置 IPC（link_set 绑定任务/习惯）。
+//! 委托 db/repos/milestone 操作 milestones 与 milestone_links 表。
+
 use tauri::State;
 
 use crate::db::repos::milestone as milestone_repo;

@@ -8,6 +8,7 @@
     "dev:kill-port": "lsof -ti :1420 | xargs kill -9 2>/dev/null; lsof -ti :1421 | xargs kill -9 2>/dev/null; true",
     "build": "pnpm --filter @spanwork/app build",
     "tauri": "pnpm --filter @spanwork/app tauri",
+    "icons:sync": "pnpm --filter @spanwork/app icons:sync",
     "tauri:dev": "pnpm dev:kill-port && pnpm --filter @spanwork/app tauri dev",
     "tauri:build": "pnpm --filter @spanwork/app tauri build",
     "tauri:ios:init": "pnpm --filter @spanwork/app tauri ios init",

@@ -1,6 +1,7 @@
 /**
- * 项目列表页：左侧新建表单 + 右侧项目卡片列表
- * 组合多个子组件，自身不直接调 API
+ * 项目列表页：左侧新建表单 + 右侧项目卡片
+ *
+ * 组合 ProjectPanel 子组件，页面本身不直接调用 IPC。
  */
 import { CreateProjectForm, ProjectList } from '@/components/project/ProjectPanel';
 

@@ -1,3 +1,6 @@
+//! 日志 IPC：前端写入、查询文件信息与读取尾部行。
+//! 直接使用 AppState.logger（FileLogger），不经过数据库。
+
 use tauri::State;
 
 use crate::dto::WriteLogInput;

@@ -1,3 +1,6 @@
+//! tasks 表 CRUD、树形列表与批量完成，组装 depth/child_count/记时汇总等衍生字段。
+//! 依赖 domain/task_tree 校验层级，time_entry repo 汇总 total_time_seconds。
+
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::domain::task_tree::{

@@ -1,3 +1,6 @@
+//! milestones 表 CRUD 与 milestone_links 关联管理。
+//! link_set 全量替换里程碑绑定的任务/习惯，列表返回 linked_count。
+
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::dto::{

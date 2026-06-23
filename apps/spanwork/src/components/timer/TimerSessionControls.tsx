@@ -1,5 +1,7 @@
 /**
- * 进行中计时的操作按钮：暂停/继续、完成、取消
+ * 活跃计时会话操作按钮（TimerSessionControls）
+ *
+ * 暂停/继续、完成（stop）、取消（cancel）；mutation 成功后刷新 activeTimer 与 todayDashboard 缓存。
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, Pause, Play, XCircle } from 'lucide-react';

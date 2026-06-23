@@ -1,4 +1,8 @@
-/** 项目相关 IPC 封装，一函数对应一个 Tauri command */
+/**
+ * 项目 CRUD IPC 封装（project_* commands）
+ *
+ * 一函数对应一个 Tauri command，经 tauriInvoke 调用 Rust 后端。
+ */
 import type {
   CreateProjectInput,
   ProjectDetailDto,

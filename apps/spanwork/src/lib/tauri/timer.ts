@@ -1,4 +1,8 @@
-/** 全局计时器 IPC 封装（start/pause/resume/stop/cancel/get_active） */
+/**
+ * 全局活跃计时器 IPC 封装（timer_* commands）
+ *
+ * 应用内同时仅一条 active session；getActiveTimer 供 TimerBarContext 轮询与乐观更新对齐。
+ */
 import type { ActiveTimerDto, StartTimerInput, TimeEntryDto } from '@spanwork/shared-types';
 
 import { tauriInvoke } from './client';

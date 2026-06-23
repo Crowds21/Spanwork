@@ -26,8 +26,7 @@ export function TimerBarExpanded() {
   return (
     <header
       className={cn(
-        'timer-bar-shell timer-bar-shell--expanded pointer-events-none fixed inset-x-0 top-0 z-40 overflow-hidden pt-safe',
-        'h-[6.5rem] sm:h-[7.75rem]',
+        'timer-bar-shell timer-bar-shell--expanded pointer-events-none fixed inset-x-0 top-0 z-40 overflow-hidden',
         'transition-[opacity,transform] duration-300 ease-in-out',
         isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0',
       )}
@@ -36,12 +35,12 @@ export function TimerBarExpanded() {
     >
       <div
         className={cn(
-          'timer-bar-surface timer-bar-surface-expanded pointer-events-auto relative h-full overflow-hidden px-4',
+          'timer-bar-surface timer-bar-surface-expanded pointer-events-auto relative overflow-hidden px-4 pb-3 md:pt-0',
           isPaused && 'timer-bar-surface--paused',
         )}
       >
-        <div className="relative z-[2] flex h-full items-center">
-          <div className="flex h-full w-full flex-col items-center justify-center gap-1 py-2 text-center sm:gap-1.5 sm:py-3">
+        <div className="relative z-[2] flex min-w-0 w-full items-center overflow-hidden px-safe">
+          <div className="flex w-full flex-col items-center justify-center gap-1 py-2 text-center sm:gap-1.5 sm:py-3 md:py-3">
             <div
               className={cn(
                 'flex items-center gap-2 text-xs font-semibold sm:text-sm',

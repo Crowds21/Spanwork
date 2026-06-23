@@ -1,3 +1,6 @@
+//! 活跃计时器业务逻辑，读写 active_timer 单例行（id = 1）。
+//! 支持暂停/恢复累计 elapsed，stop 时委托 time_entry repo 生成记录。
+
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::db::repos::time_entry as time_entry_repo;

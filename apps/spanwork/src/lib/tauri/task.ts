@@ -1,4 +1,8 @@
-/** 任务相关 IPC 封装 */
+/**
+ * 任务 CRUD 与批量完成 IPC 封装（task_* commands）
+ *
+ * listTasks 支持 includeSubtasks；update/delete 成功后由调用方 invalidate queryKeys.tasks。
+ */
 import type {
   CreateTaskInput,
   TaskBatchCompleteResult,

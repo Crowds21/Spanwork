@@ -1,3 +1,6 @@
+//! Tauri 全局状态 `AppState`：SQLite 连接池（Mutex）与文件日志器。
+//! `with_db` 封装数据库访问，出错时自动写入日志并向上返回 `AppError`。
+
 use std::sync::Mutex;
 
 use rusqlite::Connection;

@@ -1,3 +1,6 @@
+//! 时间记录 CRUD IPC，用于手动补录与编辑历史记录。
+//! 委托 db/repos/time_entry，与 timer 模块停止计时写入共用同一 repo。
+
 use tauri::State;
 
 use crate::db::repos::time_entry as time_entry_repo;

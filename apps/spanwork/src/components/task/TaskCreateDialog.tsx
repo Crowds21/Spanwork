@@ -1,8 +1,7 @@
 /**
- * 创建任务弹窗（根任务 / 子任务）
+ * 创建任务弹窗：根任务或子任务（TaskCreateDialog / TaskCreateTrigger）
  *
- * open + onOpenChange：受控组件模式，父组件持有开关状态
- * useState(title)：表单字段本地状态，提交后 mutation 调 createTask
+ * 受控 open 模式；mutation 调 createTask 后 invalidate tasks 并关闭弹窗。
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Flag, Plus } from 'lucide-react';

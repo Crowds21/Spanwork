@@ -1,3 +1,7 @@
+//! Spanwork Tauri 后端库入口。
+//! 在 setup 中初始化文件日志、SQLite 数据库与 AppState，并注册全部 IPC command。
+//! 依赖 tauri、db、commands、logging、state 等子模块。
+
 mod commands;
 mod db;
 mod domain;

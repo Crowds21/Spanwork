@@ -1,3 +1,6 @@
+//! 前后端共享数据结构，serde 序列化/反序列化，字段统一 camelCase。
+//! 包含各实体的 DTO、Input/Params 类型与 ProjectType、TaskStatus 等枚举。
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

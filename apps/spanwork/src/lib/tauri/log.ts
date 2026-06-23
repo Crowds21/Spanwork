@@ -1,4 +1,8 @@
-/** 运行日志 IPC 封装 */
+/**
+ * 客户端运行日志 IPC 封装（log_* commands）
+ *
+ * writeLog 在非 Tauri 环境静默跳过；getLogInfo 返回日志文件路径供调试。
+ */
 import type { LogInfoDto, WriteLogInput } from '@spanwork/shared-types';
 
 import { tauriInvoke } from './client';

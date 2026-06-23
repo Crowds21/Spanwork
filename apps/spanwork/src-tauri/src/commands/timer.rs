@@ -1,3 +1,6 @@
+//! 全局计时器 IPC（get_active / start / pause / resume / stop / cancel）。
+//! 委托 timer 模块操作 active_timer 表，停止时生成 time_entry。
+
 use tauri::State;
 
 use crate::dto::{ActiveTimerDto, StartTimerInput, TimeEntryDto};

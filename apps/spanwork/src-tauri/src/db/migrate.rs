@@ -1,3 +1,6 @@
+//! 版本化 schema 迁移，按序执行 migrations/*.sql 并记录 schema_migrations。
+//! 当前版本 SCHEMA_VERSION = 5，对外暴露 schema_version 供 app_get_info 使用。
+
 use rusqlite::Connection;
 
 use crate::error::{now_ms, AppResult};

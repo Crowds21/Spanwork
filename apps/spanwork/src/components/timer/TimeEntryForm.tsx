@@ -1,5 +1,7 @@
 /**
- * 手动补录时间表单（指定开始/结束时间）
+ * 手动补录时间表单（TimeEntryForm）
+ *
+ * 指定起止 datetime-local，校验后调用 createTimeEntry；受 isManualTimeEntryAllowed 约束的任务才展示。
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';

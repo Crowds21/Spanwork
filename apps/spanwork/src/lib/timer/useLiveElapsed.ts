@@ -1,5 +1,7 @@
 /**
- * 根据计时开始时间计算实时流逝秒数（单一时间源，避免与后端 elapsedSeconds 叠加）
+ * 实时流逝秒数（useLiveElapsedSeconds）
+ *
+ * 以 startedAt 为单一时间源，每秒 setState 刷新；避免与后端 elapsedSeconds 叠加导致跳变。
  */
 import { useEffect, useMemo, useState } from 'react';
 

@@ -1,9 +1,7 @@
 /**
- * 根路由布局（类比 @ControllerAdvice / 全局 layout 模板）
+ * 根路由布局：AppShell 包裹所有页面
  *
- * - createRootRoute：整棵路由树的根节点
- * - AppShell：侧边栏 + 主内容区 + 顶栏计时 + 底栏状态
- * - Outlet：子路由页面渲染插槽（类似 {% block content %}）
+ * createRootRoute 定义整棵树根节点；Outlet 渲染子路由（类比 layout 模板中的 content 插槽）。
  */
 import { Outlet, createRootRoute } from '@tanstack/react-router';
 

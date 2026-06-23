@@ -1,3 +1,6 @@
+//! 项目分类 CRUD 与排序 IPC。
+//! 委托 db/repos/project_category，删除分类时会解除关联项目的 category_id。
+
 use tauri::State;
 
 use crate::db::repos::project_category as category_repo;

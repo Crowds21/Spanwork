@@ -1,5 +1,7 @@
 /**
- * 进行中计时的活跃时长（排除暂停时间）
+ * 活跃计时器已计时长（排除暂停段，useActiveTimerElapsed）
+ *
+ * 基于 active.startedAt + accumulatedSeconds 计算；配合 useLiveElapsedSeconds 驱动 UI tick。
  */
 import type { ActiveTimerDto } from '@spanwork/shared-types';
 

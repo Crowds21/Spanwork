@@ -1,5 +1,7 @@
 /**
- * 任务详情弹窗：查看/编辑任务信息，查看每次计时会话
+ * 任务详情弹窗：查看/编辑任务、子任务导航、计时会话列表
+ *
+ * 支持复制任务 ID、内联改状态；timeEntries 按 taskId 拉取并展示每次 timer/manual 记录。
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight, ChevronLeft, ChevronRight as ChevronRightIcon, Copy, Flag, Loader2 } from 'lucide-react';

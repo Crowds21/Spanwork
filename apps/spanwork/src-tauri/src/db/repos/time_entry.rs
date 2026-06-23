@@ -1,3 +1,6 @@
+//! time_entries 表 CRUD、列表筛选与当日时长汇总。
+//! 提供 create_from_timer 供 timer 模块停止计时时写入，支持手动与计时两种 source。
+
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::dto::{

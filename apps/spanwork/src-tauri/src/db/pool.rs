@@ -1,3 +1,6 @@
+//! SQLite 连接池初始化：打开 spanwork.db、启用 WAL 与外键，执行迁移。
+//! 首次启动写入 device_config 默认记录。依赖 tauri AppHandle 解析 app data 目录。
+
 use rusqlite::Connection;
 use tauri::{AppHandle, Manager};
 

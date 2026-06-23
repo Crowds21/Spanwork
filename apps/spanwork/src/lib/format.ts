@@ -1,4 +1,8 @@
-/** 展示层格式化：时长、任务/里程碑状态中文标签 */
+/**
+ * 展示层格式化：时长、日期时间、任务/里程碑状态中文标签
+ *
+ * formatDuration* 用于卡片与计时 UI；datetimeLocalToMs / msToDatetimeLocal 供补录表单与 input[type=datetime-local] 互转。
+ */
 export function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);

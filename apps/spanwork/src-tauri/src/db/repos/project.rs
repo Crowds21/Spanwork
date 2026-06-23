@@ -1,3 +1,6 @@
+//! projects 表 CRUD、列表筛选与详情聚合（任务数、总时长、未完成里程碑数）。
+//! LEFT JOIN project_categories 返回分类信息，软删除通过 deleted_at 实现。
+
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::dto::{CreateProjectInput, ProjectDetailDto, ProjectDto, ProjectListParams, ProjectType, ProjectStatus, UpdateProjectInput};

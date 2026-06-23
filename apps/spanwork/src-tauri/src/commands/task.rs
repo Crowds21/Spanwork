@@ -1,3 +1,6 @@
+//! 任务 CRUD、批量完成与排序 IPC。
+//! 委托 db/repos/task，内含任务树深度校验与记时汇总等域规则。
+
 use tauri::State;
 
 use crate::db::repos::task as task_repo;

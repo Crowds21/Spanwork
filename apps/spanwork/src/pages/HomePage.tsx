@@ -1,8 +1,7 @@
 /**
- * 欢迎页（M0 遗留，当前默认路由已指向 TodayPage）
+ * 欢迎/关于页（M0 遗留，当前无路由挂载）
  *
- * 页面组件 = 纯函数，返回 JSX（HTML 模板语法）
- * useQuery = 带缓存的 GET 请求，enabled 控制是否发起调用
+ * 展示设备信息、应用版本与 Tauri 环境检测；默认入口已改为 TodayPage（routes/index.tsx）。
  */
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';

@@ -1,3 +1,8 @@
+/**
+ * 项目分类下拉选择（CategorySelect）
+ *
+ * 拉取 projectCategories 列表，供 CreateProjectForm 绑定 categoryId。
+ */
 import { useQuery } from '@tanstack/react-query';
 
 import {

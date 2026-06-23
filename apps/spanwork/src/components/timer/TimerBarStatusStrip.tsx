@@ -26,20 +26,20 @@ export function TimerBarStatusStrip() {
   return (
     <div
       className={cn(
-        'timer-bar-status-strip shrink-0 overflow-hidden transition-[height,opacity] duration-300 ease-in-out',
-        isVisible ? 'h-7 opacity-100' : 'h-0 opacity-0',
+        'timer-bar-status-strip shrink-0 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out',
+        isVisible ? 'max-h-32 opacity-100 md:max-h-7' : 'max-h-0 opacity-0',
       )}
       role="status"
       aria-live="polite"
     >
       <div
         className={cn(
-          'timer-bar-surface timer-bar-surface-minimized relative h-7 overflow-hidden px-4',
+          'timer-bar-surface timer-bar-surface-minimized relative overflow-hidden px-4 md:h-7 md:min-h-0 md:pt-0',
           isPaused && 'timer-bar-surface--paused',
         )}
       >
-        <div className="relative z-[2] flex h-full items-center px-safe">
-          <div className="flex w-full min-w-0 items-center justify-center gap-1.5 overflow-x-auto text-xs sm:gap-2">
+        <div className="relative z-[2] flex min-h-9 min-w-0 w-full items-center overflow-hidden px-safe md:min-h-0 md:h-full">
+          <div className="flex w-full min-w-0 items-center justify-center gap-1.5 overflow-x-hidden pr-8 text-xs sm:gap-2 md:pr-0">
             <Timer
               className={cn(
                 'size-3.5 shrink-0',
@@ -76,7 +76,7 @@ export function TimerBarStatusStrip() {
             variant="ghost"
             size="icon"
             className={cn(
-              'absolute right-0 top-1/2 size-5 -translate-y-1/2 hover:bg-primary/10',
+              'absolute right-0 top-1/2 size-7 -translate-y-1/2 hover:bg-primary/10 md:size-5',
               isPaused
                 ? 'text-amber-700/80 hover:text-amber-800 dark:text-amber-300'
                 : 'text-primary/80 hover:text-primary',

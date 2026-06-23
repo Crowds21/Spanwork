@@ -4,7 +4,7 @@
  * - createRoot：把 React 组件树挂载到 index.html 的 #root DOM 节点
  * - QueryClientProvider：全局注入 TanStack Query 客户端（带缓存的异步数据层）
  * - RouterProvider：前端路由，根据 URL 渲染对应页面组件
- * - StrictMode：开发模式下双重渲染，帮助发现副作用问题
+ * - initSafeAreaInsets：iOS WebView 下探测 safe-area-inset，供 TimerBar / AppShell 使用
  */
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -12,8 +12,11 @@ import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@ta
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 
 import { queryKeyLabel, reportAppError } from '@/lib/status/appStatus';
+import { initSafeAreaInsets } from '@/lib/safeArea';
 import { routeTree } from './routeTree.gen';
 import './styles.css';
+
+initSafeAreaInsets();
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({

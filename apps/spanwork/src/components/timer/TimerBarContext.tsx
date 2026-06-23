@@ -1,5 +1,7 @@
 /**
- * 计时顶栏共享状态：activeTimer 查询、秒级 tick、展开/收缩 UI、入场退场
+ * 计时顶栏 Context（TimerBarProvider / useTimerBar）
+ *
+ * 轮询 activeTimer、计算 elapsed、管理展开/收缩与入场动画；子组件 Expanded/Strip 使用 px-safe 适配 iOS。
  */
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';

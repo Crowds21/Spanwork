@@ -1,4 +1,8 @@
-/** 项目分类 IPC 封装 */
+/**
+ * 项目分类 CRUD IPC 封装（project_category_* commands）
+ *
+ * 供 ProjectCategoriesPage 与 CategorySelect 下拉使用。
+ */
 import type {
   CreateProjectCategoryInput,
   ProjectCategoryDto,

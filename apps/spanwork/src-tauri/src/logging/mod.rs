@@ -1,3 +1,6 @@
+//! 文件日志器 FileLogger：写入 app data/logs/spanwork.log，超限自动轮转。
+//! 提供 write / read_tail / info，供 lib setup 与 log IPC 使用。
+
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};

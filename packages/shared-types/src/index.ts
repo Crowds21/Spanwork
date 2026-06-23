@@ -1,3 +1,8 @@
+/**
+ * Spanwork 前后端共享 DTO 与类型定义
+ *
+ * Rust serde 与 TypeScript 共用同一份契约；IPC 入参/出参、React Query 缓存类型均由此导出。
+ */
 export type ProjectType = 'task' | 'habit';
 export type ProjectStatus = 'active' | 'archived' | 'completed';
 export type Platform = 'macos' | 'windows' | 'ios' | 'android' | 'linux' | 'unknown';

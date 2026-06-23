@@ -1,3 +1,7 @@
+//! 统一错误类型 `AppError` 及序列化给前端的 `ErrorBody`。
+//! 提供校验函数、UUID v7 ID 生成、毫秒时间戳与平台/设备名探测等通用工具。
+//! 依赖 serde、thiserror、rusqlite。
+
 use serde::Serialize;
 use thiserror::Error;
 

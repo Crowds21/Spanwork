@@ -1,8 +1,7 @@
 /**
- * 任务行计时控件
+ * 任务行计时控件（TaskTimerControls / TimerButton）
  *
- * TimerButton：开始计时（useMutation → setQueryData 乐观更新顶栏）
- * TaskTimerControls：计时中时显示暂停/完成/取消，仅当前任务行渲染
+ * 未计时时显示开始按钮（乐观 setQueryData）；当前任务活跃时渲染 TimerSessionControls。
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Play } from 'lucide-react';

@@ -1,6 +1,7 @@
 /**
- * 项目面板：CreateProjectForm（新建）+ ProjectList（列表卡片）
- * mutation 成功后 invalidateQueries 刷新 projects 缓存
+ * 项目面板：CreateProjectForm + ProjectList
+ *
+ * 新建/列表卡片的 mutation 成功后 invalidate queryKeys.projects；CategorySelect 绑定分类。
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';

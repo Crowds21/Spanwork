@@ -1,7 +1,7 @@
 /**
- * 计时栏「查看项目」后的任务定位（跨页面滚动高亮）
+ * 计时栏「查看任务」后的跨页任务定位（timerFocus）
  *
- * 模块级 pendingTaskId：路由跳转时 TaskTree 尚未挂载，先暂存意图再消费
+ * pendingTaskId 暂存意图：路由跳转时 TaskTree 尚未挂载，挂载后 consume 并滚动高亮。
  */
 let pendingTaskId: string | null = null;
 

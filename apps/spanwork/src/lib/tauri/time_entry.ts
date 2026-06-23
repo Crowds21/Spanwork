@@ -1,4 +1,8 @@
-/** 时间记录（手动补录）IPC 封装 */
+/**
+ * 时间记录 IPC 封装（time_entry_* commands）
+ *
+ * 含计时器自动写入与 TimeEntryForm 手动补录；list 可按 taskId / 日期范围筛选。
+ */
 import type {
   CreateTimeEntryInput,
   TimeEntryDto,

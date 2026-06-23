@@ -1,3 +1,6 @@
+//! 任务记时与计时器启动资格判定（里程碑容器、已完成任务等边界规则）。
+//! 空根里程碑可计时，有子任务的根里程碑仅作容器；Done 状态禁止启动计时器。
+
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::dto::{TaskStatus, TimeTargetType};

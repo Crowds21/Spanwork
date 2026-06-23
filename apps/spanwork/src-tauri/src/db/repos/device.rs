@@ -1,3 +1,6 @@
+//! device_config 表读写：设备 ID、名称与平台信息。
+//! 单例记录（id = 1），由 pool 首次初始化时创建，供 device IPC 使用。
+
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::dto::DeviceDto;

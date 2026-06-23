@@ -1,4 +1,8 @@
-/** 产品里程碑（Milestone）IPC 封装 */
+/**
+ * 产品里程碑 IPC 封装（milestone_* commands）
+ *
+ * 里程碑可关联任务或习惯 occurrence；与任务树中的 isMilestone 节点配合展示。
+ */
 import type {
   CreateMilestoneInput,
   MilestoneDto,

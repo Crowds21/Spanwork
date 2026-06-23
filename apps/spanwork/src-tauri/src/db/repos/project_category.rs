@@ -1,3 +1,6 @@
+//! project_categories 表 CRUD 与排序，列表附带关联项目计数。
+//! 删除分类时解除 projects.category_id，名称唯一性校验在 error 模块。
+
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::dto::{

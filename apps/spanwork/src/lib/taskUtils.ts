@@ -1,3 +1,9 @@
+/**
+ * 任务业务规则与项目视图辅助（纯函数，无 IPC）
+ *
+ * 判定任务是否可计时/补录、看板可展示性、按状态筛选树节点；
+ * ProjectViewMode 读写 localStorage，供项目详情页切换列表/看板/日历。
+ */
 import type { TaskDto, TaskStatus } from '@spanwork/shared-types';
 
 /** 是否允许补录时间（有子任务的里程碑根任务不可） */

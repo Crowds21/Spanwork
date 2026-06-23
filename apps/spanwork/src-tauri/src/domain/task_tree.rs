@@ -1,3 +1,6 @@
+//! 任务树深度校验（MAX_TASK_DEPTH = 1）与级联软删除。
+//! 递归计算 depth、检测循环引用，create/update/delete 时由 task repo 调用。
+
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::error::{AppError, AppResult, now_ms};
