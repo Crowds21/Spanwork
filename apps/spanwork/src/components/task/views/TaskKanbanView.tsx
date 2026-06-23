@@ -73,7 +73,7 @@ export function TaskKanbanView({ projectId }: TaskKanbanViewProps) {
             >
               <div className="flex items-center gap-2 border-b px-3 py-2.5">
                 <span className={cn('size-2 rounded-full', meta.dot)} />
-                <span className="text-sm font-semibold">{meta.label}</span>
+                <span className="text-sm font-medium">{meta.label}</span>
                 <Badge variant="secondary" className="ml-auto">
                   {columnTasks.length}
                 </Badge>

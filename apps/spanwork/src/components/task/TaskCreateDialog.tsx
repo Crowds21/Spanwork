@@ -20,6 +20,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tooltip } from '@/components/ui/tooltip';
+import {
+  TaskBehaviorDesignFields,
+  emptyTaskBehaviorDesignState,
+  taskBehaviorDesignPatchFromForm,
+  type TaskBehaviorDesignFormState,
+} from '@/components/task/TaskBehaviorDesignFields';
 import { createTask, updateTask } from '@/lib/tauri/task';
 import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
@@ -45,23 +51,30 @@ export function TaskCreateDialog({
   const isSubtask = Boolean(parentId);
   const [title, setTitle] = useState('');
   const [isMilestone, setIsMilestone] = useState(false);
+  const [behaviorDesign, setBehaviorDesign] = useState<TaskBehaviorDesignFormState>(
+    emptyTaskBehaviorDesignState(),
+  );
 
   useEffect(() => {
     if (!open) {
       setTitle('');
       setIsMilestone(false);
+      setBehaviorDesign(emptyTaskBehaviorDesignState());
     }
   }, [open]);
 
   const mutation = useMutation({
-    mutationFn: () =>
-      createTask({
+    mutationFn: () => {
+      const behaviorPatch = taskBehaviorDesignPatchFromForm(behaviorDesign);
+      return createTask({
         projectId,
         parentId,
         title: title.trim(),
-        dueDate: defaultDueDate,
         isMilestone: isSubtask ? false : isMilestone,
-      }),
+        ...behaviorPatch,
+        dueDate: behaviorPatch.dueDate ?? defaultDueDate,
+      });
+    },
     meta: { errorSource: isSubtask ? '添加子任务' : '添加任务' },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
@@ -127,6 +140,10 @@ export function TaskCreateDialog({
                 </span>
               </label>
             )}
+            <TaskBehaviorDesignFields
+              state={behaviorDesign}
+              onChange={(patch) => setBehaviorDesign((prev) => ({ ...prev, ...patch }))}
+            />
           </CardContent>
           <CardFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -234,10 +251,7 @@ export function TaskAddSubtaskTrigger({
           type="button"
           size="icon"
           variant="ghost"
-          className={cn(
-            'size-8 rounded-lg text-muted-foreground/45 shadow-none hover:bg-muted/40 hover:text-muted-foreground',
-            className,
-          )}
+          className={cn('size-8 shrink-0', className)}
           onClick={handleClick}
           aria-label="添加子任务"
         >

@@ -72,8 +72,11 @@ pub fn get_detail(conn: &Connection, id: &str) -> AppResult<ProjectDetailDto> {
         |row| row.get(0),
     )?;
     let total_time_seconds: i64 = conn.query_row(
-        "SELECT COALESCE(SUM(duration_seconds), 0) FROM time_entries
-         WHERE project_id = ?1 AND deleted_at IS NULL",
+        &format!(
+            "SELECT COALESCE(SUM(duration_seconds), 0) FROM time_entries
+             WHERE project_id = ?1 AND deleted_at IS NULL{}",
+            crate::db::repos::time_entry::visible_habit_target_sql("time_entries")
+        ),
         [id],
         |row| row.get(0),
     )?;

@@ -4,7 +4,7 @@
 import type { HabitRuleDto } from '@spanwork/shared-types';
 
 import { Badge } from '@/components/ui/badge';
-import { formatFrequencyLabel } from '@/lib/habitUtils';
+import { formatFrequencyLabel, formatFrequencyLabelVerbose } from '@/lib/habitUtils';
 
 interface HabitFrequencyBadgeProps {
   rule: Pick<
@@ -14,9 +14,17 @@ interface HabitFrequencyBadgeProps {
 }
 
 export function HabitFrequencyBadge({ rule }: HabitFrequencyBadgeProps) {
+  const label = formatFrequencyLabel(rule);
+  const detail = formatFrequencyLabelVerbose(rule);
+
   return (
-    <Badge variant="secondary" className="shrink-0 font-normal">
-      {formatFrequencyLabel(rule)}
+    <Badge
+      variant="secondary"
+      className="max-w-[10rem] shrink-0 truncate font-normal"
+      title={detail !== label ? detail : undefined}
+      aria-label={detail}
+    >
+      {label}
     </Badge>
   );
 }

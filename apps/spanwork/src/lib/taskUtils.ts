@@ -22,13 +22,6 @@ export function canStartTimer(
   return isManualTimeEntryAllowed(task) && task.status !== 'done';
 }
 
-/** @deprecated 使用 isManualTimeEntryAllowed / canStartTimer */
-export function isTimeTrackable(
-  task: Pick<TaskDto, 'isMilestone' | 'parentId' | 'timeTrackable'>,
-): boolean {
-  return isManualTimeEntryAllowed(task);
-}
-
 /** 看板展示的可执行任务（排除有子任务的里程碑根任务） */
 export function isTrackableTask(task: TaskDto): boolean {
   return isManualTimeEntryAllowed(task);

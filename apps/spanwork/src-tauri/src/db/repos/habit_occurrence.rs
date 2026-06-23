@@ -190,6 +190,7 @@ pub fn summarize_range(
                 COUNT(*)
          FROM habit_occurrences ho
          INNER JOIN projects p ON p.id = ho.project_id AND p.deleted_at IS NULL
+         INNER JOIN habit_rules hr ON hr.id = ho.rule_id AND hr.deleted_at IS NULL
          WHERE ho.deleted_at IS NULL AND ho.scheduled_date >= ?1 AND ho.scheduled_date <= ?2",
     );
     let mut bind_values: Vec<Box<dyn rusqlite::types::ToSql>> = vec![

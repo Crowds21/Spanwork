@@ -72,6 +72,7 @@ import {
   validateHabitTaskForm,
   type HabitTaskFormErrors,
 } from '@/lib/habitTaskValidation';
+import { invalidateAfterHabitRuleChange } from '@/queries/invalidate';
 import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
 
@@ -272,13 +273,7 @@ export function HabitTaskDialog({
         const weekFrom = getWeekRange(today).from;
         await ensureHabitOccurrences({ fromDate: weekFrom, toDate: addDays(today, 90) });
       }
-      queryClient.invalidateQueries({ queryKey: queryKeys.habitRules(projectId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.habitOccurrences(projectId) });
-      queryClient.invalidateQueries({ queryKey: ['calendar-day'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.todayDashboard });
-      if (rule) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.habitStreak(rule.id) });
-      }
+      invalidateAfterHabitRuleChange(queryClient, projectId, rule?.id);
       onOpenChange(false);
     },
   });
@@ -289,8 +284,8 @@ export function HabitTaskDialog({
       onOpenChange={onOpenChange}
       contentClassName={
         isEdit
-          ? 'flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden sm:min-h-[36rem]'
-          : 'sm:max-w-lg'
+          ? 'flex w-full max-h-[92dvh] flex-col overflow-hidden sm:max-w-4xl sm:min-h-[36rem]'
+          : 'w-full sm:max-w-lg'
       }
     >
       <Card className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden rounded-t-2xl border-0 py-0 shadow-lg sm:rounded-2xl sm:border">

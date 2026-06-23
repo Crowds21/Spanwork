@@ -44,6 +44,10 @@ export function addMonths(dateKey: string, delta: number): { year: number; month
   return { year: date.getFullYear(), month: date.getMonth() };
 }
 
+export function monthAnchorDateKey(dateKey: string): string {
+  return `${dateKey.slice(0, 7)}-01`;
+}
+
 export function monthRangeKeys(year: number, month: number): { from: string; to: string } {
   const from = toDateKey(year, month, 1);
   const lastDay = new Date(year, month + 1, 0).getDate();
@@ -55,25 +59,25 @@ export function buildMonthGrid(year: number, month: number) {
   const firstDay = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startOffset = (firstDay.getDay() + 6) % 7;
-  const cells: Array<{ day: number | null; dateKey?: string; inMonth: boolean }> = [];
+  const cells: Array<{ index: number; day: number | null; dateKey?: string; inMonth: boolean }> = [];
 
   const prevMonthLast = new Date(year, month, 0).getDate();
   for (let i = startOffset - 1; i >= 0; i -= 1) {
     const day = prevMonthLast - i;
     const pm = month === 0 ? 11 : month - 1;
     const py = month === 0 ? year - 1 : year;
-    cells.push({ day, dateKey: toDateKey(py, pm, day), inMonth: false });
+    cells.push({ index: cells.length, day, dateKey: toDateKey(py, pm, day), inMonth: false });
   }
 
   for (let day = 1; day <= daysInMonth; day += 1) {
-    cells.push({ day, dateKey: toDateKey(year, month, day), inMonth: true });
+    cells.push({ index: cells.length, day, dateKey: toDateKey(year, month, day), inMonth: true });
   }
 
   let nextDay = 1;
   while (cells.length % 7 !== 0) {
     const nm = month === 11 ? 0 : month + 1;
     const ny = month === 11 ? year + 1 : year;
-    cells.push({ day: nextDay, dateKey: toDateKey(ny, nm, nextDay), inMonth: false });
+    cells.push({ index: cells.length, day: nextDay, dateKey: toDateKey(ny, nm, nextDay), inMonth: false });
     nextDay += 1;
   }
 

@@ -4,7 +4,7 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarDayAgenda } from '@/components/calendar/CalendarDayAgenda';
 import { CalendarDayTimeline } from '@/components/calendar/CalendarDayTimeline';
-import { useCalendarDay } from '@/components/calendar/useCalendarDay';
+import { useCalendarDay } from '@/hooks/useCalendarDay';
 
 interface CalendarDayViewProps {
   dateKey: string;
@@ -32,8 +32,7 @@ export function CalendarDayView({ dateKey, projectId }: CalendarDayViewProps) {
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-muted-foreground">时间轴</h3>
         <CalendarDayTimeline
-          dateKey={dateKey}
-          timeBlocks={day.timeBlocks}
+          timeBlocks={day.timeBlocks ?? []}
           activeTimer={day.activeTimer}
         />
       </div>

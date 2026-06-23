@@ -1,7 +1,7 @@
 /**
  * 习惯任务周期进度条（本周 / 本月 / 本年）
  */
-import { formatFrequencyLabel, getProgressPeriod } from '@/lib/habitUtils';
+import { formatFrequencyLabelVerbose, getProgressPeriod } from '@/lib/habitUtils';
 import type { HabitRuleDto } from '@spanwork/shared-types';
 import { cn } from '@/lib/utils';
 
@@ -27,7 +27,7 @@ export function HabitWeekProgress({
         <span>
           {period.label} {done}/{total}
         </span>
-        <span className="sr-only">{formatFrequencyLabel(rule)}</span>
+        <span className="sr-only">{formatFrequencyLabelVerbose(rule)}</span>
         {total > 0 && <span>{pct}%</span>}
       </div>
       <div

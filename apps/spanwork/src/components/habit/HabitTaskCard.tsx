@@ -1,7 +1,7 @@
 /**
  * 单条习惯任务进展卡片
  */
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
   AlertCircle,
@@ -13,8 +13,8 @@ import {
   Flame,
   MinusCircle,
   MoreHorizontal,
-  Pencil,
   Play,
+  PencilLine,
   SkipForward,
   Trash2,
 } from 'lucide-react';
@@ -31,8 +31,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Tooltip } from '@/components/ui/tooltip';
+import { useHabitOccurrenceActions } from '@/hooks/useHabitOccurrenceActions';
 import { formatDuration } from '@/lib/format';
-import { celebrateHabitCompletion } from '@/lib/habitCelebration';
 import {
   canManualHabitTimeEntry,
   canStartHabitTimer,
@@ -51,8 +51,7 @@ import {
 import { todayDateKey } from '@/lib/calendarUtils';
 import { habitRuleElementId } from '@/lib/timer/timerFocus';
 import { isTauri } from '@/lib/tauri/env';
-import { getHabitStreak, updateHabitOccurrence } from '@/lib/tauri/habit';
-import { getActiveTimer, startTimer } from '@/lib/tauri/timer';
+import { getHabitStreak } from '@/lib/tauri/habit';
 import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
 
@@ -114,10 +113,26 @@ export function HabitTaskCard({
     enabled: inTauri,
   });
 
-  const timerQuery = useQuery({
-    queryKey: queryKeys.activeTimer,
-    queryFn: getActiveTimer,
-    enabled: inTauri,
+  const {
+    activeTimer,
+    isTimingThis,
+    isTimingOther,
+    invalidate,
+    statusMutation,
+    startMutation,
+  } = useHabitOccurrenceActions({
+    projectId: project.id,
+    ruleId: rule.id,
+    occurrenceId: todayOcc?.id ?? '',
+    dateKey: today,
+    onInvalidate: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.timeEntries({
+          projectId: project.id,
+          targetType: 'habit_occurrence',
+        }),
+      });
+    },
   });
 
   const period = getProgressPeriod(rule);
@@ -125,18 +140,6 @@ export function HabitTaskCard({
   const totalSeconds = sumRuleTimeSeconds(historyOccurrences, rule.id);
   const lastDone = lastCompletedDate(historyOccurrences, rule.id);
   const streakLabel = formatStreakLabel(streakQuery.data?.currentStreak ?? 0, rule.frequency);
-
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.habitOccurrences(project.id) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.habitStreak(rule.id) });
-    queryClient.invalidateQueries({ queryKey: ['calendar-day'] });
-    queryClient.invalidateQueries({ queryKey: queryKeys.todayDashboard });
-    queryClient.invalidateQueries({ queryKey: queryKeys.activeTimer });
-    queryClient.invalidateQueries({ queryKey: queryKeys.project(project.id) });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.timeEntries({ projectId: project.id, targetType: 'habit_occurrence' }),
-    });
-  };
 
   useLayoutEffect(() => {
     if (!menuOpen || !menuButtonRef.current) {
@@ -151,38 +154,6 @@ export function HabitTaskCard({
     });
   }, [menuOpen]);
 
-  const statusMutation = useMutation({
-    mutationFn: (status: HabitOccurrenceDto['status']) =>
-      updateHabitOccurrence({ id: todayOcc!.id, patch: { status } }),
-    meta: { errorSource: '更新习惯' },
-    onSuccess: async (_data, status) => {
-      invalidate();
-      if (status === 'done') {
-        await celebrateHabitCompletion(rule.id);
-      }
-    },
-  });
-
-  const startMutation = useMutation({
-    mutationFn: () =>
-      startTimer({
-        projectId: project.id,
-        targetType: 'habit_occurrence',
-        targetId: todayOcc!.id,
-      }),
-    meta: { errorSource: '开始计时' },
-    onSuccess: (data) => {
-      queryClient.setQueryData(queryKeys.activeTimer, data);
-      invalidate();
-    },
-  });
-
-  const activeTimer = timerQuery.data;
-  const isTimingThis =
-    todayOcc != null &&
-    activeTimer?.targetType === 'habit_occurrence' &&
-    activeTimer.targetId === todayOcc.id;
-  const isTimingOther = Boolean(activeTimer && !isTimingThis);
   const canAct = !readOnly && todayOcc && canUpdateHabitCheckIn(todayOcc);
   const canStartTimer = !readOnly && todayOcc && canStartHabitTimer(todayOcc);
   const canManualEntry = !readOnly && todayOcc && canManualHabitTimeEntry(todayOcc);
@@ -309,16 +280,16 @@ export function HabitTaskCard({
                         </Button>
                       </Tooltip>
                     )}
-                    <Tooltip label="编辑" side="bottom">
+                    <Tooltip label="查看详情" side="bottom">
                       <Button
                         type="button"
                         size="icon"
                         variant="ghost"
                         className={iconBtnClass}
                         onClick={onEdit}
-                        aria-label="编辑"
+                        aria-label="查看详情"
                       >
-                        <Pencil className="size-4" />
+                        <PencilLine className="size-4" />
                       </Button>
                     </Tooltip>
                   </>

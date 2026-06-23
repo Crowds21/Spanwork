@@ -22,9 +22,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TaskStatusSelect } from '@/components/task/TaskStatusSelect';
+import {
+  TaskBehaviorDesignFields,
+  taskBehaviorDesignFromTask,
+  taskBehaviorDesignPatchFromForm,
+  type TaskBehaviorDesignFormState,
+} from '@/components/task/TaskBehaviorDesignFields';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Textarea } from '@/components/ui/textarea';
 import { Tooltip } from '@/components/ui/tooltip';
 import {
   formatDateTime,
@@ -59,9 +64,10 @@ export function TaskDetailDialog({
   const inTauri = isTauri();
 
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
   const [status, setStatus] = useState<TaskStatus>('todo');
-  const [dueDate, setDueDate] = useState('');
+  const [behaviorDesign, setBehaviorDesign] = useState<TaskBehaviorDesignFormState>(
+    taskBehaviorDesignFromTask(),
+  );
   const [isMilestone, setIsMilestone] = useState(false);
   const [recordsOpen, setRecordsOpen] = useState(true);
   const [recordsPage, setRecordsPage] = useState(0);
@@ -110,9 +116,8 @@ export function TaskDetailDialog({
   useEffect(() => {
     if (!task) return;
     setTitle(task.title);
-    setDescription(task.description ?? '');
     setStatus(task.status);
-    setDueDate(task.dueDate ?? '');
+    setBehaviorDesign(taskBehaviorDesignFromTask(task));
     setIsMilestone(task.isMilestone);
   }, [task]);
 
@@ -141,10 +146,8 @@ export function TaskDetailDialog({
       const patch: UpdateTaskInput = {
         title: title.trim(),
         status,
+        ...taskBehaviorDesignPatchFromForm(behaviorDesign),
       };
-      const desc = description.trim();
-      if (desc) patch.description = desc;
-      if (dueDate) patch.dueDate = dueDate;
       if (canToggleMilestone) patch.isMilestone = isMilestone;
       return updateTask(taskId, patch);
     },
@@ -161,7 +164,11 @@ export function TaskDetailDialog({
   const canSave = title.trim().length > 0 && !saveMutation.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} contentClassName="max-w-3xl">
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      contentClassName="flex w-full max-h-[92dvh] flex-col overflow-hidden sm:max-w-4xl"
+    >
       <Card className="max-h-[85vh] gap-0 overflow-hidden py-0 shadow-lg">
         <CardHeader className="py-6">
           <CardTitle>任务详情</CardTitle>
@@ -215,30 +222,14 @@ export function TaskDetailDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="task-detail-description">描述</Label>
-                  <Textarea
-                    id="task-detail-description"
-                    rows={3}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="任务说明（可选）"
-                  />
+                  <Label>状态</Label>
+                  <TaskStatusSelect value={status} onValueChange={setStatus} className="w-full sm:w-auto" />
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>状态</Label>
-                    <TaskStatusSelect value={status} onValueChange={setStatus} className="w-full" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="task-detail-due">截止日期</Label>
-                    <Input
-                      id="task-detail-due"
-                      type="date"
-                      value={dueDate}
-                      onChange={(e) => setDueDate(e.target.value)}
-                    />
-                  </div>
-                </div>
+
+                <TaskBehaviorDesignFields
+                  state={behaviorDesign}
+                  onChange={(patch) => setBehaviorDesign((prev) => ({ ...prev, ...patch }))}
+                />
 
                 <label
                   className={cn(

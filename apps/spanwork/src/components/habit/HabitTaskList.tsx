@@ -22,6 +22,7 @@ import {
 } from '@/lib/tauri/habit';
 import { isTauri } from '@/lib/tauri/env';
 import { attemptTimerFocus, consumeTimerFocus } from '@/lib/timer/timerFocus';
+import { invalidateAfterHabitRuleChange } from '@/queries/invalidate';
 import { queryKeys } from '@/queries/keys';
 
 interface HabitTaskListProps {
@@ -81,10 +82,7 @@ export function HabitTaskList({ project, readOnly }: HabitTaskListProps) {
     mutationFn: (ruleId: string) => deleteHabitRule(ruleId),
     meta: { errorSource: '删除习惯任务' },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.habitRules(project.id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.habitOccurrences(project.id) });
-      queryClient.invalidateQueries({ queryKey: ['calendar-day'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.todayDashboard });
+      invalidateAfterHabitRuleChange(queryClient, project.id);
     },
   });
 

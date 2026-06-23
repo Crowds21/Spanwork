@@ -83,7 +83,7 @@ export function HabitProjectDetail({
           </Button>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{project.name}</h1>
-            <Badge variant="secondary">习惯式</Badge>
+            <Badge variant="habit">习惯式</Badge>
             {readOnly && <Badge variant="outline">已归档</Badge>}
             {project.categoryName && (
               <Badge variant="outline" className="gap-1.5">

@@ -1,5 +1,5 @@
 /**
- * 完成打卡时的鼓励文案（Sonner promise toast）
+ * 完成打卡时的鼓励文案（Sonner success toast）
  */
 import { toast } from 'sonner';
 
@@ -7,8 +7,13 @@ import { getLocale, type Locale } from '@/lib/i18n';
 import { pickRandomEncouragement } from '@/lib/i18n/encouragement';
 import { getHabitStreak } from '@/lib/tauri/habit';
 
-const CELEBRATION_LOADING_MS = 5000;
 const CELEBRATION_SUCCESS_MS = 5000;
+
+const CELEBRATION_TOAST_CLASS_NAMES = {
+  toast: 'justify-center !w-auto max-w-sm [&_[data-content]]:items-center',
+  title: 'text-center',
+  description: 'text-center',
+} as const;
 
 const STREAK_MILESTONES: Record<Locale, Record<number, string>> = {
   'zh-CN': {
@@ -32,19 +37,18 @@ const COMPLETION_TITLES: Record<Locale, string> = {
   'en-US': 'Habit completed',
 };
 
-const ERROR_MESSAGES: Record<Locale, string> = {
-  'zh-CN': '打卡提示加载失败',
-  'en-US': 'Could not show celebration',
-};
-
 interface CelebrationContent {
   title: string;
   message: string;
 }
 
-function wait(ms: number) {
-  return new Promise<void>((resolve) => {
-    window.setTimeout(resolve, ms);
+export function showCompletionToast(title: string, message: string): void {
+  toast.success(title, {
+    description: message,
+    duration: CELEBRATION_SUCCESS_MS,
+    closeButton: false,
+    style: { width: 'auto' },
+    classNames: CELEBRATION_TOAST_CLASS_NAMES,
   });
 }
 
@@ -71,14 +75,5 @@ async function fetchCelebrationContent(ruleId: string, locale: Locale): Promise<
 export async function celebrateHabitCompletion(ruleId: string): Promise<void> {
   const locale = getLocale();
   const content = await fetchCelebrationContent(ruleId, locale);
-
-  toast.promise(wait(CELEBRATION_LOADING_MS).then(() => content), {
-    loading: content.message,
-    success: (data) => ({
-      message: data.title,
-      description: data.message,
-      duration: CELEBRATION_SUCCESS_MS,
-    }),
-    error: ERROR_MESSAGES[locale] ?? ERROR_MESSAGES['zh-CN'],
-  });
+  showCompletionToast(content.title, content.message);
 }

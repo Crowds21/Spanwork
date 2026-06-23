@@ -1,5 +1,6 @@
 //! time_entries 表 CRUD、列表筛选与当日时长汇总。
 //! 提供 create_from_timer 供 timer 模块停止计时时写入，支持手动与计时两种 source。
+//! habit_occurrence 类记录在读取时过滤已删 rule/occurrence（time entry 本身保留）。
 
 use rusqlite::{Connection, OptionalExtension};
 
@@ -8,6 +9,20 @@ use crate::dto::{
     TimeTargetType, UpdateTimeEntryInput,
 };
 use crate::error::{new_id, now_ms, AppError, AppResult};
+
+/// habit_occurrence 目标仅当 occurrence 与 rule 均未软删时可见；task 目标不受影响。
+pub fn visible_habit_target_sql(alias: &str) -> String {
+    format!(
+        " AND (
+          {alias}.target_type != 'habit_occurrence'
+          OR EXISTS (
+            SELECT 1 FROM habit_occurrences ho
+            INNER JOIN habit_rules hr ON hr.id = ho.rule_id AND hr.deleted_at IS NULL
+            WHERE ho.id = {alias}.target_id AND ho.deleted_at IS NULL
+          )
+        )"
+    )
+}
 
 pub fn list(conn: &Connection, params: &TimeEntryListParams) -> AppResult<Vec<TimeEntryDto>> {
     let limit = params.limit.unwrap_or(100);
@@ -19,6 +34,7 @@ pub fn list(conn: &Connection, params: &TimeEntryListParams) -> AppResult<Vec<Ti
          FROM time_entries
          WHERE deleted_at IS NULL",
     );
+    sql.push_str(&visible_habit_target_sql("time_entries"));
     let mut bind_values: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
 
     if let Some(project_id) = &params.project_id {
@@ -204,24 +220,24 @@ pub fn delete(conn: &Connection, id: &str) -> AppResult<()> {
 }
 
 pub fn sum_for_target(conn: &Connection, target_type: TimeTargetType, target_id: &str) -> AppResult<i64> {
-    conn.query_row(
+    let mut sql = String::from(
         "SELECT COALESCE(SUM(duration_seconds), 0) FROM time_entries
          WHERE target_type = ?1 AND target_id = ?2 AND deleted_at IS NULL",
-        rusqlite::params![target_type_to_str(target_type), target_id],
-        |row| row.get(0),
-    )
-    .map_err(Into::into)
+    );
+    sql.push_str(&visible_habit_target_sql("time_entries"));
+    conn.query_row(&sql, rusqlite::params![target_type_to_str(target_type), target_id], |row| row.get(0))
+        .map_err(Into::into)
 }
 
 pub fn sum_today(conn: &Connection, day_start_ms: i64, day_end_ms: i64) -> AppResult<i64> {
-    conn.query_row(
+    let sql = format!(
         "SELECT COALESCE(SUM(te.duration_seconds), 0) FROM time_entries te
          INNER JOIN projects p ON p.id = te.project_id AND p.deleted_at IS NULL
-         WHERE te.deleted_at IS NULL AND te.start_at >= ?1 AND te.start_at < ?2",
-        rusqlite::params![day_start_ms, day_end_ms],
-        |row| row.get(0),
-    )
-    .map_err(Into::into)
+         WHERE te.deleted_at IS NULL AND te.start_at >= ?1 AND te.start_at < ?2{}",
+        visible_habit_target_sql("te")
+    );
+    conn.query_row(&sql, rusqlite::params![day_start_ms, day_end_ms], |row| row.get(0))
+        .map_err(Into::into)
 }
 
 pub fn resolve_create_time_entry(input: &CreateTimeEntryInput) -> AppResult<(i64, Option<i64>, i64)> {
@@ -291,6 +307,7 @@ pub fn list_for_day(
          INNER JOIN projects p ON p.id = te.project_id AND p.deleted_at IS NULL
          WHERE te.deleted_at IS NULL AND te.start_at >= ?1 AND te.start_at < ?2",
     );
+    sql.push_str(&visible_habit_target_sql("te"));
     let mut bind_values: Vec<Box<dyn rusqlite::types::ToSql>> = vec![
         Box::new(day_start_ms),
         Box::new(day_end_ms),

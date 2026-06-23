@@ -1,30 +1,27 @@
 /**
  * 任务树：扁平任务 → 父子树形展示，含计时/补录/状态操作
  *
- * buildTree + 递归 TaskRow；消费 timerFocus 实现跨页滚动高亮；支持状态筛选与展开折叠。
+ * buildTaskTree + 递归 TaskRow；消费 timerFocus 实现跨页滚动高亮；支持状态筛选与展开折叠。
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronRight, ClockPlus, Flag, ScrollText, Trash2 } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import type { TaskDto, TaskStatus } from '@spanwork/shared-types';
 
-import { TaskAddSubtaskTrigger, TaskCreateTrigger } from '@/components/task/TaskCreateDialog';
+import { TaskCreateTrigger } from '@/components/task/TaskCreateDialog';
 import { TaskDetailDialog } from '@/components/task/TaskDetailDialog';
-import { TaskStatusSelect } from '@/components/task/TaskStatusSelect';
-import { taskRowActionStyles } from '@/components/task/taskRowActionStyles';
-import { Badge } from '@/components/ui/badge';
+import { TaskTaskCard } from '@/components/task/TaskTaskCard';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tooltip } from '@/components/ui/tooltip';
 import { TimeEntryForm } from '@/components/timer/TimeEntryForm';
-import { TaskTimerControls, TimerButton } from '@/components/timer/TimerBar';
-import { formatDuration, TASK_STATUSES, taskStatusMeta } from '@/lib/format';
+import { TASK_STATUSES, taskStatusMeta } from '@/lib/format';
+import { buildTaskTree } from '@/lib/taskTree';
 import {
   filterTasksForTree,
   isManualTimeEntryAllowed,
   canStartTimer,
   type TaskStatusFilter,
 } from '@/lib/taskUtils';
+import { celebrateTaskCompletion } from '@/lib/taskCelebration';
 import { deleteTask, listTasks, updateTask } from '@/lib/tauri/task';
 import { consumeTimerFocus, scrollToTaskElement } from '@/lib/timer/timerFocus';
 import { queryKeys } from '@/queries/keys';
@@ -32,20 +29,6 @@ import { cn } from '@/lib/utils';
 
 interface TaskTreeProps {
   projectId: string;
-}
-
-function buildTree(tasks: TaskDto[]) {
-  const byParent = new Map<string | null, TaskDto[]>();
-  for (const task of tasks) {
-    const key = task.parentId ?? null;
-    const list = byParent.get(key) ?? [];
-    list.push(task);
-    byParent.set(key, list);
-  }
-  for (const list of byParent.values()) {
-    list.sort((a, b) => a.sortOrder - b.sortOrder);
-  }
-  return byParent;
 }
 
 function TaskRow({
@@ -67,14 +50,16 @@ function TaskRow({
   const canAddChild = depth === 0;
   const canManualEntry = isManualTimeEntryAllowed(task);
   const canTimer = canStartTimer(task);
-  const isMilestoneRoot = task.isMilestone && !task.parentId;
   const hasChildren = children.length > 0;
 
   const updateMutation = useMutation({
     mutationFn: (status: TaskStatus) => updateTask(task.id, { status }),
-    onSuccess: () => {
+    onSuccess: (_data, status) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.todayDashboard });
+      if (status === 'done') {
+        celebrateTaskCompletion(task);
+      }
     },
   });
 
@@ -87,108 +72,24 @@ function TaskRow({
   });
 
   return (
-    <li id={`task-${task.id}`} className="scroll-mt-24 space-y-2">
-      <div
-        className={cn(
-          'flex flex-col gap-3 rounded-lg border bg-card p-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2',
-          depth > 0 && 'ml-3 border-dashed sm:ml-6',
-        )}
-      >
-        <div className="flex min-w-0 items-start gap-2 sm:flex-1">
-          {children.length > 0 ? (
-            <button
-              type="button"
-              className="mt-0.5 text-muted-foreground hover:text-foreground"
-              onClick={() => setExpanded((v) => !v)}
-            >
-              {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-            </button>
-          ) : (
-            <span className="size-4 shrink-0" />
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-medium leading-snug">{task.title}</p>
-              {task.isMilestone && (
-                <Badge variant="secondary" className="gap-1">
-                  <Flag className="size-3" />
-                  里程碑
-                </Badge>
-              )}
-            </div>
-            {task.totalTimeSeconds != null && task.totalTimeSeconds > 0 && (
-              <p className="text-xs text-muted-foreground">
-                {isMilestoneRoot && hasChildren ? '子任务合计 ' : '已记录 '}
-                {formatDuration(task.totalTimeSeconds)}
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-        <TaskStatusSelect
-          value={task.status}
-          onValueChange={(status) => updateMutation.mutate(status)}
-        />
-        <div className="flex items-center gap-1.5 rounded-xl border border-border/60 bg-muted/20 p-1">
-          <Tooltip label="查看任务详情">
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className={taskRowActionStyles.detail}
-              onClick={() => setShowDetail(true)}
-              aria-label="查看任务详情"
-            >
-              <ScrollText className="size-4" />
-            </Button>
-          </Tooltip>
-          <TimerButton
-            projectId={projectId}
-            targetId={task.id}
-            startable={canTimer}
-            className={taskRowActionStyles.timer}
-          />
-          {canManualEntry && (
-            <Tooltip label="补录时间">
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className={cn(taskRowActionStyles.timeEntry, showTimeForm && 'ring-2 ring-amber-400/60')}
-                onClick={() => setShowTimeForm((v) => !v)}
-                aria-label="补录时间"
-              >
-                <ClockPlus className="size-4" />
-              </Button>
-            </Tooltip>
-          )}
-          {canAddChild && (
-            <TaskAddSubtaskTrigger
-              projectId={projectId}
-              parentId={task.id}
-              parentTitle={task.title}
-              isMilestone={task.isMilestone}
-            />
-          )}
-          <Tooltip label="删除任务">
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className={taskRowActionStyles.delete}
-              onClick={() => deleteMutation.mutate()}
-              disabled={deleteMutation.isPending}
-              aria-label="删除任务"
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          </Tooltip>
-        </div>
-        </div>
-      </div>
-      {canTimer && (
-        <TaskTimerControls projectId={projectId} taskId={task.id} className={depth > 0 ? 'ml-6' : undefined} />
-      )}
+    <li className="space-y-2">
+      <TaskTaskCard
+        task={task}
+        projectId={projectId}
+        depth={depth}
+        hasChildren={hasChildren}
+        expanded={expanded}
+        onToggleExpand={() => setExpanded((v) => !v)}
+        showTimeForm={showTimeForm}
+        onToggleTimeForm={() => setShowTimeForm((v) => !v)}
+        onOpenDetail={() => setShowDetail(true)}
+        onStatusChange={(status) => updateMutation.mutate(status)}
+        onDelete={(options) => deleteMutation.mutate(undefined, options)}
+        deletePending={deleteMutation.isPending}
+        canAddChild={canAddChild}
+        canManualEntry={canManualEntry}
+        canTimer={canTimer}
+      />
       <TaskDetailDialog
         taskId={task.id}
         projectId={projectId}
@@ -200,8 +101,8 @@ function TaskRow({
           <TimeEntryForm projectId={projectId} targetType="task" targetId={task.id} />
         </div>
       )}
-      {expanded && children.length > 0 && (
-        <ul className="space-y-2">
+      {expanded && hasChildren && (
+        <ul className={cn('space-y-2 border-l border-border/60 pl-3', depth > 0 && 'ml-3 sm:ml-6')}>
           {children.map((child) => (
             <TaskRow
               key={child.id}
@@ -229,7 +130,7 @@ export function TaskTree({ projectId }: TaskTreeProps) {
     () => filterTasksForTree(data ?? [], statusFilter),
     [data, statusFilter],
   );
-  const byParent = useMemo(() => buildTree(filteredTasks), [filteredTasks]);
+  const byParent = useMemo(() => buildTaskTree(filteredTasks), [filteredTasks]);
   const roots = byParent.get(null) ?? [];
 
   useEffect(() => {
@@ -247,9 +148,9 @@ export function TaskTree({ projectId }: TaskTreeProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-16 w-full rounded-lg" />
+          <Skeleton key={i} className="h-36 w-full rounded-xl" />
         ))}
       </div>
     );

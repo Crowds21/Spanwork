@@ -19,12 +19,14 @@ export function TimerButton({
   targetId,
   startable = true,
   disabled,
+  variant = 'default',
   className,
 }: {
   projectId: string;
   targetId: string;
   startable?: boolean;
   disabled?: boolean;
+  variant?: 'ghost' | 'default';
   className?: string;
 }) {
   const queryClient = useQueryClient();
@@ -56,8 +58,8 @@ export function TimerButton({
       <Button
         type="button"
         size="icon"
-        variant="ghost"
-        className={cn('size-8', className)}
+        variant={variant}
+        className={cn('size-8 shrink-0', className)}
         disabled={disabled || startMutation.isPending || isTimingOther}
         onClick={() => startMutation.mutate()}
         aria-label="开始计时"

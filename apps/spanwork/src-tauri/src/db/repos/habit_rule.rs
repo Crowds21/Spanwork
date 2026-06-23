@@ -226,16 +226,14 @@ pub fn update(conn: &Connection, rule_id: &str, patch: &UpdateHabitRuleInput) ->
 pub fn delete(conn: &Connection, rule_id: &str) -> AppResult<()> {
     let _ = get_by_id(conn, rule_id)?;
     let now = now_ms();
-    let today = crate::domain::habit_schedule::format_date(crate::domain::habit_schedule::today_local_date());
     conn.execute(
         "UPDATE habit_rules SET deleted_at = ?1, updated_at = ?1 WHERE id = ?2 AND deleted_at IS NULL",
         rusqlite::params![now, rule_id],
     )?;
     conn.execute(
         "UPDATE habit_occurrences SET deleted_at = ?1, updated_at = ?1
-         WHERE rule_id = ?2 AND deleted_at IS NULL AND status = 'pending'
-           AND scheduled_date >= ?3",
-        rusqlite::params![now, rule_id, today],
+         WHERE rule_id = ?2 AND deleted_at IS NULL",
+        rusqlite::params![now, rule_id],
     )?;
     Ok(())
 }

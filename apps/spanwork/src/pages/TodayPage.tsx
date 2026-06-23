@@ -47,7 +47,7 @@ export function TodayPage() {
   });
 
   const logInfoQuery = useQuery({
-    queryKey: ['log-info'],
+    queryKey: queryKeys.logInfo,
     queryFn: getLogInfo,
     enabled: inTauri,
   });

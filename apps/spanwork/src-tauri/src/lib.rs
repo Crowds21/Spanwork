@@ -39,6 +39,7 @@ pub fn run() {
             let _ = logger.write(LogLevel::Info, "db", "database initialized", None);
 
             app.manage(AppState { db, logger });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -197,6 +198,7 @@ mod tests {
                 tags: None,
                 sort_order: None,
                 is_milestone: true,
+                ..Default::default()
             },
         )
         .unwrap();
@@ -214,6 +216,7 @@ mod tests {
                 tags: None,
                 sort_order: None,
                 is_milestone: false,
+                ..Default::default()
             },
         )
         .unwrap();
@@ -234,6 +237,7 @@ mod tests {
                 tags: None,
                 sort_order: None,
                 is_milestone: false,
+                ..Default::default()
             },
         );
         assert!(matches!(
@@ -254,6 +258,7 @@ mod tests {
                 tags: None,
                 sort_order: None,
                 is_milestone: false,
+                ..Default::default()
             },
         )
         .unwrap();
@@ -271,6 +276,7 @@ mod tests {
                 tags: None,
                 sort_order: None,
                 is_milestone: false,
+                ..Default::default()
             },
         );
         assert!(matches!(
@@ -302,6 +308,7 @@ mod tests {
                 tags: None,
                 sort_order: None,
                 is_milestone: false,
+                ..Default::default()
             },
         )
         .unwrap();
@@ -357,6 +364,7 @@ mod tests {
                 tags: None,
                 sort_order: None,
                 is_milestone: false,
+                ..Default::default()
             },
         )
         .unwrap();
@@ -419,6 +427,7 @@ mod tests {
                 tags: None,
                 sort_order: None,
                 is_milestone: false,
+                ..Default::default()
             },
         )
         .unwrap();
@@ -462,6 +471,7 @@ mod tests {
                 tags: None,
                 sort_order: None,
                 is_milestone: false,
+                ..Default::default()
             },
         )
         .unwrap();
@@ -518,6 +528,7 @@ mod tests {
                 tags: None,
                 sort_order: None,
                 is_milestone: false,
+                ..Default::default()
             },
         )
         .unwrap();
@@ -578,6 +589,7 @@ mod tests {
                 tags: None,
                 sort_order: None,
                 is_milestone: true,
+                ..Default::default()
             },
         )
         .unwrap();
@@ -595,6 +607,7 @@ mod tests {
                 tags: None,
                 sort_order: None,
                 is_milestone: false,
+                ..Default::default()
             },
         )
         .unwrap();
@@ -658,6 +671,7 @@ mod tests {
                 tags: None,
                 sort_order: None,
                 is_milestone: true,
+                ..Default::default()
             },
         )
         .unwrap();
@@ -697,6 +711,7 @@ mod tests {
                 tags: None,
                 sort_order: None,
                 is_milestone: false,
+                ..Default::default()
             },
         )
         .unwrap();
@@ -913,6 +928,134 @@ mod tests {
 
         let streak = habit_occurrence::compute_streak(&conn, &rule_id).unwrap();
         assert_eq!(streak, 1);
+    }
+
+    #[test]
+    fn habit_rule_delete_hides_calendar_time_and_summaries() {
+        use crate::commands::today::utc_day_bounds;
+        use crate::db::repos::{calendar, habit_occurrence, habit_rule};
+        use crate::domain::habit_schedule::{format_date, today_local_date};
+        use crate::dto::{
+            CalendarDayParams, CreateHabitRuleInput, HabitFrequency, HabitOccurrenceStatus,
+            UpdateHabitOccurrenceInput,
+        };
+
+        let conn = test_conn();
+        let today = format_date(today_local_date());
+        let (utc_start, utc_end) = utc_day_bounds(now_ms());
+
+        let project = project::create(
+            &conn,
+            &CreateProjectInput {
+                name: "Bodyweight".into(),
+                description: None,
+                project_type: ProjectType::Habit,
+                color: None,
+                icon: None,
+                start_date: None,
+                target_end_date: None,
+                category_id: None,
+                habit_rule: None,
+            },
+        )
+        .unwrap();
+
+        let rule = habit_rule::create(
+            &conn,
+            &project.id,
+            Some(&CreateHabitRuleInput {
+                title: Some("自重训练".into()),
+                sort_order: None,
+                frequency: Some(HabitFrequency::Daily),
+                days_of_week: None,
+                day_of_month: None,
+                days_of_month: None,
+                month_and_day: None,
+                yearly_dates: None,
+                why: None,
+                celebration_messages: None,
+                target_duration_seconds: None,
+                minimum_duration_seconds: None,
+                ability_tips: None,
+                anchor_time: None,
+                anchor_habit: None,
+                behavior_design_enabled: None,
+                celebration_on_complete: None,
+            }),
+            &project.name,
+        )
+        .unwrap();
+
+        habit_occurrence::ensure_range(&conn, &today, &today).unwrap();
+
+        let day = calendar::get_day(
+            &conn,
+            &CalendarDayParams {
+                date: today.clone(),
+                project_id: None,
+            },
+            None,
+        )
+        .unwrap();
+        let occ_id = day.occurrences[0].id.clone();
+
+        time_entry::create(
+            &conn,
+            &CreateTimeEntryInput {
+                project_id: project.id.clone(),
+                target_type: TimeTargetType::HabitOccurrence,
+                target_id: occ_id.clone(),
+                start_at: Some(now_ms() - 60_000),
+                end_at: None,
+                duration_seconds: Some(1800),
+                note: None,
+            },
+        )
+        .unwrap();
+
+        habit_occurrence::update(
+            &conn,
+            &occ_id,
+            &UpdateHabitOccurrenceInput {
+                status: Some(HabitOccurrenceStatus::Done),
+                scheduled_date: None,
+                note: None,
+            },
+        )
+        .unwrap();
+
+        let before_delete = calendar::get_day(
+            &conn,
+            &CalendarDayParams {
+                date: today.clone(),
+                project_id: None,
+            },
+            None,
+        )
+        .unwrap();
+        assert_eq!(before_delete.time_blocks.len(), 1);
+        assert!(time_entry::sum_today(&conn, utc_start, utc_end).unwrap() > 0);
+
+        habit_rule::delete(&conn, &rule.id).unwrap();
+
+        let after_delete = calendar::get_day(
+            &conn,
+            &CalendarDayParams {
+                date: today.clone(),
+                project_id: None,
+            },
+            None,
+        )
+        .unwrap();
+        assert!(after_delete.time_blocks.is_empty());
+        assert!(after_delete.occurrences.is_empty());
+        assert_eq!(time_entry::sum_today(&conn, utc_start, utc_end).unwrap(), 0);
+
+        let summaries = habit_occurrence::summarize_range(&conn, &today, &today, None).unwrap();
+        assert!(summaries.is_empty());
+
+        let detail = project::get_detail(&conn, &project.id).unwrap();
+        assert_eq!(detail.total_time_seconds, Some(0));
     }
 
     #[test]

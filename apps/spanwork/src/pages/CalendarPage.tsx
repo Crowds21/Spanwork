@@ -10,7 +10,7 @@ import { CalendarMonthView } from '@/components/calendar/CalendarMonthView';
 import {
   addDays,
   addMonths,
-  parseDateKey,
+  monthAnchorDateKey,
   toDateKey,
   todayDateKey,
   type CalendarViewMode,
@@ -42,8 +42,7 @@ export function CalendarPage({ date, view, projectId }: CalendarPageProps) {
     if (view === 'day') {
       go({ date: addDays(date, -1) });
     } else {
-      const { year, month } = parseDateKey(`${date.slice(0, 7)}-01`);
-      const prev = addMonths(`${year}-${String(month + 1).padStart(2, '0')}-01`, -1);
+      const prev = addMonths(monthAnchorDateKey(date), -1);
       go({ date: toDateKey(prev.year, prev.month, 1) });
     }
   }
@@ -52,8 +51,7 @@ export function CalendarPage({ date, view, projectId }: CalendarPageProps) {
     if (view === 'day') {
       go({ date: addDays(date, 1) });
     } else {
-      const { year, month } = parseDateKey(`${date.slice(0, 7)}-01`);
-      const next = addMonths(`${year}-${String(month + 1).padStart(2, '0')}-01`, 1);
+      const next = addMonths(monthAnchorDateKey(date), 1);
       go({ date: toDateKey(next.year, next.month, 1) });
     }
   }

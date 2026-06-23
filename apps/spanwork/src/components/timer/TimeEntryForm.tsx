@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { datetimeLocalToMs, formatDuration, msToDatetimeLocal } from '@/lib/format';
 import { createTimeEntry } from '@/lib/tauri/time_entry';
-import { queryKeys } from '@/queries/keys';
+import { invalidateTimeEntryQueries } from '@/queries/invalidate';
 
 type HabitEntryMode = 'range' | 'duration' | 'marker';
 
@@ -58,19 +58,11 @@ export function TimeEntryForm({
   }, [mode, startLocal, endLocal, durationMinutes]);
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.timeEntries() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.todayDashboard });
-    queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.activeTimer });
-    queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) });
-    if (targetType === 'habit_occurrence') {
-      queryClient.invalidateQueries({ queryKey: ['habit-occurrences'] });
-    }
-    if (dateKey) {
-      queryClient.invalidateQueries({ queryKey: queryKeys.calendarDay(dateKey) });
-    } else {
-      queryClient.invalidateQueries({ queryKey: ['calendar-day'] });
-    }
+    invalidateTimeEntryQueries(queryClient, {
+      projectId,
+      targetType,
+      dateKey,
+    });
   };
 
   const mutation = useMutation({

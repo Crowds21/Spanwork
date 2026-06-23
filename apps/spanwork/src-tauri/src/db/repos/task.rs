@@ -14,12 +14,19 @@ use crate::error::{new_id, now_ms, validate_task_title, AppError, AppResult};
 
 use super::{milestone as milestone_repo, project as project_repo, time_entry as time_entry_repo};
 
+const TASK_SELECT: &str = "id, project_id, parent_id, milestone_id, is_milestone, title, description, status, priority,
+                due_date, tags, sort_order, start_date, behavior_design_enabled, celebration_on_complete,
+                created_at, updated_at";
+
+const TASK_SELECT_T: &str = "t.id, t.project_id, t.parent_id, t.milestone_id, t.is_milestone, t.title, t.description, t.status, t.priority,
+                t.due_date, t.tags, t.sort_order, t.start_date, t.behavior_design_enabled, t.celebration_on_complete,
+                t.created_at, t.updated_at";
+
 pub fn list(conn: &Connection, params: &TaskListParams) -> AppResult<Vec<TaskDto>> {
     project_repo::get_by_id(conn, &params.project_id)?;
 
-    let mut sql = String::from(
-        "SELECT id, project_id, parent_id, milestone_id, is_milestone, title, description, status, priority,
-                due_date, tags, sort_order, created_at, updated_at
+    let mut sql = format!(
+        "SELECT {TASK_SELECT}
          FROM tasks
          WHERE project_id = ?1 AND deleted_at IS NULL",
     );
@@ -63,9 +70,8 @@ fn flatten_subtasks(
     project_id: &str,
     milestone_id: Option<&str>,
 ) -> AppResult<Vec<TaskDto>> {
-    let mut sql = String::from(
-        "SELECT id, project_id, parent_id, milestone_id, is_milestone, title, description, status, priority,
-                due_date, tags, sort_order, created_at, updated_at
+    let mut sql = format!(
+        "SELECT {TASK_SELECT}
          FROM tasks
          WHERE project_id = ?1 AND deleted_at IS NULL",
     );
@@ -112,10 +118,11 @@ fn append_children(
 pub fn get_by_id(conn: &Connection, id: &str) -> AppResult<TaskDto> {
     let mut task = conn
         .query_row(
-            "SELECT id, project_id, parent_id, milestone_id, is_milestone, title, description, status, priority,
-                    due_date, tags, sort_order, created_at, updated_at
+            &format!(
+                "SELECT {TASK_SELECT}
              FROM tasks
-             WHERE id = ?1 AND deleted_at IS NULL",
+             WHERE id = ?1 AND deleted_at IS NULL"
+            ),
             [id],
             map_task_row,
         )
@@ -175,11 +182,19 @@ pub fn create(conn: &Connection, input: &CreateTaskInput) -> AppResult<TaskDto> 
         }
     };
 
+    let behavior_design_enabled = input.behavior_design_enabled.unwrap_or(false);
+    let celebration_on_complete = if behavior_design_enabled {
+        input.celebration_on_complete.unwrap_or(false)
+    } else {
+        false
+    };
+
     conn.execute(
         "INSERT INTO tasks (
             id, project_id, parent_id, milestone_id, is_milestone, title, description, status, priority,
-            due_date, tags, sort_order, created_at, updated_at, origin_device_id
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'todo', ?8, ?9, ?10, ?11, ?12, ?12, ?13)",
+            due_date, tags, sort_order, start_date, behavior_design_enabled, celebration_on_complete,
+            created_at, updated_at, origin_device_id
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'todo', ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?15, ?16)",
         rusqlite::params![
             id,
             input.project_id,
@@ -189,9 +204,12 @@ pub fn create(conn: &Connection, input: &CreateTaskInput) -> AppResult<TaskDto> 
             input.title.trim(),
             input.description,
             priority,
-            input.due_date,
+            normalize_date(input.due_date.as_ref()),
             tags_json,
             sort_order,
+            normalize_date(input.start_date.as_ref()),
+            i32::from(behavior_design_enabled),
+            i32::from(celebration_on_complete),
             now,
             origin,
         ],
@@ -261,7 +279,30 @@ fn apply_update(conn: &Connection, existing: &TaskDto, patch: &UpdateTaskInput) 
     let description = patch.description.as_ref().or(existing.description.as_ref());
     let status = patch.status.unwrap_or(existing.status);
     let priority = patch.priority.unwrap_or(existing.priority).clamp(0, 3);
-    let due_date = patch.due_date.as_ref().or(existing.due_date.as_ref());
+    let behavior_design_enabled = patch
+        .behavior_design_enabled
+        .unwrap_or(existing.behavior_design_enabled);
+    let celebration_on_complete = if behavior_design_enabled {
+        patch
+            .celebration_on_complete
+            .unwrap_or(existing.celebration_on_complete)
+    } else {
+        false
+    };
+    let start_date = if !behavior_design_enabled {
+        None
+    } else if patch.start_date.is_some() {
+        normalize_date(patch.start_date.as_ref())
+    } else {
+        existing.start_date.clone()
+    };
+    let due_date = if !behavior_design_enabled {
+        None
+    } else if patch.due_date.is_some() {
+        normalize_date(patch.due_date.as_ref())
+    } else {
+        existing.due_date.clone()
+    };
     let tags = match &patch.tags {
         Some(t) => tags_to_json(t),
         None => tags_to_json(&existing.tags),
@@ -282,8 +323,9 @@ fn apply_update(conn: &Connection, existing: &TaskDto, patch: &UpdateTaskInput) 
         "UPDATE tasks SET
             title = ?1, description = ?2, status = ?3, priority = ?4, due_date = ?5,
             tags = ?6, parent_id = ?7, milestone_id = ?8, sort_order = ?9, is_milestone = ?10,
-            updated_at = ?11
-         WHERE id = ?12 AND deleted_at IS NULL",
+            start_date = ?11, behavior_design_enabled = ?12, celebration_on_complete = ?13,
+            updated_at = ?14
+         WHERE id = ?15 AND deleted_at IS NULL",
         rusqlite::params![
             title.trim(),
             description,
@@ -295,6 +337,9 @@ fn apply_update(conn: &Connection, existing: &TaskDto, patch: &UpdateTaskInput) 
             milestone_id,
             sort_order,
             i64::from(is_milestone),
+            start_date,
+            i32::from(behavior_design_enabled),
+            i32::from(celebration_on_complete),
             now,
             existing.id,
         ],
@@ -358,15 +403,14 @@ pub fn batch_complete(conn: &Connection, params: &TaskBatchCompleteParams) -> Ap
 }
 
 pub fn recent_tasks(conn: &Connection, limit: i64) -> AppResult<Vec<TaskDto>> {
-    let mut stmt = conn.prepare(
-        "SELECT t.id, t.project_id, t.parent_id, t.milestone_id, t.is_milestone, t.title, t.description, t.status, t.priority,
-                t.due_date, t.tags, t.sort_order, t.created_at, t.updated_at, p.name
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {TASK_SELECT_T}, p.name
          FROM tasks t
          INNER JOIN projects p ON p.id = t.project_id AND p.deleted_at IS NULL
          WHERE t.deleted_at IS NULL AND t.status NOT IN ('done', 'cancelled')
          ORDER BY t.updated_at DESC
          LIMIT ?1",
-    )?;
+    ))?;
     let mut tasks: Vec<TaskDto> = stmt
         .query_map([limit], map_recent_task_row)?
         .collect::<Result<Vec<_>, _>>()?;
@@ -440,6 +484,7 @@ fn map_task_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TaskDto> {
         status: parse_task_status(&status_str),
         priority: row.get(8)?,
         due_date: row.get(9)?,
+        start_date: row.get(12)?,
         tags: parse_tags(tags_str),
         sort_order: row.get(11)?,
         depth: None,
@@ -449,14 +494,16 @@ fn map_task_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TaskDto> {
         time_trackable: None,
         timer_startable: None,
         project_name: None,
-        created_at: row.get(12)?,
-        updated_at: row.get(13)?,
+        behavior_design_enabled: row.get::<_, i32>(13)? != 0,
+        celebration_on_complete: row.get::<_, i32>(14)? != 0,
+        created_at: row.get(15)?,
+        updated_at: row.get(16)?,
     })
 }
 
 fn map_recent_task_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TaskDto> {
     let mut task = map_task_row(row)?;
-    task.project_name = Some(row.get(14)?);
+    task.project_name = Some(row.get(17)?);
     Ok(task)
 }
 
@@ -486,4 +533,15 @@ pub fn parse_tags(value: Option<String>) -> Vec<String> {
 
 pub fn tags_to_json(tags: &[String]) -> String {
     serde_json::to_string(tags).unwrap_or_else(|_| "[]".to_string())
+}
+
+fn normalize_date(value: Option<&String>) -> Option<String> {
+    value.and_then(|s| {
+        let trimmed = s.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    })
 }

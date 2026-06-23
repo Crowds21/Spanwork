@@ -1,5 +1,5 @@
 //! 版本化 schema 迁移，按序执行 migrations/*.sql 并记录 schema_migrations。
-//! 当前版本 SCHEMA_VERSION = 9，对外暴露 schema_version 供 app_get_info 使用。
+//! 当前版本 SCHEMA_VERSION = 10，对外暴露 schema_version 供 app_get_info 使用。
 
 use rusqlite::Connection;
 
@@ -14,7 +14,8 @@ const MIGRATION_006: &str = include_str!("../../migrations/006_habit_rules_multi
 const MIGRATION_007: &str = include_str!("../../migrations/007_habit_fogg_fields.sql");
 const MIGRATION_008: &str = include_str!("../../migrations/008_behavior_design_enabled.sql");
 const MIGRATION_009: &str = include_str!("../../migrations/009_habit_schedule_multi.sql");
-const SCHEMA_VERSION: i32 = 9;
+const MIGRATION_010: &str = include_str!("../../migrations/010_task_behavior_design.sql");
+const SCHEMA_VERSION: i32 = 10;
 
 pub fn run_migrations(conn: &Connection) -> AppResult<()> {
     conn.execute(
@@ -72,6 +73,10 @@ pub fn run_migrations(conn: &Connection) -> AppResult<()> {
 
     if current < 9 {
         apply_migration(conn, 9, MIGRATION_009)?;
+    }
+
+    if current < 10 {
+        apply_migration(conn, 10, MIGRATION_010)?;
     }
 
     Ok(())

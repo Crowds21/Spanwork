@@ -1,19 +1,17 @@
 /**
  * 月视图：iOS 式网格 + 色点指示
  */
-import { useQuery } from '@tanstack/react-query';
-
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   buildMonthGrid,
+  monthAnchorDateKey,
+  monthRangeKeys,
   parseDateKey,
   todayDateKey,
   WEEKDAY_LABELS,
 } from '@/lib/calendarUtils';
-import { isTauri } from '@/lib/tauri/env';
-import { getCalendarRange } from '@/lib/tauri/calendar';
-import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
+import { useCalendarRange } from '@/hooks/useCalendarRange';
 
 interface CalendarMonthViewProps {
   anchorDateKey: string;
@@ -26,16 +24,10 @@ export function CalendarMonthView({
   projectId,
   onSelectDate,
 }: CalendarMonthViewProps) {
-  const { year, month } = parseDateKey(`${anchorDateKey.slice(0, 7)}-01`);
-  const from = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-  const lastDay = new Date(year, month + 1, 0).getDate();
-  const to = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  const { year, month } = parseDateKey(monthAnchorDateKey(anchorDateKey));
+  const { from, to } = monthRangeKeys(year, month);
 
-  const rangeQuery = useQuery({
-    queryKey: queryKeys.calendarRange(from, to, projectId),
-    queryFn: () => getCalendarRange({ fromDate: from, toDate: to, projectId }),
-    enabled: isTauri(),
-  });
+  const rangeQuery = useCalendarRange(from, to, projectId);
 
   const summaryMap = new Map(
     (rangeQuery.data?.days ?? []).map((d) => [d.date, d]),
@@ -56,7 +48,7 @@ export function CalendarMonthView({
       </div>
       <div className="grid grid-cols-7 gap-1">
         {cells.map((cell) => {
-          if (!cell.dateKey) return <div key={Math.random()} />;
+          if (!cell.dateKey) return <div key={`pad-${cell.index}`} />;
           const summary = summaryMap.get(cell.dateKey);
           const isToday = cell.dateKey === today;
           const allDone =

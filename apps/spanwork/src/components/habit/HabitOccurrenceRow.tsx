@@ -1,7 +1,6 @@
 /**
  * 习惯实例待办行（完成 / 跳过 / 计时 / 补录）
  */
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Clock, Play, SkipForward } from 'lucide-react';
 import { useState } from 'react';
 import type { HabitOccurrenceDto } from '@spanwork/shared-types';
@@ -12,17 +11,13 @@ import { TimerSessionControls } from '@/components/timer/TimerSessionControls';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Tooltip } from '@/components/ui/tooltip';
+import { useHabitOccurrenceActions } from '@/hooks/useHabitOccurrenceActions';
 import { formatDuration } from '@/lib/format';
-import { celebrateHabitCompletion } from '@/lib/habitCelebration';
 import {
   canManualHabitTimeEntry,
   canStartHabitTimer,
   canUpdateHabitCheckIn,
 } from '@/lib/habitOccurrenceUtils';
-import { isTauri } from '@/lib/tauri/env';
-import { updateHabitOccurrence } from '@/lib/tauri/habit';
-import { getActiveTimer, startTimer } from '@/lib/tauri/timer';
-import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
 
 const statusIcon: Record<HabitOccurrenceDto['status'], string> = {
@@ -39,60 +34,23 @@ interface HabitOccurrenceRowProps {
 }
 
 export function HabitOccurrenceRow({ occurrence, dateKey, compact }: HabitOccurrenceRowProps) {
-  const queryClient = useQueryClient();
   const [entryOpen, setEntryOpen] = useState(false);
   const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
-  const inTauri = isTauri();
 
-  const timerQuery = useQuery({
-    queryKey: queryKeys.activeTimer,
-    queryFn: getActiveTimer,
-    enabled: inTauri,
+  const {
+    activeTimer,
+    isTimingThis,
+    isTimingOther,
+    invalidate,
+    statusMutation,
+    startMutation,
+  } = useHabitOccurrenceActions({
+    projectId: occurrence.projectId,
+    ruleId: occurrence.ruleId,
+    occurrenceId: occurrence.id,
+    dateKey,
   });
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.calendarDay(dateKey) });
-    queryClient.invalidateQueries({ queryKey: ['calendar-day'] });
-    queryClient.invalidateQueries({ queryKey: ['habit-occurrences'] });
-    queryClient.invalidateQueries({ queryKey: queryKeys.todayDashboard });
-    queryClient.invalidateQueries({ queryKey: queryKeys.activeTimer });
-    queryClient.invalidateQueries({ queryKey: queryKeys.project(occurrence.projectId) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.timeEntries() });
-  };
-
-  const statusMutation = useMutation({
-    mutationFn: (status: HabitOccurrenceDto['status']) =>
-      updateHabitOccurrence({
-        id: occurrence.id,
-        patch: { status },
-      }),
-    meta: { errorSource: '更新习惯' },
-    onSuccess: async (_data, status) => {
-      invalidate();
-      if (status === 'done') {
-        await celebrateHabitCompletion(occurrence.ruleId);
-      }
-    },
-  });
-
-  const startMutation = useMutation({
-    mutationFn: () =>
-      startTimer({
-        projectId: occurrence.projectId,
-        targetType: 'habit_occurrence',
-        targetId: occurrence.id,
-      }),
-    meta: { errorSource: '开始计时' },
-    onSuccess: (data) => {
-      queryClient.setQueryData(queryKeys.activeTimer, data);
-      invalidate();
-    },
-  });
-
-  const activeTimer = timerQuery.data;
-  const isTimingThis =
-    activeTimer?.targetType === 'habit_occurrence' && activeTimer.targetId === occurrence.id;
-  const isTimingOther = Boolean(activeTimer && !isTimingThis);
   const canAct = canUpdateHabitCheckIn(occurrence);
   const canStartTimer = canStartHabitTimer(occurrence);
   const canManualEntry = canManualHabitTimeEntry(occurrence);

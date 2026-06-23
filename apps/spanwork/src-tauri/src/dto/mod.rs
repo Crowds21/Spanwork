@@ -220,6 +220,8 @@ pub struct TaskDto {
     pub priority: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub due_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_date: Option<String>,
     pub tags: Vec<String>,
     pub sort_order: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -236,6 +238,8 @@ pub struct TaskDto {
     pub timer_startable: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub project_name: Option<String>,
+    pub behavior_design_enabled: bool,
+    pub celebration_on_complete: bool,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -250,7 +254,7 @@ pub struct TaskListParams {
     pub milestone_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateTaskInput {
     pub project_id: String,
@@ -260,10 +264,13 @@ pub struct CreateTaskInput {
     pub description: Option<String>,
     pub priority: Option<i64>,
     pub due_date: Option<String>,
+    pub start_date: Option<String>,
     pub tags: Option<Vec<String>>,
     pub sort_order: Option<i64>,
     #[serde(default)]
     pub is_milestone: bool,
+    pub behavior_design_enabled: Option<bool>,
+    pub celebration_on_complete: Option<bool>,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -274,11 +281,14 @@ pub struct UpdateTaskInput {
     pub status: Option<TaskStatus>,
     pub priority: Option<i64>,
     pub due_date: Option<String>,
+    pub start_date: Option<String>,
     pub tags: Option<Vec<String>>,
     pub parent_id: Option<String>,
     pub milestone_id: Option<Option<String>>,
     pub sort_order: Option<i64>,
     pub is_milestone: Option<bool>,
+    pub behavior_design_enabled: Option<bool>,
+    pub celebration_on_complete: Option<bool>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

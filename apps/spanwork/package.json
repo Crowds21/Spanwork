@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "check": "tsc -b --noEmit",
+    "test": "vitest run -c vitest.config.ts",
+    "test:watch": "vitest -c vitest.config.ts",
     "generate:encouragement": "node scripts/generate-encouragement.mjs",
     "tauri": "tauri",
     "icons:sync": "bash src-tauri/scripts/sync-icons.sh",
@@ -45,6 +47,7 @@
     "@vitejs/plugin-react": "^4.5.2",
     "shadcn": "^4.11.0",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
   }
 }

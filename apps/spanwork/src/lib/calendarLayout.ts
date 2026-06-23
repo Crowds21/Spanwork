@@ -1,6 +1,14 @@
 /**
  * 日历时间轴重叠块布局（按时间切片等分宽度）
  */
+import type { CalendarTimeBlockDto } from '@spanwork/shared-types';
+
+import { isLongCalendarBlock, isShortCalendarBlock } from '@/lib/calendarDuration';
+import {
+  CALENDAR_PILL_HEIGHT,
+  msToHeightPx,
+  msToTopPx,
+} from '@/lib/calendarTimelineMetrics';
 
 export interface TimelineInterval {
   id: string;
@@ -15,12 +23,63 @@ export interface TimelineBlockSegmentLayout {
   columnCount: number;
 }
 
-export function intervalEndMs(
-  startAt: number,
-  endAt: number | undefined,
-  durationSeconds: number,
-): number {
-  return endAt ?? startAt + durationSeconds * 1000;
+export interface TimelineSegmentPositionStyle {
+  left: number | string;
+  right?: number | string;
+  width?: number | string;
+}
+
+export function findSegmentAtTime(
+  segments: TimelineBlockSegmentLayout[],
+  timeMs: number,
+): TimelineBlockSegmentLayout | null {
+  if (segments.length === 0) return null;
+  return (
+    segments.find((segment) => segment.startMs <= timeMs && segment.endMs > timeMs) ?? segments[0]
+  );
+}
+
+export function segmentPositionStyle(
+  segment: TimelineBlockSegmentLayout,
+  gapPx = 2,
+): TimelineSegmentPositionStyle {
+  const { column, columnCount: columnCount } = segment;
+
+  if (columnCount <= 1) {
+    return { left: 0, right: 0 };
+  }
+
+  const totalGap = (columnCount - 1) * gapPx;
+  const width = `calc((100% - ${totalGap}px) / ${columnCount})`;
+
+  if (column === 0) {
+    return { left: 0, width };
+  }
+
+  return {
+    left: `calc(${column} * ((100% - ${totalGap}px) / ${columnCount} + ${gapPx}px))`,
+    width,
+  };
+}
+
+export function defaultBlockSegments(
+  startMs: number,
+  endMs: number,
+): [TimelineBlockSegmentLayout] {
+  return [{ startMs, endMs, column: 0, columnCount: 1 }];
+}
+
+export function resolveBlockSegments(
+  layout: Map<string, TimelineBlockSegmentLayout[]>,
+  blockId: string,
+  startMs: number,
+  endMs: number,
+): TimelineBlockSegmentLayout[] {
+  const layoutSegments = layout.get(blockId);
+  if (layoutSegments && layoutSegments.length > 0) {
+    return layoutSegments;
+  }
+  return defaultBlockSegments(startMs, endMs);
 }
 
 function mergeSegments(
@@ -89,22 +148,63 @@ export function layoutTimelineSegments(
   return result;
 }
 
-/** @deprecated 使用 layoutTimelineSegments */
-export interface TimelineBlockLayout {
-  column: number;
-  columnCount: number;
+export interface CapsuleGeometry {
+  startMs: number;
+  endMs: number;
+  top: number;
+  height: number;
+  position: TimelineSegmentPositionStyle;
+  compact: boolean;
 }
 
-/** @deprecated 使用 layoutTimelineSegments */
-export function layoutOverlappingIntervals(
-  blocks: TimelineInterval[],
-): Map<string, TimelineBlockLayout> {
-  const segments = layoutTimelineSegments(blocks);
-  const layout = new Map<string, TimelineBlockLayout>();
-  for (const [id, list] of segments) {
-    const maxCount = Math.max(...list.map((s) => s.columnCount), 1);
-    const first = list[0];
-    layout.set(id, { column: first?.column ?? 0, columnCount: maxCount });
+export function resolveCapsuleGeometries(
+  durationSeconds: number,
+  segments: TimelineBlockSegmentLayout[],
+  hourHeight: number,
+  startMs: number,
+): CapsuleGeometry[] {
+  if (isShortCalendarBlock(durationSeconds)) {
+    const segment = findSegmentAtTime(segments, startMs) ?? segments[0];
+    if (segment == null) return [];
+
+    const height = CALENDAR_PILL_HEIGHT;
+    return [
+      {
+        startMs: segment.startMs,
+        endMs: segment.endMs,
+        top: msToTopPx(startMs, hourHeight),
+        height,
+        position: segmentPositionStyle(segment),
+        compact: true,
+      },
+    ];
   }
-  return layout;
+
+  if (isLongCalendarBlock(durationSeconds)) {
+    return segments.map((segment) => {
+      const height = Math.max(
+        msToHeightPx(segment.startMs, segment.endMs, hourHeight),
+        CALENDAR_PILL_HEIGHT,
+      );
+      return {
+        startMs: segment.startMs,
+        endMs: segment.endMs,
+        top: msToTopPx(segment.startMs, hourHeight),
+        height,
+        position: segmentPositionStyle(segment),
+        compact: height <= 28,
+      };
+    });
+  }
+
+  return [];
+}
+
+export function resolveIntervalCapsules(
+  block: CalendarTimeBlockDto,
+  segments: TimelineBlockSegmentLayout[],
+  startMs: number,
+  hourHeight: number,
+): CapsuleGeometry[] {
+  return resolveCapsuleGeometries(block.durationSeconds, segments, hourHeight, startMs);
 }

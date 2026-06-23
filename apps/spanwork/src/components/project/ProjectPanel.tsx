@@ -249,7 +249,7 @@ export function ProjectList() {
               <CardHeader className="pb-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge
-                    variant={project.projectType === 'task' ? 'default' : 'secondary'}
+                    variant={project.projectType === 'task' ? 'default' : 'habit'}
                     className="gap-1"
                   >
                     {project.projectType === 'task' ? (

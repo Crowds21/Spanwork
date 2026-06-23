@@ -1,10 +1,11 @@
 /**
- * 日历时间轴条目胶囊（圆点 + 任务名 + 时长 xxxmin）
+ * 日历时间轴条目块（任务名 + 时长 xxxmin）
  */
 import type { CalendarTimeBlockDto } from '@spanwork/shared-types';
 
 import { TitleWithProject } from '@/components/common/TitleWithProject';
 import { formatCalendarDurationMinutes } from '@/lib/calendarDuration';
+import type { CapsuleGeometry } from '@/lib/calendarLayout';
 import {
   calendarColorWithAlpha,
   resolveCalendarProjectColor,
@@ -14,9 +15,11 @@ import { cn } from '@/lib/utils';
 interface CalendarTimeEntryPillProps {
   block: CalendarTimeBlockDto;
   className?: string;
-  /** 较矮时使用全圆角胶囊形 */
+  /** 较矮时垂直居中对齐内容 */
   compact?: boolean;
   showDuration?: boolean;
+  /** 时间轴绝对定位几何（top/height/width） */
+  layout?: CapsuleGeometry;
 }
 
 export function CalendarTimeEntryPill({
@@ -24,29 +27,34 @@ export function CalendarTimeEntryPill({
   className,
   compact = false,
   showDuration = true,
+  layout,
 }: CalendarTimeEntryPillProps) {
   const color = resolveCalendarProjectColor(block.projectId, block.projectColor);
   const duration = formatCalendarDurationMinutes(block.durationSeconds);
   const tooltip = [block.title, block.projectName, duration].filter(Boolean).join(' · ');
+  const isCompact = layout?.compact ?? compact;
 
   return (
     <div
       className={cn(
-        'flex min-w-0 items-center gap-2 border px-1.5 py-0.5 text-xs leading-none',
-        compact ? 'rounded-full' : 'rounded-lg',
+        'flex min-w-0 rounded-none border px-1.5 py-0.5 text-xs leading-none',
+        layout ? 'absolute overflow-hidden pr-2' : '',
+        isCompact ? 'items-center' : 'items-start',
         className,
       )}
       style={{
         backgroundColor: calendarColorWithAlpha(color, 0.12),
         borderColor: calendarColorWithAlpha(color, 0.28),
+        ...(layout
+          ? {
+              top: layout.top,
+              height: layout.height,
+              ...layout.position,
+            }
+          : undefined),
       }}
       title={tooltip}
     >
-      <span
-        className="size-2.5 shrink-0 rounded-full ring-2 ring-background"
-        style={{ backgroundColor: color }}
-        aria-hidden
-      />
       <TitleWithProject
         title={block.title}
         projectName={block.projectName}

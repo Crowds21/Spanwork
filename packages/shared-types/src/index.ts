@@ -138,6 +138,7 @@ export interface TaskDto {
   status: TaskStatus;
   priority: number;
   dueDate?: string;
+  startDate?: string;
   tags: string[];
   sortOrder: number;
   depth?: number;
@@ -147,6 +148,8 @@ export interface TaskDto {
   timeTrackable?: boolean;
   timerStartable?: boolean;
   projectName?: string;
+  behaviorDesignEnabled: boolean;
+  celebrationOnComplete: boolean;
   createdAt: number;
   updatedAt: number;
 }
@@ -166,9 +169,12 @@ export interface CreateTaskInput {
   description?: string;
   priority?: number;
   dueDate?: string;
+  startDate?: string;
   tags?: string[];
   sortOrder?: number;
   isMilestone?: boolean;
+  behaviorDesignEnabled?: boolean;
+  celebrationOnComplete?: boolean;
 }
 
 export interface UpdateTaskInput {
@@ -177,11 +183,14 @@ export interface UpdateTaskInput {
   status?: TaskStatus;
   priority?: number;
   dueDate?: string;
+  startDate?: string;
   tags?: string[];
   parentId?: string;
   milestoneId?: string | null;
   sortOrder?: number;
   isMilestone?: boolean;
+  behaviorDesignEnabled?: boolean;
+  celebrationOnComplete?: boolean;
 }
 
 export interface TaskBatchCompleteResult {

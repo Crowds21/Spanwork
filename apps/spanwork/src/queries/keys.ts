@@ -16,20 +16,26 @@ export const queryKeys = {
   milestones: (projectId: string) => ['milestones', projectId] as const,
   timeEntries: (params?: Record<string, unknown>) =>
     params ? (['time-entries', params] as const) : (['time-entries'] as const),
+  timeEntriesRoot: ['time-entries'] as const,
   activeTimer: ['active-timer'] as const,
   todayDashboard: ['today-dashboard'] as const,
+  calendarDayRoot: ['calendar-day'] as const,
   calendarDay: (date: string, projectId?: string) =>
     projectId ? (['calendar-day', date, projectId] as const) : (['calendar-day', date] as const),
+  calendarRangeRoot: ['calendar-range'] as const,
   calendarRange: (from: string, to: string, projectId?: string) =>
     projectId
       ? (['calendar-range', from, to, projectId] as const)
       : (['calendar-range', from, to] as const),
+  habitRulesRoot: ['habit-rules'] as const,
   habitRules: (projectId: string) => ['habit-rules', projectId] as const,
   habitStreak: (ruleId: string) => ['habit-streak', ruleId] as const,
+  habitOccurrencesRoot: ['habit-occurrences'] as const,
   habitOccurrences: (projectId: string, fromDate?: string, toDate?: string) =>
     fromDate && toDate
       ? (['habit-occurrences', projectId, fromDate, toDate] as const)
       : (['habit-occurrences', projectId] as const),
+  logInfo: ['log-info'] as const,
   projectCategories: ['project-categories'] as const,
   projectCategory: (id: string) => ['project-category', id] as const,
 };

@@ -1,5 +1,5 @@
 /**
- * 任务状态下拉：圆角触发器 + 分色选项（TODO / DOING / DONE / CANCELED）
+ * 任务状态下拉：轻量 outline + 圆点分色 + 中文标签
  */
 import type { TaskStatus } from '@spanwork/shared-types';
 
@@ -42,28 +42,28 @@ export function TaskStatusSelect({
       <SelectTrigger
         size="sm"
         className={cn(
-          'h-8 w-[7.25rem] rounded-full border px-3 text-xs font-semibold tracking-wide shadow-none',
+          'h-7 min-w-0 w-auto gap-1.5 rounded-md border px-2.5 text-xs font-medium shadow-none',
           current.trigger,
           className,
         )}
       >
         <SelectValue>
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5">
             <StatusDot status={value} />
             {current.label}
           </span>
         </SelectValue>
       </SelectTrigger>
-      <SelectContent className="rounded-xl">
+      <SelectContent className="rounded-lg">
         {TASK_STATUSES.map((status) => {
           const meta = taskStatusMeta[status];
           return (
             <SelectItem
               key={status}
               value={status}
-              className={cn('rounded-lg text-xs font-semibold tracking-wide', meta.item)}
+              className={cn('rounded-md text-xs font-medium', meta.item)}
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5">
                 <StatusDot status={status} />
                 {meta.label}
               </span>
@@ -80,7 +80,7 @@ export function TaskStatusBadge({ status }: { status: TaskStatus }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold tracking-wide',
+        'inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium',
         meta.badge,
       )}
     >

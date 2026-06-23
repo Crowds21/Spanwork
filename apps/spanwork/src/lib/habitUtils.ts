@@ -7,41 +7,77 @@ import { addDays, parseDateKey, toDateKey, todayDateKey } from '@/lib/calendarUt
 
 const WEEKDAY_SHORT = ['一', '二', '三', '四', '五', '六', '日'];
 
-export function buildDisplayTitle(projectName: string, ruleTitle: string): string {
-  return `${projectName} · ${ruleTitle}`;
+type FrequencyRuleInput = Pick<
+  HabitRuleDto,
+  'frequency' | 'daysOfWeek' | 'dayOfMonth' | 'daysOfMonth' | 'monthAndDay' | 'yearlyDates'
+>;
+
+function sortedUnique(nums: number[]): number[] {
+  return [...new Set(nums)].sort((a, b) => a - b);
 }
 
-export function formatFrequencyLabel(
-  rule: Pick<
-    HabitRuleDto,
-    'frequency' | 'daysOfWeek' | 'dayOfMonth' | 'daysOfMonth' | 'monthAndDay' | 'yearlyDates'
-  >,
-): string {
+function weeklyDays(rule: FrequencyRuleInput): number[] {
+  return sortedUnique(rule.daysOfWeek ?? []);
+}
+
+function monthlyDays(rule: FrequencyRuleInput): number[] {
+  const raw = rule.daysOfMonth?.length
+    ? rule.daysOfMonth
+    : rule.dayOfMonth != null
+      ? [rule.dayOfMonth]
+      : [];
+  return sortedUnique(raw);
+}
+
+function yearlyDates(rule: FrequencyRuleInput): string[] {
+  if (rule.yearlyDates?.length) return rule.yearlyDates;
+  if (rule.monthAndDay) return [rule.monthAndDay];
+  return [];
+}
+
+export function formatFrequencyLabelVerbose(rule: FrequencyRuleInput): string {
   switch (rule.frequency) {
     case 'daily':
       return '每天';
     case 'weekly': {
-      const days = [...(rule.daysOfWeek ?? [])].sort((a, b) => a - b);
+      const days = weeklyDays(rule);
       if (days.length === 0) return '每周';
       return `每周${days.map((d) => WEEKDAY_SHORT[d - 1]).join('、')}`;
     }
     case 'monthly': {
-      const days = [...(rule.daysOfMonth?.length ? rule.daysOfMonth : rule.dayOfMonth != null ? [rule.dayOfMonth] : [])].sort(
-        (a, b) => a - b,
-      );
+      const days = monthlyDays(rule);
       if (days.length === 0) return '每月';
       return `每月 ${days.join('、')} 日`;
     }
     case 'yearly': {
-      const dates = rule.yearlyDates?.length
-        ? rule.yearlyDates
-        : rule.monthAndDay
-          ? [rule.monthAndDay]
-          : [];
+      const dates = yearlyDates(rule);
       if (dates.length === 0) return '每年';
       return `每年 ${dates.join('、')}`;
     }
   }
+}
+
+export function formatFrequencyLabel(rule: FrequencyRuleInput): string {
+  switch (rule.frequency) {
+    case 'daily':
+      return '每天';
+    case 'weekly': {
+      const count = weeklyDays(rule).length;
+      return count === 0 ? '每周' : `每周 · ${count} 天`;
+    }
+    case 'monthly': {
+      const count = monthlyDays(rule).length;
+      return count === 0 ? '每月' : `每月 · ${count} 天`;
+    }
+    case 'yearly': {
+      const count = yearlyDates(rule).length;
+      return count === 0 ? '每年' : `每年 · ${count} 天`;
+    }
+  }
+}
+
+export function buildDisplayTitle(projectName: string, ruleTitle: string): string {
+  return `${projectName} · ${ruleTitle}`;
 }
 
 export function formatStreakLabel(streak: number, frequency: HabitFrequency): string {

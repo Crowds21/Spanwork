@@ -55,7 +55,4 @@ export function getHabitStreak(ruleId: string): Promise<HabitStreakDto> {
   return tauriInvoke<HabitStreakDto>('habit_streak_get', { ruleId });
 }
 
-/** @deprecated 使用 listHabitRules */
-export { listHabitRules as getHabitRulesForProject };
-
 export type { CreateHabitRuleInput };
