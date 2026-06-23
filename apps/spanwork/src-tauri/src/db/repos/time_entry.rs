@@ -75,7 +75,7 @@ pub fn create(conn: &Connection, input: &CreateTimeEntryInput) -> AppResult<Time
         &input.target_id,
     )?;
 
-    let (end_at, duration_seconds) = resolve_duration(input.start_at, input.end_at, input.duration_seconds)?;
+    let (start_at, end_at, duration_seconds) = resolve_create_time_entry(input)?;
 
     let origin = crate::db::repos::device::origin_device_id(conn)?;
     let id = new_id();
@@ -91,7 +91,7 @@ pub fn create(conn: &Connection, input: &CreateTimeEntryInput) -> AppResult<Time
             input.project_id,
             target_type_to_str(input.target_type),
             input.target_id,
-            input.start_at,
+            start_at,
             end_at,
             duration_seconds,
             input.note,
@@ -113,7 +113,7 @@ pub fn create_from_timer(
     note: Option<&str>,
     duration_seconds_override: Option<i64>,
 ) -> AppResult<TimeEntryDto> {
-    crate::domain::task_time::validate_manual_time_target(conn, target_type, target_id)?;
+    crate::domain::task_time::validate_timer_stop_time_target(conn, target_type, target_id)?;
 
     let duration_seconds = duration_seconds_override.unwrap_or_else(|| {
         ((end_at - start_at) / 1000).max(0)
@@ -160,15 +160,17 @@ fn apply_update(
     existing: &TimeEntryDto,
     patch: &UpdateTimeEntryInput,
 ) -> AppResult<()> {
-    let start_at = patch.start_at.unwrap_or(existing.start_at);
-    let end_at = patch.end_at.or(existing.end_at);
-    let duration_seconds = if patch.duration_seconds.is_some() || patch.end_at.is_some() || patch.start_at.is_some() {
-        let (resolved_end, resolved_duration) =
-            resolve_duration(start_at, end_at, patch.duration_seconds.or(Some(existing.duration_seconds)))?;
-        let _ = resolved_end;
-        resolved_duration
+    let (start_at, end_at, duration_seconds) = if patch.duration_seconds.is_some()
+        || patch.end_at.is_some()
+        || patch.start_at.is_some()
+    {
+        resolve_update_time_entry(
+            Some(patch.start_at.unwrap_or(existing.start_at)),
+            patch.end_at.or(existing.end_at),
+            patch.duration_seconds.or(Some(existing.duration_seconds)),
+        )?
     } else {
-        existing.duration_seconds
+        (existing.start_at, existing.end_at, existing.duration_seconds)
     };
 
     let note = patch.note.as_ref().or(existing.note.as_ref());
@@ -213,35 +215,101 @@ pub fn sum_for_target(conn: &Connection, target_type: TimeTargetType, target_id:
 
 pub fn sum_today(conn: &Connection, day_start_ms: i64, day_end_ms: i64) -> AppResult<i64> {
     conn.query_row(
-        "SELECT COALESCE(SUM(duration_seconds), 0) FROM time_entries
-         WHERE deleted_at IS NULL AND start_at >= ?1 AND start_at < ?2",
+        "SELECT COALESCE(SUM(te.duration_seconds), 0) FROM time_entries te
+         INNER JOIN projects p ON p.id = te.project_id AND p.deleted_at IS NULL
+         WHERE te.deleted_at IS NULL AND te.start_at >= ?1 AND te.start_at < ?2",
         rusqlite::params![day_start_ms, day_end_ms],
         |row| row.get(0),
     )
     .map_err(Into::into)
 }
 
-fn resolve_duration(
-    start_at: i64,
-    end_at: Option<i64>,
-    duration_seconds: Option<i64>,
-) -> AppResult<(Option<i64>, i64)> {
-    match (end_at, duration_seconds) {
-        (Some(end), _) if end < start_at => Err(AppError::Validation {
+pub fn resolve_create_time_entry(input: &CreateTimeEntryInput) -> AppResult<(i64, Option<i64>, i64)> {
+    match (input.start_at, input.end_at, input.duration_seconds) {
+        (Some(start), Some(end), _) if end < start => Err(AppError::Validation {
             field: "endAt".into(),
             reason: "must be after startAt".into(),
         }),
-        (Some(end), _) => Ok((Some(end), ((end - start_at) / 1000).max(0))),
-        (None, Some(duration)) if duration >= 0 => Ok((None, duration)),
-        (None, Some(_)) => Err(AppError::Validation {
+        (Some(start), Some(end), _) => Ok((start, Some(end), ((end - start) / 1000).max(0))),
+        (None, None, Some(duration)) if duration >= 0 => {
+            let end = now_ms();
+            let start = end - duration * 1000;
+            Ok((start, Some(end), duration))
+        }
+        (Some(start), None, Some(duration)) if duration >= 0 => Ok((start, None, duration)),
+        (Some(_), None, Some(_)) => Err(AppError::Validation {
             field: "durationSeconds".into(),
             reason: "must be non-negative".into(),
         }),
-        (None, None) => Err(AppError::Validation {
+        (Some(_), None, None) => Err(AppError::Validation {
             field: "durationSeconds".into(),
-            reason: "either endAt or durationSeconds is required".into(),
+            reason: "either endAt or durationSeconds is required when startAt is set".into(),
+        }),
+        (None, Some(_), _) => Err(AppError::Validation {
+            field: "startAt".into(),
+            reason: "startAt is required when endAt is set".into(),
+        }),
+        (None, None, Some(_)) => Err(AppError::Validation {
+            field: "durationSeconds".into(),
+            reason: "must be non-negative".into(),
+        }),
+        (None, None, None) => Err(AppError::Validation {
+            field: "input".into(),
+            reason: "provide (startAt+endAt), (startAt+durationSeconds), or durationSeconds alone"
+                .into(),
         }),
     }
+}
+
+fn resolve_update_time_entry(
+    start_at: Option<i64>,
+    end_at: Option<i64>,
+    duration_seconds: Option<i64>,
+) -> AppResult<(i64, Option<i64>, i64)> {
+    resolve_create_time_entry(&CreateTimeEntryInput {
+        project_id: String::new(),
+        target_type: TimeTargetType::Task,
+        target_id: String::new(),
+        start_at,
+        end_at,
+        duration_seconds,
+        note: None,
+    })
+}
+
+pub fn list_for_day(
+    conn: &Connection,
+    day_start_ms: i64,
+    day_end_ms: i64,
+    target_type: Option<TimeTargetType>,
+    project_id: Option<&str>,
+) -> AppResult<Vec<TimeEntryDto>> {
+    let mut sql = String::from(
+        "SELECT te.id, te.project_id, te.target_type, te.target_id, te.start_at, te.end_at,
+                te.duration_seconds, te.note, te.source, te.created_at, te.updated_at
+         FROM time_entries te
+         INNER JOIN projects p ON p.id = te.project_id AND p.deleted_at IS NULL
+         WHERE te.deleted_at IS NULL AND te.start_at >= ?1 AND te.start_at < ?2",
+    );
+    let mut bind_values: Vec<Box<dyn rusqlite::types::ToSql>> = vec![
+        Box::new(day_start_ms),
+        Box::new(day_end_ms),
+    ];
+
+    if let Some(tt) = target_type {
+        sql.push_str(" AND te.target_type = ?");
+        bind_values.push(Box::new(target_type_to_str(tt).to_string()));
+    }
+    if let Some(pid) = project_id {
+        sql.push_str(" AND te.project_id = ?");
+        bind_values.push(Box::new(pid.to_string()));
+    }
+
+    sql.push_str(" ORDER BY te.start_at ASC");
+
+    let mut stmt = conn.prepare(&sql)?;
+    let rows = stmt.query_map(rusqlite::params_from_iter(bind_values.iter()), map_time_entry_row)?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
 
 fn map_time_entry_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TimeEntryDto> {

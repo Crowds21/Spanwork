@@ -24,6 +24,8 @@ interface TimerSessionControlsProps {
   size?: 'sm' | 'md';
   className?: string;
   onComplete?: () => void;
+  completeTooltip?: string;
+  completeAriaLabel?: string;
 }
 
 export function TimerSessionControls({
@@ -32,6 +34,8 @@ export function TimerSessionControls({
   size = 'sm',
   className,
   onComplete,
+  completeTooltip = '完成并保存本次计时',
+  completeAriaLabel = '完成并保存本次计时',
 }: TimerSessionControlsProps) {
   const queryClient = useQueryClient();
   const iconClass = size === 'sm' ? 'size-3.5' : 'size-4';
@@ -113,7 +117,7 @@ export function TimerSessionControls({
         </Tooltip>
       )}
 
-      <Tooltip label="完成并保存本次计时">
+      <Tooltip label={completeTooltip}>
         <Button
           type="button"
           size="icon"
@@ -121,7 +125,7 @@ export function TimerSessionControls({
           className={buttonClass}
           disabled={pending}
           onClick={() => completeMutation.mutate()}
-          aria-label="完成并保存本次计时"
+          aria-label={completeAriaLabel}
         >
           <CheckCircle2 className={iconClass} />
         </Button>

@@ -10,3 +10,5 @@ pub mod task;
 pub mod time_entry;
 pub mod timer;
 pub mod today;
+pub mod habit;
+pub mod calendar;

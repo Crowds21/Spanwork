@@ -7,3 +7,6 @@ pub mod project;
 pub mod project_category;
 pub mod task;
 pub mod time_entry;
+pub mod habit_rule;
+pub mod habit_occurrence;
+pub mod calendar;

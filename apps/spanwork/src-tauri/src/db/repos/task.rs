@@ -359,15 +359,16 @@ pub fn batch_complete(conn: &Connection, params: &TaskBatchCompleteParams) -> Ap
 
 pub fn recent_tasks(conn: &Connection, limit: i64) -> AppResult<Vec<TaskDto>> {
     let mut stmt = conn.prepare(
-        "SELECT id, project_id, parent_id, milestone_id, is_milestone, title, description, status, priority,
-                due_date, tags, sort_order, created_at, updated_at
-         FROM tasks
-         WHERE deleted_at IS NULL
-         ORDER BY updated_at DESC
+        "SELECT t.id, t.project_id, t.parent_id, t.milestone_id, t.is_milestone, t.title, t.description, t.status, t.priority,
+                t.due_date, t.tags, t.sort_order, t.created_at, t.updated_at, p.name
+         FROM tasks t
+         INNER JOIN projects p ON p.id = t.project_id AND p.deleted_at IS NULL
+         WHERE t.deleted_at IS NULL AND t.status NOT IN ('done', 'cancelled')
+         ORDER BY t.updated_at DESC
          LIMIT ?1",
     )?;
     let mut tasks: Vec<TaskDto> = stmt
-        .query_map([limit], map_task_row)?
+        .query_map([limit], map_recent_task_row)?
         .collect::<Result<Vec<_>, _>>()?;
 
     for task in &mut tasks {
@@ -447,9 +448,16 @@ fn map_task_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TaskDto> {
         total_time_seconds: None,
         time_trackable: None,
         timer_startable: None,
+        project_name: None,
         created_at: row.get(12)?,
         updated_at: row.get(13)?,
     })
+}
+
+fn map_recent_task_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TaskDto> {
+    let mut task = map_task_row(row)?;
+    task.project_name = Some(row.get(14)?);
+    Ok(task)
 }
 
 pub fn parse_task_status(value: &str) -> TaskStatus {

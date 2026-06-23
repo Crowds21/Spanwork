@@ -4,6 +4,7 @@
 import { ChevronUp, Timer } from 'lucide-react';
 
 import { useTimerBar } from '@/components/timer/TimerBarContext';
+import { TimerBarCancelButton } from '@/components/timer/TimerBarCancelButton';
 import { Button } from '@/components/ui/button';
 import { formatDurationLive } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -35,12 +36,12 @@ export function TimerBarExpanded() {
     >
       <div
         className={cn(
-          'timer-bar-surface timer-bar-surface-expanded pointer-events-auto relative overflow-hidden px-4 pb-3 md:pt-0',
+          'timer-bar-surface timer-bar-surface-expanded pointer-events-auto relative overflow-x-hidden px-4 pb-3 md:pt-0',
           isPaused && 'timer-bar-surface--paused',
         )}
       >
-        <div className="relative z-[2] flex min-w-0 w-full items-center overflow-hidden px-safe">
-          <div className="flex w-full flex-col items-center justify-center gap-1 py-2 text-center sm:gap-1.5 sm:py-3 md:py-3">
+        <div className="relative z-[2] flex min-w-0 w-full items-center px-safe">
+          <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1 overflow-hidden py-2 text-center sm:gap-1.5 sm:py-3 md:py-3">
             <div
               className={cn(
                 'flex items-center gap-2 text-xs font-semibold sm:text-sm',
@@ -67,21 +68,30 @@ export function TimerBarExpanded() {
               查看任务
             </button>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={cn(
-              'absolute right-0 top-2 size-7 hover:bg-primary/10',
-              isPaused
-                ? 'text-amber-700/80 hover:text-amber-800 dark:text-amber-300'
-                : 'text-primary/80 hover:text-primary',
-            )}
-            onClick={() => setMinimized(true)}
-            aria-label="收起计时栏"
-          >
-            <ChevronUp className="size-4" />
-          </Button>
+          <div className="absolute right-0 top-2 z-[3] flex shrink-0 items-center gap-0.5 overflow-visible">
+            <TimerBarCancelButton
+              className={
+                isPaused
+                  ? 'text-amber-700/80 hover:text-destructive dark:text-amber-300'
+                  : 'text-primary/80 hover:text-destructive'
+              }
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn(
+                'size-7 hover:bg-primary/10',
+                isPaused
+                  ? 'text-amber-700/80 hover:text-amber-800 dark:text-amber-300'
+                  : 'text-primary/80 hover:text-primary',
+              )}
+              onClick={() => setMinimized(true)}
+              aria-label="收起计时栏"
+            >
+              <ChevronUp className="size-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </header>

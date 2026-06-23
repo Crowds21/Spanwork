@@ -188,6 +188,16 @@ pub fn cancel(conn: &Connection) -> AppResult<()> {
     clear_active(conn)
 }
 
+/// 若活跃计时器属于给定项目，则 stop 并写入 time_entry（供项目删除级联调用）。
+pub fn stop_if_active_for_project(conn: &Connection, project_id: &str) -> AppResult<()> {
+    if let Some(row) = load_active_row(conn)? {
+        if row.project_id == project_id {
+            stop_internal(conn)?;
+        }
+    }
+    Ok(())
+}
+
 fn stop_internal(conn: &Connection) -> AppResult<()> {
     let row = load_active_row(conn)?;
     if let Some(row) = row {

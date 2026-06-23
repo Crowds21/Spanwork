@@ -64,6 +64,28 @@ pub struct ProjectDto {
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CreateHabitRuleInput {
+    pub title: Option<String>,
+    pub sort_order: Option<i64>,
+    pub frequency: Option<HabitFrequency>,
+    pub days_of_week: Option<Vec<i32>>,
+    pub day_of_month: Option<i32>,
+    pub days_of_month: Option<Vec<i32>>,
+    pub month_and_day: Option<String>,
+    pub yearly_dates: Option<Vec<String>>,
+    pub why: Option<String>,
+    pub celebration_messages: Option<Vec<String>>,
+    pub target_duration_seconds: Option<i64>,
+    pub minimum_duration_seconds: Option<i64>,
+    pub ability_tips: Option<String>,
+    pub anchor_time: Option<String>,
+    pub anchor_habit: Option<String>,
+    pub behavior_design_enabled: Option<bool>,
+    pub celebration_on_complete: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateProjectInput {
     pub name: String,
     pub description: Option<String>,
@@ -73,6 +95,7 @@ pub struct CreateProjectInput {
     pub start_date: Option<String>,
     pub target_end_date: Option<String>,
     pub category_id: Option<String>,
+    pub habit_rule: Option<CreateHabitRuleInput>,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -211,6 +234,8 @@ pub struct TaskDto {
     pub time_trackable: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timer_startable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_name: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -427,7 +452,7 @@ pub struct CreateTimeEntryInput {
     pub project_id: String,
     pub target_type: TimeTargetType,
     pub target_id: String,
-    pub start_at: i64,
+    pub start_at: Option<i64>,
     pub end_at: Option<i64>,
     pub duration_seconds: Option<i64>,
     pub note: Option<String>,
@@ -493,6 +518,10 @@ pub struct HabitOccurrenceDto {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub project_color: Option<String>,
     pub rule_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rule_title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_title: Option<String>,
     pub scheduled_date: String,
     pub status: HabitOccurrenceStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -514,6 +543,192 @@ pub struct TodayDashboardDto {
     pub habit_occurrences_today: Vec<HabitOccurrenceDto>,
     pub recent_tasks: Vec<TaskDto>,
     pub total_time_today_seconds: i64,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum HabitFrequency {
+    Daily,
+    Weekly,
+    Monthly,
+    Yearly,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HabitRuleDto {
+    pub id: String,
+    pub project_id: String,
+    pub title: String,
+    pub sort_order: i64,
+    pub frequency: HabitFrequency,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub days_of_week: Option<Vec<i32>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub day_of_month: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub days_of_month: Option<Vec<i32>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub month_and_day: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub yearly_dates: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub why: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub celebration_messages: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target_duration_seconds: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub minimum_duration_seconds: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ability_tips: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub anchor_time: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub anchor_habit: Option<String>,
+    pub behavior_design_enabled: bool,
+    pub celebration_on_complete: bool,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateHabitRuleInput {
+    pub title: Option<String>,
+    pub sort_order: Option<i64>,
+    pub frequency: Option<HabitFrequency>,
+    pub days_of_week: Option<Vec<i32>>,
+    pub day_of_month: Option<i32>,
+    pub days_of_month: Option<Vec<i32>>,
+    pub month_and_day: Option<String>,
+    pub yearly_dates: Option<Vec<String>>,
+    pub why: Option<String>,
+    pub celebration_messages: Option<Vec<String>>,
+    pub target_duration_seconds: Option<i64>,
+    pub minimum_duration_seconds: Option<i64>,
+    pub ability_tips: Option<String>,
+    pub anchor_time: Option<String>,
+    pub anchor_habit: Option<String>,
+    pub behavior_design_enabled: Option<bool>,
+    pub celebration_on_complete: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HabitRuleUpdateParams {
+    pub rule_id: String,
+    pub patch: UpdateHabitRuleInput,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HabitRuleCreateParams {
+    pub project_id: String,
+    pub input: CreateHabitRuleInput,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct HabitOccurrenceListParams {
+    pub project_id: Option<String>,
+    pub from_date: Option<String>,
+    pub to_date: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HabitOccurrenceEnsureParams {
+    pub from_date: String,
+    pub to_date: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateHabitOccurrenceInput {
+    pub status: Option<HabitOccurrenceStatus>,
+    pub scheduled_date: Option<String>,
+    pub note: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HabitOccurrenceUpdateParams {
+    pub id: String,
+    pub patch: UpdateHabitOccurrenceInput,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum TimeBlockDisplayMode {
+    Interval,
+    Marker,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CalendarDayParams {
+    pub date: String,
+    pub project_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CalendarRangeParams {
+    pub from_date: String,
+    pub to_date: String,
+    pub project_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CalendarTimeBlockDto {
+    pub id: String,
+    pub project_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_name: Option<String>,
+    pub target_type: TimeTargetType,
+    pub target_id: String,
+    pub title: String,
+    pub start_at: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_at: Option<i64>,
+    pub duration_seconds: i64,
+    pub source: TimeEntrySource,
+    pub display_mode: TimeBlockDisplayMode,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CalendarDayDto {
+    pub date: String,
+    pub occurrences: Vec<HabitOccurrenceDto>,
+    pub time_blocks: Vec<CalendarTimeBlockDto>,
+    pub active_timer: Option<ActiveTimerDto>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CalendarDaySummaryDto {
+    pub date: String,
+    pub pending_count: i64,
+    pub done_count: i64,
+    pub total_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CalendarRangeDto {
+    pub days: Vec<CalendarDaySummaryDto>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HabitStreakDto {
+    pub rule_id: String,
+    pub current_streak: i64,
 }
 
 #[derive(Debug, Clone, Deserialize)]

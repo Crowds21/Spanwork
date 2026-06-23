@@ -1,23 +1,21 @@
 /**
- * 项目详情页：任务树 / 看板 / 日历视图切换
- *
- * projectId 来自路由 params；view 搜索参数持久化到 localStorage；删除项目后 navigate 回列表。
+ * 项目详情页：任务树 / 看板 / 日历 或 习惯式项目详情
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { HabitProjectDetail } from '@/components/habit/HabitProjectDetail';
 import { TaskCalendarView } from '@/components/task/views/TaskCalendarView';
 import { TaskKanbanView } from '@/components/task/views/TaskKanbanView';
 import { TaskViewSwitcher } from '@/components/task/views/TaskViewSwitcher';
 import { TaskTree } from '@/components/task/TaskTree';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { deleteProject, getProject } from '@/lib/tauri/project';
+import { deleteProject, getProject, updateProject } from '@/lib/tauri/project';
 import type { ProjectViewMode } from '@/lib/taskUtils';
 import { readStoredViewMode, storeViewMode } from '@/lib/taskUtils';
 import { queryKeys } from '@/queries/keys';
@@ -66,6 +64,18 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
     mutationFn: () => deleteProject(projectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.projectsRoot });
+      queryClient.invalidateQueries({ queryKey: queryKeys.todayDashboard });
+      navigate({ to: '/projects' });
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: () => updateProject(projectId, { status: 'archived' }),
+    meta: { errorSource: '存档项目' },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projectsRoot });
+      queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.todayDashboard });
       navigate({ to: '/projects' });
     },
   });
@@ -77,6 +87,7 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
       <div className="space-y-4">
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-36 w-full rounded-xl" />
       </div>
     );
   }
@@ -97,17 +108,13 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
 
   if (project.projectType !== 'task') {
     return (
-      <div className="space-y-4">
-        <Button variant="ghost" asChild>
-          <Link to="/projects">
-            <ArrowLeft className="size-4" />
-            返回项目列表
-          </Link>
-        </Button>
-        <Alert>
-          <AlertDescription>习惯式项目详情将在 M2 实现</AlertDescription>
-        </Alert>
-      </div>
+      <HabitProjectDetail
+        project={project}
+        onArchive={() => archiveMutation.mutate()}
+        onDelete={() => deleteMutation.mutate()}
+        isArchiving={archiveMutation.isPending}
+        isDeleting={deleteMutation.isPending}
+      />
     );
   }
 
@@ -125,6 +132,7 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{project.name}</h1>
               <Badge>任务式</Badge>
+              {project.status === 'archived' && <Badge variant="outline">已归档</Badge>}
               {project.categoryName && (
                 <Badge variant="outline" className="gap-1.5">
                   {project.categoryColor && (
@@ -142,15 +150,25 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
             )}
           </div>
         </div>
-        <Button
-          variant="outline"
-          className="text-destructive hover:text-destructive"
-          onClick={() => deleteMutation.mutate()}
-          disabled={deleteMutation.isPending}
-        >
-          <Trash2 className="size-4" />
-          删除项目
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {project.status === 'active' && (
+            <Button
+              variant="outline"
+              onClick={() => archiveMutation.mutate()}
+              disabled={archiveMutation.isPending}
+            >
+              存档
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            className="text-destructive hover:text-destructive"
+            onClick={() => deleteMutation.mutate()}
+            disabled={deleteMutation.isPending}
+          >
+            删除项目
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">

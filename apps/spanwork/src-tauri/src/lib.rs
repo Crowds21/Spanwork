@@ -82,6 +82,17 @@ pub fn run() {
             commands::timer::timer_stop,
             commands::timer::timer_cancel,
             commands::today::today_get_dashboard,
+            commands::habit::habit_rule_list,
+            commands::habit::habit_rule_get,
+            commands::habit::habit_rule_create,
+            commands::habit::habit_rule_update,
+            commands::habit::habit_rule_delete,
+            commands::habit::habit_occurrence_list,
+            commands::habit::habit_occurrence_ensure,
+            commands::habit::habit_occurrence_update,
+            commands::habit::habit_streak_get,
+            commands::calendar::calendar_get_day,
+            commands::calendar::calendar_get_range,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -129,6 +140,7 @@ mod tests {
                 start_date: None,
                 target_end_date: None,
                 category_id: None,
+                habit_rule: None,
             },
         )
         .unwrap()
@@ -149,6 +161,7 @@ mod tests {
                 start_date: None,
                 target_end_date: None,
                 category_id: None,
+                habit_rule: None,
             },
         )
         .unwrap();
@@ -459,7 +472,7 @@ mod tests {
                 project_id,
                 target_type: TimeTargetType::Task,
                 target_id: task_item.id,
-                start_at: day_start + 1_000,
+                start_at: Some(day_start + 1_000),
                 end_at: Some(day_start + 3_600_000),
                 duration_seconds: None,
                 note: None,
@@ -483,6 +496,68 @@ mod tests {
         };
         assert!(dashboard.habit_occurrences_today.is_empty());
         assert_eq!(dashboard.recent_tasks.len(), 1);
+    }
+
+    #[test]
+    fn project_delete_cascades_dashboard() {
+        let conn = test_conn();
+        let project_id = create_test_project(&conn);
+        let now = now_ms();
+        let (day_start, day_end) = utc_day_bounds(now);
+
+        let task_item = task::create(
+            &conn,
+            &CreateTaskInput {
+                project_id: project_id.clone(),
+                parent_id: None,
+                milestone_id: None,
+                title: "Orphan".into(),
+                description: None,
+                priority: None,
+                due_date: None,
+                tags: None,
+                sort_order: None,
+                is_milestone: false,
+            },
+        )
+        .unwrap();
+
+        time_entry::create(
+            &conn,
+            &CreateTimeEntryInput {
+                project_id: project_id.clone(),
+                target_type: TimeTargetType::Task,
+                target_id: task_item.id.clone(),
+                start_at: Some(day_start + 1_000),
+                end_at: Some(day_start + 3_600_000),
+                duration_seconds: None,
+                note: None,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(task::recent_tasks(&conn, 10).unwrap().len(), 1);
+        assert!(time_entry::sum_today(&conn, day_start, day_end).unwrap() > 0);
+
+        timer::start(
+            &conn,
+            &StartTimerInput {
+                project_id: project_id.clone(),
+                target_type: TimeTargetType::Task,
+                target_id: task_item.id.clone(),
+                note: None,
+                force: None,
+            },
+        )
+        .unwrap();
+        assert!(timer::get_active(&conn).unwrap().is_some());
+
+        project::delete(&conn, &project_id).unwrap();
+
+        assert!(project::get_by_id(&conn, &project_id).is_err());
+        assert_eq!(task::recent_tasks(&conn, 10).unwrap().len(), 0);
+        assert_eq!(time_entry::sum_today(&conn, day_start, day_end).unwrap(), 0);
+        assert!(timer::get_active(&conn).unwrap().is_none());
     }
 
     #[test]
@@ -524,6 +599,7 @@ mod tests {
         )
         .unwrap();
 
+        let milestone = task::get_by_id(&conn, &milestone.id).unwrap();
         assert_eq!(milestone.time_trackable, Some(false));
 
         let timer_error = timer::start(
@@ -547,7 +623,7 @@ mod tests {
                 project_id: project_id.clone(),
                 target_type: TimeTargetType::Task,
                 target_id: sub.id.clone(),
-                start_at: now_ms() - 7200_000,
+                start_at: Some(now_ms() - 7200_000),
                 end_at: Some(now_ms()),
                 duration_seconds: None,
                 note: None,
@@ -662,7 +738,7 @@ mod tests {
                 project_id,
                 target_type: TimeTargetType::Task,
                 target_id: done_task.id,
-                start_at: now_ms() - 3600_000,
+                start_at: Some(now_ms() - 3600_000),
                 end_at: Some(now_ms()),
                 duration_seconds: None,
                 note: None,
@@ -710,6 +786,7 @@ mod tests {
                 start_date: None,
                 target_end_date: None,
                 category_id: Some(created.id.clone()),
+                habit_rule: None,
             },
         )
         .unwrap()
@@ -722,5 +799,216 @@ mod tests {
 
         let project_after = project::get_by_id(&conn, &project_id).unwrap();
         assert!(project_after.category_id.is_none());
+    }
+
+    #[test]
+    fn habit_project_calendar_flow() {
+        use crate::db::repos::{calendar, habit_occurrence, habit_rule};
+        use crate::domain::habit_schedule::{format_date, today_local_date};
+        use crate::dto::{
+            CalendarDayParams, CreateHabitRuleInput, HabitFrequency, HabitOccurrenceStatus,
+            TimeBlockDisplayMode, UpdateHabitOccurrenceInput,
+        };
+
+        let conn = test_conn();
+        let today = format_date(today_local_date());
+
+        let project = project::create(
+            &conn,
+            &CreateProjectInput {
+                name: "Morning Run".into(),
+                description: None,
+                project_type: ProjectType::Habit,
+                color: Some("#22c55e".into()),
+                icon: None,
+                start_date: None,
+                target_end_date: None,
+                category_id: None,
+                habit_rule: None,
+            },
+        )
+        .unwrap();
+
+        habit_rule::create(
+            &conn,
+            &project.id,
+            Some(&CreateHabitRuleInput {
+                title: Some("Morning Run".into()),
+                sort_order: None,
+                frequency: Some(HabitFrequency::Daily),
+                days_of_week: None,
+                day_of_month: None,
+                days_of_month: None,
+                month_and_day: None,
+                yearly_dates: None,
+                why: None,
+                celebration_messages: None,
+                target_duration_seconds: None,
+                minimum_duration_seconds: None,
+                ability_tips: None,
+                anchor_time: None,
+                anchor_habit: None,
+                behavior_design_enabled: None,
+                celebration_on_complete: None,
+            }),
+            &project.name,
+        )
+        .unwrap();
+
+        let to = format_date(today_local_date() + chrono::Duration::days(90));
+        habit_occurrence::ensure_range(&conn, &today, &to).unwrap();
+
+        let day = calendar::get_day(
+            &conn,
+            &CalendarDayParams {
+                date: today.clone(),
+                project_id: None,
+            },
+            None,
+        )
+        .unwrap();
+        assert_eq!(day.occurrences.len(), 1);
+        assert_eq!(day.occurrences[0].status, HabitOccurrenceStatus::Pending);
+
+        assert_eq!(day.occurrences[0].display_title.as_deref(), Some("Morning Run · Morning Run"));
+
+        let occ_id = day.occurrences[0].id.clone();
+        let rule_id = day.occurrences[0].rule_id.clone();
+        time_entry::create(
+            &conn,
+            &CreateTimeEntryInput {
+                project_id: project.id.clone(),
+                target_type: TimeTargetType::HabitOccurrence,
+                target_id: occ_id.clone(),
+                start_at: Some(now_ms() - 1800_000),
+                end_at: None,
+                duration_seconds: Some(1800),
+                note: None,
+            },
+        )
+        .unwrap();
+
+        let day2 = calendar::get_day(
+            &conn,
+            &CalendarDayParams {
+                date: today,
+                project_id: None,
+            },
+            None,
+        )
+        .unwrap();
+        assert_eq!(day2.time_blocks.len(), 1);
+        assert_eq!(day2.time_blocks[0].display_mode, TimeBlockDisplayMode::Marker);
+
+        habit_occurrence::update(
+            &conn,
+            &occ_id,
+            &UpdateHabitOccurrenceInput {
+                status: Some(HabitOccurrenceStatus::Done),
+                scheduled_date: None,
+                note: None,
+            },
+        )
+        .unwrap();
+
+        let streak = habit_occurrence::compute_streak(&conn, &rule_id).unwrap();
+        assert_eq!(streak, 1);
+    }
+
+    #[test]
+    fn habit_timer_stop_allows_existing_manual_time() {
+        use crate::db::repos::{calendar, habit_occurrence, habit_rule};
+        use crate::domain::habit_schedule::{format_date, today_local_date};
+        use crate::dto::{CalendarDayParams, CreateHabitRuleInput, HabitFrequency, StartTimerInput};
+
+        let conn = test_conn();
+        let today = format_date(today_local_date());
+
+        let project = project::create(
+            &conn,
+            &CreateProjectInput {
+                name: "Reading".into(),
+                description: None,
+                project_type: ProjectType::Habit,
+                color: None,
+                icon: None,
+                start_date: None,
+                target_end_date: None,
+                category_id: None,
+                habit_rule: None,
+            },
+        )
+        .unwrap();
+
+        habit_rule::create(
+            &conn,
+            &project.id,
+            Some(&CreateHabitRuleInput {
+                title: Some("Reading Notes".into()),
+                sort_order: None,
+                frequency: Some(HabitFrequency::Daily),
+                days_of_week: None,
+                day_of_month: None,
+                days_of_month: None,
+                month_and_day: None,
+                yearly_dates: None,
+                why: None,
+                celebration_messages: None,
+                target_duration_seconds: None,
+                minimum_duration_seconds: None,
+                ability_tips: None,
+                anchor_time: None,
+                anchor_habit: None,
+                behavior_design_enabled: None,
+                celebration_on_complete: None,
+            }),
+            &project.name,
+        )
+        .unwrap();
+
+        let to = format_date(today_local_date() + chrono::Duration::days(7));
+        habit_occurrence::ensure_range(&conn, &today, &to).unwrap();
+
+        let occ_id = calendar::get_day(
+            &conn,
+            &CalendarDayParams {
+                date: today,
+                project_id: None,
+            },
+            None,
+        )
+        .unwrap()
+        .occurrences[0]
+        .id
+        .clone();
+
+        time_entry::create(
+            &conn,
+            &CreateTimeEntryInput {
+                project_id: project.id.clone(),
+                target_type: TimeTargetType::HabitOccurrence,
+                target_id: occ_id.clone(),
+                start_at: Some(now_ms() - 1800_000),
+                end_at: None,
+                duration_seconds: Some(1800),
+                note: None,
+            },
+        )
+        .unwrap();
+
+        timer::start(
+            &conn,
+            &StartTimerInput {
+                project_id: project.id,
+                target_type: TimeTargetType::HabitOccurrence,
+                target_id: occ_id,
+                note: None,
+                force: None,
+            },
+        )
+        .unwrap();
+
+        let entry = timer::stop(&conn).unwrap();
+        assert!(entry.duration_seconds >= 0);
     }
 }

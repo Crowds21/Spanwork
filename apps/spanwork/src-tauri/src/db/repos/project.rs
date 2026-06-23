@@ -137,6 +137,19 @@ pub fn create(conn: &Connection, input: &CreateProjectInput) -> AppResult<Projec
         ],
     )?;
 
+    if input.project_type == ProjectType::Habit {
+        if input.habit_rule.is_some() {
+            crate::db::repos::habit_rule::create_for_project(conn, &id, input.habit_rule.as_ref())?;
+            let today =
+                crate::domain::habit_schedule::format_date(crate::domain::habit_schedule::today_local_date());
+            let to = {
+                let d = crate::domain::habit_schedule::today_local_date() + chrono::Duration::days(90);
+                crate::domain::habit_schedule::format_date(d)
+            };
+            crate::db::repos::habit_occurrence::ensure_range(conn, &today, &to)?;
+        }
+    }
+
     get_by_id(conn, &id)
 }
 
@@ -194,20 +207,7 @@ pub fn update(conn: &Connection, id: &str, patch: &UpdateProjectInput) -> AppRes
 }
 
 pub fn delete(conn: &Connection, id: &str) -> AppResult<()> {
-    let now = now_ms();
-    let updated = conn.execute(
-        "UPDATE projects SET deleted_at = ?1, updated_at = ?1 WHERE id = ?2 AND deleted_at IS NULL",
-        rusqlite::params![now, id],
-    )?;
-
-    if updated == 0 {
-        return Err(AppError::NotFound {
-            entity: "project",
-            id: id.to_string(),
-        });
-    }
-
-    Ok(())
+    crate::domain::project_lifecycle::cascade_soft_delete(conn, id)
 }
 
 pub fn reorder(conn: &Connection, ordered_ids: &[String]) -> AppResult<()> {

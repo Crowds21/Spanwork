@@ -26,7 +26,7 @@ import {
   type TaskStatusFilter,
 } from '@/lib/taskUtils';
 import { deleteTask, listTasks, updateTask } from '@/lib/tauri/task';
-import { consumeTaskFocus, scrollToTaskElement } from '@/lib/timer/timerFocus';
+import { consumeTimerFocus, scrollToTaskElement } from '@/lib/timer/timerFocus';
 import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
 
@@ -234,10 +234,10 @@ export function TaskTree({ projectId }: TaskTreeProps) {
 
   useEffect(() => {
     if (!data?.length) return;
-    const taskId = consumeTaskFocus();
-    if (!taskId) return;
+    const focus = consumeTimerFocus();
+    if (!focus || focus.targetType !== 'task') return;
 
-    const attempt = () => scrollToTaskElement(taskId);
+    const attempt = () => scrollToTaskElement(focus.targetId);
     window.requestAnimationFrame(() => {
       if (!attempt()) {
         window.setTimeout(attempt, 200);

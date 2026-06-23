@@ -212,7 +212,10 @@
 .timer-bar-surface-expanded {
   max-width: 100%;
   border-radius: 0 0 1rem 1rem;
-  box-shadow: 0 6px 20px -8px color-mix(in oklch, var(--foreground) 12%, transparent);
+  isolation: isolate;
+  box-shadow:
+    0 8px 32px -10px color-mix(in oklch, var(--foreground) 14%, transparent),
+    inset 0 1px 0 0 color-mix(in oklch, var(--foreground) 10%, transparent);
 }
 
 .timer-bar-surface-expanded::before {
@@ -221,7 +224,7 @@
   inset: 0;
   z-index: 0;
   border-radius: inherit;
-  opacity: 0.6;
+  opacity: 0.55;
   background: linear-gradient(
     90deg,
     color-mix(in oklch, var(--primary) 28%, transparent),
@@ -241,13 +244,26 @@
   inset: 0;
   z-index: 1;
   border-radius: inherit;
-  background: color-mix(in oklch, var(--background) 24%, transparent);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid color-mix(in oklch, var(--foreground) 10%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--foreground) 8%, transparent) 0%,
+      transparent 40%
+    ),
+    color-mix(in oklch, var(--background) 38%, transparent);
+  backdrop-filter: blur(28px) saturate(1.65);
+  -webkit-backdrop-filter: blur(28px) saturate(1.65);
 }
 
 .dark .timer-bar-surface-expanded::after {
-  background: color-mix(in oklch, var(--background) 20%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--foreground) 6%, transparent) 0%,
+      transparent 45%
+    ),
+    color-mix(in oklch, var(--background) 32%, transparent);
 }
 
 /* ── Status strip: in-flow top bar inside main column ── */
@@ -262,7 +278,9 @@
 /* ── Minimized surface: compact strip visuals (used by in-flow status bar) ── */
 .timer-bar-surface-minimized {
   max-width: 100%;
+  isolation: isolate;
   border-bottom: 1px solid color-mix(in oklch, var(--primary) 18%, var(--border));
+  box-shadow: inset 0 1px 0 0 color-mix(in oklch, var(--foreground) 8%, transparent);
 }
 
 .timer-bar-surface-minimized::before {
@@ -270,7 +288,7 @@
   position: absolute;
   inset: 0;
   z-index: 0;
-  opacity: 0.6;
+  opacity: 0.55;
   background: linear-gradient(
     90deg,
     color-mix(in oklch, var(--primary) 28%, transparent),
@@ -289,13 +307,25 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: color-mix(in oklch, var(--background) 24%, transparent);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--foreground) 7%, transparent) 0%,
+      transparent 50%
+    ),
+    color-mix(in oklch, var(--background) 38%, transparent);
+  backdrop-filter: blur(28px) saturate(1.65);
+  -webkit-backdrop-filter: blur(28px) saturate(1.65);
 }
 
 .dark .timer-bar-surface-minimized::after {
-  background: color-mix(in oklch, var(--background) 20%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--foreground) 5%, transparent) 0%,
+      transparent 55%
+    ),
+    color-mix(in oklch, var(--background) 32%, transparent);
 }
 
 /* ── Paused: amber/orange accent instead of primary blue ── */

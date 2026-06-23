@@ -18,6 +18,18 @@ export const queryKeys = {
     params ? (['time-entries', params] as const) : (['time-entries'] as const),
   activeTimer: ['active-timer'] as const,
   todayDashboard: ['today-dashboard'] as const,
+  calendarDay: (date: string, projectId?: string) =>
+    projectId ? (['calendar-day', date, projectId] as const) : (['calendar-day', date] as const),
+  calendarRange: (from: string, to: string, projectId?: string) =>
+    projectId
+      ? (['calendar-range', from, to, projectId] as const)
+      : (['calendar-range', from, to] as const),
+  habitRules: (projectId: string) => ['habit-rules', projectId] as const,
+  habitStreak: (ruleId: string) => ['habit-streak', ruleId] as const,
+  habitOccurrences: (projectId: string, fromDate?: string, toDate?: string) =>
+    fromDate && toDate
+      ? (['habit-occurrences', projectId, fromDate, toDate] as const)
+      : (['habit-occurrences', projectId] as const),
   projectCategories: ['project-categories'] as const,
   projectCategory: (id: string) => ['project-category', id] as const,
 };

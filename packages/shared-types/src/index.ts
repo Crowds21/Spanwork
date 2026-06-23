@@ -12,6 +12,8 @@ export type TimeTargetType = 'task' | 'habit_occurrence';
 export type TimeEntrySource = 'timer' | 'manual';
 export type MilestoneLinkType = 'task' | 'habit_occurrence';
 export type HabitOccurrenceStatus = 'pending' | 'done' | 'skipped' | 'missed';
+export type HabitFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type TimeBlockDisplayMode = 'interval' | 'marker';
 
 export interface DeviceDto {
   deviceId: string;
@@ -49,6 +51,26 @@ export interface ProjectDetailDto extends ProjectDto {
   openMilestoneCount?: number;
 }
 
+export interface CreateHabitRuleInput {
+  title?: string;
+  sortOrder?: number;
+  frequency?: HabitFrequency;
+  daysOfWeek?: number[];
+  dayOfMonth?: number;
+  daysOfMonth?: number[];
+  monthAndDay?: string;
+  yearlyDates?: string[];
+  why?: string;
+  celebrationMessages?: string[];
+  targetDurationSeconds?: number;
+  minimumDurationSeconds?: number;
+  abilityTips?: string;
+  anchorTime?: string;
+  anchorHabit?: string;
+  behaviorDesignEnabled?: boolean;
+  celebrationOnComplete?: boolean;
+}
+
 export interface CreateProjectInput {
   name: string;
   description?: string;
@@ -58,6 +80,7 @@ export interface CreateProjectInput {
   startDate?: string;
   targetEndDate?: string;
   categoryId?: string;
+  habitRule?: CreateHabitRuleInput;
 }
 
 export interface UpdateProjectInput {
@@ -123,6 +146,7 @@ export interface TaskDto {
   totalTimeSeconds?: number;
   timeTrackable?: boolean;
   timerStartable?: boolean;
+  projectName?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -229,10 +253,135 @@ export interface CreateTimeEntryInput {
   projectId: string;
   targetType: TimeTargetType;
   targetId: string;
-  startAt: number;
+  startAt?: number;
   endAt?: number;
   durationSeconds?: number;
   note?: string;
+}
+
+export interface HabitRuleDto {
+  id: string;
+  projectId: string;
+  title: string;
+  sortOrder: number;
+  frequency: HabitFrequency;
+  daysOfWeek?: number[];
+  dayOfMonth?: number;
+  daysOfMonth?: number[];
+  monthAndDay?: string;
+  yearlyDates?: string[];
+  why?: string;
+  celebrationMessages?: string[];
+  targetDurationSeconds?: number;
+  minimumDurationSeconds?: number;
+  abilityTips?: string;
+  anchorTime?: string;
+  anchorHabit?: string;
+  behaviorDesignEnabled: boolean;
+  celebrationOnComplete: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface UpdateHabitRuleInput {
+  title?: string;
+  sortOrder?: number;
+  frequency?: HabitFrequency;
+  daysOfWeek?: number[];
+  dayOfMonth?: number;
+  daysOfMonth?: number[];
+  monthAndDay?: string;
+  yearlyDates?: string[];
+  why?: string;
+  celebrationMessages?: string[];
+  targetDurationSeconds?: number;
+  minimumDurationSeconds?: number;
+  abilityTips?: string;
+  anchorTime?: string;
+  anchorHabit?: string;
+  behaviorDesignEnabled?: boolean;
+  celebrationOnComplete?: boolean;
+}
+
+export interface HabitRuleUpdateParams {
+  ruleId: string;
+  patch: UpdateHabitRuleInput;
+}
+
+export interface HabitRuleCreateParams {
+  projectId: string;
+  input: CreateHabitRuleInput;
+}
+
+export interface HabitOccurrenceListParams {
+  projectId?: string;
+  fromDate?: string;
+  toDate?: string;
+}
+
+export interface HabitOccurrenceEnsureParams {
+  fromDate: string;
+  toDate: string;
+}
+
+export interface UpdateHabitOccurrenceInput {
+  status?: HabitOccurrenceStatus;
+  scheduledDate?: string;
+  note?: string;
+}
+
+export interface HabitOccurrenceUpdateParams {
+  id: string;
+  patch: UpdateHabitOccurrenceInput;
+}
+
+export interface CalendarDayParams {
+  date: string;
+  projectId?: string;
+}
+
+export interface CalendarRangeParams {
+  fromDate: string;
+  toDate: string;
+  projectId?: string;
+}
+
+export interface CalendarTimeBlockDto {
+  id: string;
+  projectId: string;
+  projectColor?: string;
+  projectName?: string;
+  targetType: TimeTargetType;
+  targetId: string;
+  title: string;
+  startAt: number;
+  endAt?: number;
+  durationSeconds: number;
+  source: TimeEntrySource;
+  displayMode: TimeBlockDisplayMode;
+}
+
+export interface CalendarDayDto {
+  date: string;
+  occurrences: HabitOccurrenceDto[];
+  timeBlocks: CalendarTimeBlockDto[];
+  activeTimer: ActiveTimerDto | null;
+}
+
+export interface CalendarDaySummaryDto {
+  date: string;
+  pendingCount: number;
+  doneCount: number;
+  totalCount: number;
+}
+
+export interface CalendarRangeDto {
+  days: CalendarDaySummaryDto[];
+}
+
+export interface HabitStreakDto {
+  ruleId: string;
+  currentStreak: number;
 }
 
 export interface UpdateTimeEntryInput {
@@ -268,6 +417,8 @@ export interface HabitOccurrenceDto {
   projectName?: string;
   projectColor?: string;
   ruleId: string;
+  ruleTitle?: string;
+  displayTitle?: string;
   scheduledDate: string;
   status: HabitOccurrenceStatus;
   rescheduledFrom?: string;

@@ -7,6 +7,7 @@
     "dev": "pnpm --filter @spanwork/app dev",
     "dev:kill-port": "lsof -ti :1420 | xargs kill -9 2>/dev/null; lsof -ti :1421 | xargs kill -9 2>/dev/null; true",
     "build": "pnpm --filter @spanwork/app build",
+    "clean": "cargo clean && rm -rf apps/spanwork/dist apps/spanwork/release apps/spanwork/src-tauri/gen/apple/build apps/spanwork/src-tauri/gen/apple/Externals apps/spanwork/node_modules/.vite .turbo apps/spanwork/.tanstack && find . -name '*.tsbuildinfo' -not -path './node_modules/*' -delete",
     "tauri": "pnpm --filter @spanwork/app tauri",
     "icons:sync": "pnpm --filter @spanwork/app icons:sync",
     "tauri:dev": "pnpm dev:kill-port && pnpm --filter @spanwork/app tauri dev",

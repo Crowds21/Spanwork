@@ -20,7 +20,7 @@ import {
 import { isTauri } from '@/lib/tauri/client';
 import { getActiveTimer } from '@/lib/tauri/timer';
 import { useActiveTimerElapsed } from '@/lib/timer/useActiveTimerElapsed';
-import { focusTask } from '@/lib/timer/timerFocus';
+import { focusTimerTarget } from '@/lib/timer/timerFocus';
 import { queryKeys } from '@/queries/keys';
 
 export const TIMER_BAR_ENTER_EXIT_MS = 320;
@@ -89,7 +89,7 @@ export function TimerBarProvider({ children }: { children: ReactNode }) {
 
   const handleViewProject = useCallback(() => {
     if (!active) return;
-    focusTask(active.targetId);
+    focusTimerTarget(active.targetType, active.targetId);
     void navigate({
       to: '/projects/$projectId',
       params: { projectId: active.projectId },

@@ -4,7 +4,7 @@
  * 新建/列表卡片的 mutation 成功后 invalidate queryKeys.projects；CategorySelect 绑定分类。
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { CalendarClock, ListTodo, Repeat2 } from 'lucide-react';
 import { useState } from 'react';
 import type { CreateProjectInput, ProjectDetailDto, ProjectType } from '@spanwork/shared-types';
@@ -41,6 +41,7 @@ interface CreateProjectFormProps {
 }
 
 export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [projectType, setProjectType] = useState<ProjectType>('task');
@@ -55,6 +56,10 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
       setDescription('');
       setCategoryId(undefined);
       onCreated?.(project);
+      void navigate({
+        to: '/projects/$projectId',
+        params: { projectId: project.id },
+      });
     },
   });
 
@@ -98,7 +103,7 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="task">任务式 — 可拆分子任务</SelectItem>
-                <SelectItem value="habit">习惯式 — 周期性养成</SelectItem>
+                <SelectItem value="habit">习惯式 — 同一主题下可有多条习惯</SelectItem>
               </SelectContent>
             </Select>
           </div>

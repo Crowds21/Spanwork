@@ -93,13 +93,30 @@ pub fn validate_timer_start_target(conn: &Connection, task_id: &str) -> AppResul
     Ok(())
 }
 
+pub fn validate_timer_stop_time_target(
+    conn: &Connection,
+    target_type: TimeTargetType,
+    target_id: &str,
+) -> AppResult<()> {
+    match target_type {
+        TimeTargetType::Task => validate_manual_time_entry_target(conn, target_id)?,
+        TimeTargetType::HabitOccurrence => {
+            crate::domain::habit_time::validate_timer_stop_target(conn, target_id)?
+        }
+    }
+    Ok(())
+}
+
 pub fn validate_manual_time_target(
     conn: &Connection,
     target_type: TimeTargetType,
     target_id: &str,
 ) -> AppResult<()> {
-    if target_type == TimeTargetType::Task {
-        validate_manual_time_entry_target(conn, target_id)?;
+    match target_type {
+        TimeTargetType::Task => validate_manual_time_entry_target(conn, target_id)?,
+        TimeTargetType::HabitOccurrence => {
+            crate::domain::habit_time::validate_manual_time_entry_target(conn, target_id)?
+        }
     }
     Ok(())
 }
@@ -109,8 +126,11 @@ pub fn validate_timer_start_time_target(
     target_type: TimeTargetType,
     target_id: &str,
 ) -> AppResult<()> {
-    if target_type == TimeTargetType::Task {
-        validate_timer_start_target(conn, target_id)?;
+    match target_type {
+        TimeTargetType::Task => validate_timer_start_target(conn, target_id)?,
+        TimeTargetType::HabitOccurrence => {
+            crate::domain::habit_time::validate_timer_start_target(conn, target_id)?
+        }
     }
     Ok(())
 }

@@ -5,7 +5,10 @@
  */
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Clock, FileText, ListTodo, Timer } from 'lucide-react';
+import { CalendarDays, Clock, FileText, ListTodo, Repeat2, Timer } from 'lucide-react';
+
+import { HabitOccurrenceRow } from '@/components/habit/HabitOccurrenceRow';
+import { TitleWithProject } from '@/components/common/TitleWithProject';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -23,6 +26,7 @@ import { useActiveTimerElapsed } from '@/lib/timer/useActiveTimerElapsed';
 import { isTauri } from '@/lib/tauri/env';
 import { getLogInfo } from '@/lib/tauri/log';
 import { getTodayDashboard } from '@/lib/tauri/today';
+import { todayDateKey } from '@/lib/calendarUtils';
 import { queryKeys } from '@/queries/keys';
 
 import type { ActiveTimerDto } from '@spanwork/shared-types';
@@ -55,7 +59,7 @@ export function TodayPage() {
       <div>
         <h1 className="text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">今日</h1>
         <p className="mt-1 text-sm text-muted-foreground sm:text-base">
-          活跃计时、最近任务与今日时间汇总
+          活跃计时、今日习惯、最近任务与时间汇总
         </p>
       </div>
 
@@ -131,6 +135,43 @@ export function TodayPage() {
           </div>
 
           <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2 text-primary">
+                  <Repeat2 className="size-4" />
+                  <CardTitle className="text-lg">今日习惯</CardTitle>
+                </div>
+                <CardDescription>跨项目习惯待办</CardDescription>
+              </div>
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/calendar" search={{ view: 'day', date: todayDateKey() }}>
+                  <CalendarDays className="size-4" />
+                  查看日历
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {dashboard.habitOccurrencesToday.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  暂无习惯待办。
+                  <Link to="/projects" className="ml-1 text-primary underline-offset-4 hover:underline">
+                    创建习惯式项目
+                  </Link>
+                </p>
+              ) : (
+                dashboard.habitOccurrencesToday.map((occ) => (
+                  <HabitOccurrenceRow
+                    key={occ.id}
+                    occurrence={occ}
+                    dateKey={todayDateKey()}
+                    compact
+                  />
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
             <CardHeader>
               <CardTitle className="text-lg">最近更新的任务</CardTitle>
               <CardDescription>按更新时间排序，最多 10 条</CardDescription>
@@ -143,7 +184,9 @@ export function TodayPage() {
                   {dashboard.recentTasks.map((task) => (
                     <li key={task.id} className="flex flex-wrap items-center gap-3 py-3">
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium">{task.title}</p>
+                        <p className="text-sm">
+                          <TitleWithProject title={task.title} projectName={task.projectName} />
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           更新 {new Date(task.updatedAt).toLocaleString()}
                         </p>
@@ -162,21 +205,6 @@ export function TodayPage() {
           </Card>
         </>
       )}
-
-      <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card">
-        <CardHeader>
-          <CardTitle className="text-xl">项目管理</CardTitle>
-          <CardDescription>创建项目、拆分任务、记录时间</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild>
-            <Link to="/projects">
-              进入项目
-              <ArrowRight className="size-4" />
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
 
       {inTauri && logInfoQuery.data && (
         <Card className="border-dashed bg-muted/20">
