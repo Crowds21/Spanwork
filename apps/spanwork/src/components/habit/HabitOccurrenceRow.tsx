@@ -55,7 +55,7 @@ export function HabitOccurrenceRow({ occurrence, dateKey, compact }: HabitOccurr
   const canStartTimer = canStartHabitTimer(occurrence);
   const canManualEntry = canManualHabitTimeEntry(occurrence);
   const color = occurrence.projectColor ?? undefined;
-  const iconBtnClass = 'size-8 shrink-0';
+  const iconBtnClass = 'size-8 max-md:size-11 shrink-0';
   const title =
     occurrence.ruleTitle ??
     occurrence.displayTitle ??

@@ -40,7 +40,7 @@ export function TimerBarStatusStrip() {
         )}
       >
         <div className="relative z-[2] flex min-h-9 min-w-0 w-full items-center px-safe md:min-h-0 md:h-full">
-          <div className="flex w-full min-w-0 items-center justify-center gap-1.5 overflow-x-hidden pr-16 text-xs sm:gap-2 md:pr-0">
+          <div className="flex w-full min-w-0 items-center justify-center gap-1.5 overflow-x-hidden pr-12 text-xs sm:gap-2 sm:pr-16 md:pr-0">
             <Timer
               className={cn(
                 'size-3.5 shrink-0',
@@ -55,13 +55,13 @@ export function TimerBarStatusStrip() {
             <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-foreground">
               {formatDurationLive(elapsed)}
             </span>
-            <span className={cn('shrink-0', isPaused ? 'text-amber-600/35' : 'text-primary/35')}>
+            <span className={cn('hidden shrink-0 sm:inline', isPaused ? 'text-amber-600/35' : 'text-primary/35')}>
               ·
             </span>
             <button
               type="button"
               className={cn(
-                'shrink-0 underline-offset-2 hover:underline',
+                'hidden shrink-0 underline-offset-2 hover:underline sm:inline',
                 isPaused
                   ? 'text-amber-700/90 hover:text-amber-800 dark:text-amber-300'
                   : 'text-primary/90 hover:text-primary',
@@ -85,7 +85,7 @@ export function TimerBarStatusStrip() {
               variant="ghost"
               size="icon"
               className={cn(
-                'size-7 hover:bg-primary/10 md:size-5',
+                'size-11 hover:bg-primary/10 md:size-5',
                 isPaused
                   ? 'text-amber-700/80 hover:text-amber-800 dark:text-amber-300'
                   : 'text-primary/80 hover:text-primary',

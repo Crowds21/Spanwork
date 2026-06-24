@@ -7,6 +7,7 @@ import type { ActiveTimerDto, CalendarTimeBlockDto } from '@spanwork/shared-type
 import { CalendarActiveTimerBlock } from '@/components/calendar/CalendarActiveTimerBlock';
 import { CalendarTimelineCapsule } from '@/components/calendar/CalendarTimelineCapsule';
 import { CalendarTimelineMarker } from '@/components/calendar/CalendarTimelineMarker';
+import { useCalendarHourHeight } from '@/hooks/useIsMobile';
 import {
   layoutTimelineSegments,
   resolveBlockSegments,
@@ -27,7 +28,7 @@ interface CalendarDayTimelineProps {
 }
 
 export function CalendarDayTimeline({ timeBlocks, activeTimer }: CalendarDayTimelineProps) {
-  const hourHeight = typeof window !== 'undefined' && window.innerWidth < 768 ? 40 : 48;
+  const hourHeight = useCalendarHourHeight();
   const blocks = timeBlocks ?? [];
 
   const visibleBlocks = useMemo(

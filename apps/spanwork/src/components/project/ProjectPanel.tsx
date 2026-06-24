@@ -220,7 +220,8 @@ export function ProjectList() {
               type="button"
               size="sm"
               variant={categoryFilter === cat.id ? 'default' : 'outline'}
-              className="gap-1.5"
+              className="max-w-[8rem] gap-1.5 truncate"
+              title={cat.name}
               onClick={() => setCategoryFilter(cat.id)}
             >
               {cat.color && (
@@ -272,7 +273,9 @@ export function ProjectList() {
                     </Badge>
                   )}
                 </div>
-                <CardTitle className="text-lg">{project.name}</CardTitle>
+                <CardTitle className="truncate text-lg" title={project.name}>
+                  {project.name}
+                </CardTitle>
                 {project.description && (
                   <CardDescription className="line-clamp-2">{project.description}</CardDescription>
                 )}

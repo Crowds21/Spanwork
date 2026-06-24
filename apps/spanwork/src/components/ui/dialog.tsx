@@ -36,7 +36,7 @@ export function Dialog({ open, onOpenChange, children, contentClassName }: Dialo
       />
       <div
         className={cn(
-          'relative z-10 w-full max-h-[92dvh] overflow-y-auto sm:max-w-md',
+          'relative z-10 w-full max-h-[92dvh] overflow-y-auto pb-safe sm:max-w-md sm:pb-0',
           'rounded-t-2xl sm:rounded-2xl',
           contentClassName,
         )}

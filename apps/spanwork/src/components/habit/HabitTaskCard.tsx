@@ -159,7 +159,7 @@ export function HabitTaskCard({
   const canManualEntry = !readOnly && todayOcc && canManualHabitTimeEntry(todayOcc);
 
   const titleId = `habit-task-${rule.id}`;
-  const iconBtnClass = 'size-8 shrink-0';
+  const iconBtnClass = 'size-8 max-md:size-11 shrink-0';
 
   return (
     <>
@@ -169,9 +169,13 @@ export function HabitTaskCard({
       >
         <CardContent className="space-y-3 p-4" aria-labelledby={titleId}>
           <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 id={titleId} className="text-base font-semibold leading-tight">
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex min-w-0 items-center gap-2">
+                <h3
+                  id={titleId}
+                  className="min-w-0 truncate text-base font-semibold leading-tight"
+                  title={rule.title}
+                >
                   {rule.title}
                 </h3>
                 <HabitFrequencyBadge rule={rule} />

@@ -26,14 +26,14 @@ export function CalendarDateHeader({
   onToday,
 }: CalendarDateHeaderProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-1">
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-center gap-1">
         <Button type="button" variant="ghost" size="icon" onClick={onPrev} aria-label="上一页">
           <ChevronLeft className="size-5" />
         </Button>
         <button
           type="button"
-          className="min-w-[10rem] text-center text-base font-semibold hover:underline sm:text-lg"
+          className="min-w-0 flex-1 truncate text-center text-base font-semibold hover:underline sm:min-w-[10rem] sm:flex-none sm:text-lg"
           onClick={onToday}
         >
           {view === 'day' ? formatDateLabel(dateKey) : dateKey.slice(0, 7)}

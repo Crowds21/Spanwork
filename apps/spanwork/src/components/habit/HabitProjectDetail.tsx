@@ -81,21 +81,28 @@ export function HabitProjectDetail({
               返回
             </Link>
           </Button>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{project.name}</h1>
-            <Badge variant="habit">习惯式</Badge>
-            {readOnly && <Badge variant="outline">已归档</Badge>}
-            {project.categoryName && (
-              <Badge variant="outline" className="gap-1.5">
-                {project.categoryColor && (
-                  <span
-                    className="size-2 rounded-full"
-                    style={{ backgroundColor: project.categoryColor }}
-                  />
-                )}
-                {project.categoryName}
-              </Badge>
-            )}
+          <div>
+            <h1
+              className="truncate text-2xl font-bold tracking-tight sm:text-3xl"
+              title={project.name}
+            >
+              {project.name}
+            </h1>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Badge variant="habit">习惯式</Badge>
+              {readOnly && <Badge variant="outline">已归档</Badge>}
+              {project.categoryName && (
+                <Badge variant="outline" className="max-w-[8rem] shrink-0 gap-1.5 truncate">
+                  {project.categoryColor && (
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: project.categoryColor }}
+                    />
+                  )}
+                  <span className="truncate">{project.categoryName}</span>
+                </Badge>
+              )}
+            </div>
           </div>
           {project.description && (
             <p className="text-muted-foreground">{project.description}</p>

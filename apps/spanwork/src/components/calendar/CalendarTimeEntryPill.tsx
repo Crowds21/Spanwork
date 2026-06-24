@@ -33,6 +33,8 @@ export function CalendarTimeEntryPill({
   const duration = formatCalendarDurationMinutes(block.durationSeconds);
   const tooltip = [block.title, block.projectName, duration].filter(Boolean).join(' · ');
   const isCompact = layout?.compact ?? compact;
+  const hideProjectName = isCompact;
+  const hideDuration = isCompact;
 
   return (
     <div
@@ -57,11 +59,11 @@ export function CalendarTimeEntryPill({
     >
       <TitleWithProject
         title={block.title}
-        projectName={block.projectName}
+        projectName={hideProjectName ? undefined : block.projectName}
         className="min-w-0 flex-1"
         projectClassName="text-[10px]"
       />
-      {showDuration && duration && (
+      {showDuration && duration && !hideDuration && (
         <span className="shrink-0 tabular-nums text-muted-foreground">{duration}</span>
       )}
     </div>

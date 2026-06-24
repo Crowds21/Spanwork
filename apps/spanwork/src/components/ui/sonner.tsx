@@ -9,12 +9,12 @@ export function Toaster(props: ToasterProps) {
       className="toaster group"
       position="top-center"
       offset={{
-        top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+        top: 'var(--toast-offset-top)',
       }}
       toastOptions={{
         classNames: {
           toast:
-            'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg',
+            'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg max-w-[min(100vw-2rem,24rem)]',
           title: 'group-[.toast]:font-semibold',
           description: 'group-[.toast]:text-muted-foreground group-[.toast]:leading-relaxed',
         },
