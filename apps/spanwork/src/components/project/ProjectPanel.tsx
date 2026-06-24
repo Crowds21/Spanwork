@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { CalendarClock, ListTodo, Repeat2 } from 'lucide-react';
 import { useState } from 'react';
-import type { CreateProjectInput, ProjectDetailDto, ProjectType } from '@spanwork/shared-types';
+import type { CreateHabitRuleInput, CreateProjectInput, HabitFrequency, ProjectDetailDto, ProjectType } from '@spanwork/shared-types';
 
 import { CategorySelect } from '@/components/project/CategorySelect';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +36,16 @@ import { listProjectCategories } from '@/lib/tauri/project_category';
 import { cn } from '@/lib/utils';
 import { queryKeys } from '@/queries/keys';
 
+const WEEKDAY_OPTIONS = [
+  { value: 1, label: '一' },
+  { value: 2, label: '二' },
+  { value: 3, label: '三' },
+  { value: 4, label: '四' },
+  { value: 5, label: '五' },
+  { value: 6, label: '六' },
+  { value: 7, label: '日' },
+];
+
 interface CreateProjectFormProps {
   onCreated?: (project: ProjectDetailDto) => void;
 }
@@ -47,6 +57,10 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
   const [projectType, setProjectType] = useState<ProjectType>('task');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState<string | undefined>();
+  const [includeFirstHabit, setIncludeFirstHabit] = useState(true);
+  const [habitTaskTitle, setHabitTaskTitle] = useState('');
+  const [habitFrequency, setHabitFrequency] = useState<HabitFrequency>('daily');
+  const [habitDaysOfWeek, setHabitDaysOfWeek] = useState<number[]>([1, 3, 5]);
 
   const mutation = useMutation({
     mutationFn: (input: CreateProjectInput) => createProject(input),
@@ -55,6 +69,10 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
       setName('');
       setDescription('');
       setCategoryId(undefined);
+      setIncludeFirstHabit(true);
+      setHabitTaskTitle('');
+      setHabitFrequency('daily');
+      setHabitDaysOfWeek([1, 3, 5]);
       onCreated?.(project);
       void navigate({
         to: '/projects/$projectId',
@@ -63,15 +81,35 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
     },
   });
 
+  function buildHabitRule(trimmedName: string): CreateHabitRuleInput | undefined {
+    if (projectType !== 'habit' || !includeFirstHabit) return undefined;
+    const rule: CreateHabitRuleInput = {
+      title: habitTaskTitle.trim() || trimmedName,
+      frequency: habitFrequency,
+    };
+    if (habitFrequency === 'weekly') {
+      rule.daysOfWeek = habitDaysOfWeek.length > 0 ? habitDaysOfWeek : [1];
+    }
+    return rule;
+  }
+
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!name.trim()) return;
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
     mutation.mutate({
-      name: name.trim(),
+      name: trimmedName,
       projectType,
       description: description.trim() || undefined,
       categoryId,
+      habitRule: buildHabitRule(trimmedName),
     });
+  }
+
+  function toggleWeekday(day: number) {
+    setHabitDaysOfWeek((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort((a, b) => a - b),
+    );
   }
 
   return (
@@ -107,6 +145,67 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
               </SelectContent>
             </Select>
           </div>
+          {projectType === 'habit' && (
+            <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  id="include-first-habit"
+                  type="checkbox"
+                  className="size-4 rounded border border-input accent-primary"
+                  checked={includeFirstHabit}
+                  onChange={(e) => setIncludeFirstHabit(e.target.checked)}
+                />
+                <span className="text-sm">添加首个习惯任务</span>
+              </label>
+              {includeFirstHabit && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="habit-task-title">任务名称（可选）</Label>
+                    <Input
+                      id="habit-task-title"
+                      value={habitTaskTitle}
+                      onChange={(e) => setHabitTaskTitle(e.target.value)}
+                      placeholder="留空则使用项目名称"
+                      maxLength={128}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="habit-frequency">重复频率</Label>
+                    <Select
+                      value={habitFrequency}
+                      onValueChange={(value) => setHabitFrequency(value as HabitFrequency)}
+                    >
+                      <SelectTrigger id="habit-frequency" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">每天</SelectItem>
+                        <SelectItem value="weekly">每周</SelectItem>
+                        <SelectItem value="monthly">每月</SelectItem>
+                        <SelectItem value="yearly">每年</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {habitFrequency === 'weekly' && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {WEEKDAY_OPTIONS.map(({ value, label }) => (
+                        <Button
+                          key={value}
+                          type="button"
+                          size="sm"
+                          variant={habitDaysOfWeek.includes(value) ? 'default' : 'outline'}
+                          className="h-8 min-w-9 px-2"
+                          onClick={() => toggleWeekday(value)}
+                        >
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="project-category">分类（可选）</Label>
             <CategorySelect

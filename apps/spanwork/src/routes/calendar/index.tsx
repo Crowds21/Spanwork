@@ -19,7 +19,7 @@ export const Route = createFileRoute('/calendar/')({
     const projectId = typeof search.projectId === 'string' ? search.projectId : undefined;
     return {
       date,
-      view: view === 'month' ? 'month' : 'day',
+      view: view === 'month' ? 'month' : view === 'week' ? 'week' : 'day',
       projectId,
     };
   },

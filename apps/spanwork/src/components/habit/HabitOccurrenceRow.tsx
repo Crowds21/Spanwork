@@ -1,11 +1,12 @@
 /**
  * 习惯实例待办行（完成 / 跳过 / 计时 / 补录）
  */
-import { Check, Clock, Play, SkipForward } from 'lucide-react';
+import { Check, CalendarClock, Clock, Play, SkipForward } from 'lucide-react';
 import { useState } from 'react';
 import type { HabitOccurrenceDto } from '@spanwork/shared-types';
 
 import { HabitTimeEntryDialog } from '@/components/habit/HabitTimeEntryDialog';
+import { HabitRescheduleDialog } from '@/components/habit/HabitRescheduleDialog';
 import { TitleWithProject } from '@/components/common/TitleWithProject';
 import { TimerSessionControls } from '@/components/timer/TimerSessionControls';
 import { Button } from '@/components/ui/button';
@@ -31,11 +32,18 @@ interface HabitOccurrenceRowProps {
   occurrence: HabitOccurrenceDto;
   dateKey: string;
   compact?: boolean;
+  showReschedule?: boolean;
 }
 
-export function HabitOccurrenceRow({ occurrence, dateKey, compact }: HabitOccurrenceRowProps) {
+export function HabitOccurrenceRow({
+  occurrence,
+  dateKey,
+  compact,
+  showReschedule = true,
+}: HabitOccurrenceRowProps) {
   const [entryOpen, setEntryOpen] = useState(false);
   const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
 
   const {
     activeTimer,
@@ -64,7 +72,10 @@ export function HabitOccurrenceRow({ occurrence, dateKey, compact }: HabitOccurr
   const projectLabel =
     occurrence.ruleTitle && occurrence.projectName ? occurrence.projectName : undefined;
   const tooltipTitle = occurrence.displayTitle ?? title;
-  const showActions = canAct || canManualEntry || isTimingThis;
+  const canReschedule =
+    showReschedule &&
+    (occurrence.status === 'pending' || occurrence.status === 'missed');
+  const showActions = canAct || canManualEntry || isTimingThis || canReschedule;
 
   return (
     <>
@@ -171,6 +182,20 @@ export function HabitOccurrenceRow({ occurrence, dateKey, compact }: HabitOccurr
                     </Tooltip>
                   </>
                 )}
+                {canReschedule && (
+                  <Tooltip label="改期" side="bottom">
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className={iconBtnClass}
+                      onClick={() => setRescheduleOpen(true)}
+                      aria-label="改期"
+                    >
+                      <CalendarClock className="size-4" />
+                    </Button>
+                  </Tooltip>
+                )}
               </>
             )}
           </div>
@@ -197,6 +222,18 @@ export function HabitOccurrenceRow({ occurrence, dateKey, compact }: HabitOccurr
         projectId={occurrence.projectId}
         occurrenceId={occurrence.id}
         dateKey={dateKey}
+      />
+
+      <HabitRescheduleDialog
+        open={rescheduleOpen}
+        onOpenChange={setRescheduleOpen}
+        projectId={occurrence.projectId}
+        ruleId={occurrence.ruleId}
+        occurrenceId={occurrence.id}
+        currentDate={occurrence.scheduledDate}
+        title={tooltipTitle}
+        dateKey={dateKey}
+        onSuccess={invalidate}
       />
     </>
   );

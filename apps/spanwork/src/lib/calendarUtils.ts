@@ -2,7 +2,9 @@
  * 日历网格与日期导航工具（全局习惯日历）
  */
 
-export type CalendarViewMode = 'day' | 'month';
+export type CalendarViewMode = 'day' | 'week' | 'month';
+
+export const MAX_TIMELINE_COLUMNS = 3;
 
 const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
 
@@ -42,6 +44,34 @@ export function addMonths(dateKey: string, delta: number): { year: number; month
   const { year, month } = parseDateKey(dateKey);
   const date = new Date(year, month + delta, 1);
   return { year: date.getFullYear(), month: date.getMonth() };
+}
+
+/** ISO 周一为一周起点 */
+export function weekRangeKeys(dateKey: string): { from: string; to: string; days: string[] } {
+  const { year, month, day } = parseDateKey(dateKey);
+  const date = new Date(year, month, day);
+  const weekday = (date.getDay() + 6) % 7;
+  const monday = new Date(year, month, day - weekday);
+  const days: string[] = [];
+  for (let i = 0; i < 7; i += 1) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push(toDateKey(d.getFullYear(), d.getMonth(), d.getDate()));
+  }
+  return { from: days[0], to: days[6], days };
+}
+
+export function formatWeekLabel(dateKey: string): string {
+  const { from, to } = weekRangeKeys(dateKey);
+  const start = parseDateKey(from);
+  const end = parseDateKey(to);
+  if (start.year === end.year && start.month === end.month) {
+    return `${start.year}年${start.month + 1}月${start.day}日 – ${end.day}日`;
+  }
+  if (start.year === end.year) {
+    return `${start.year}年${start.month + 1}月${start.day}日 – ${end.month + 1}月${end.day}日`;
+  }
+  return `${start.year}年${start.month + 1}月${start.day}日 – ${end.year}年${end.month + 1}月${end.day}日`;
 }
 
 export function monthAnchorDateKey(dateKey: string): string {

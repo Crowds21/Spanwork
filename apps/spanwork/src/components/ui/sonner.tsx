@@ -4,12 +4,17 @@
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
 export function Toaster(props: ToasterProps) {
+  const safeTopOffset = 'var(--toast-offset-top)';
+
   return (
     <Sonner
       className="toaster group"
       position="top-center"
       offset={{
-        top: 'var(--toast-offset-top)',
+        top: safeTopOffset,
+      }}
+      mobileOffset={{
+        top: safeTopOffset,
       }}
       toastOptions={{
         classNames: {

@@ -1,16 +1,19 @@
 /**
- * 日历日期导航头（‹ › + 视图切换器）
+ * 日历日期导航头（‹ › + 视图切换器 + 项目筛选）
  */
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+import { CalendarProjectFilter } from '@/components/calendar/CalendarProjectFilter';
 import { CalendarViewSwitcher } from '@/components/calendar/CalendarViewSwitcher';
 import { Button } from '@/components/ui/button';
 import type { CalendarViewMode } from '@/lib/calendarUtils';
-import { formatDateLabel } from '@/lib/calendarUtils';
+import { formatDateLabel, formatWeekLabel } from '@/lib/calendarUtils';
 
 interface CalendarDateHeaderProps {
   dateKey: string;
   view: CalendarViewMode;
+  projectId?: string;
+  onProjectFilterChange: (projectId: string | undefined) => void;
   onViewChange: (view: CalendarViewMode) => void;
   onPrev: () => void;
   onNext: () => void;
@@ -20,29 +23,41 @@ interface CalendarDateHeaderProps {
 export function CalendarDateHeader({
   dateKey,
   view,
+  projectId,
+  onProjectFilterChange,
   onViewChange,
   onPrev,
   onNext,
   onToday,
 }: CalendarDateHeaderProps) {
+  const titleLabel =
+    view === 'day'
+      ? formatDateLabel(dateKey)
+      : view === 'week'
+        ? formatWeekLabel(dateKey)
+        : dateKey.slice(0, 7);
+
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-      <div className="flex min-w-0 items-center gap-1">
-        <Button type="button" variant="ghost" size="icon" onClick={onPrev} aria-label="上一页">
-          <ChevronLeft className="size-5" />
-        </Button>
-        <button
-          type="button"
-          className="min-w-0 flex-1 truncate text-center text-base font-semibold hover:underline sm:min-w-[10rem] sm:flex-none sm:text-lg"
-          onClick={onToday}
-        >
-          {view === 'day' ? formatDateLabel(dateKey) : dateKey.slice(0, 7)}
-        </button>
-        <Button type="button" variant="ghost" size="icon" onClick={onNext} aria-label="下一页">
-          <ChevronRight className="size-5" />
-        </Button>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-1">
+          <Button type="button" variant="ghost" size="icon" onClick={onPrev} aria-label="上一页">
+            <ChevronLeft className="size-5" />
+          </Button>
+          <button
+            type="button"
+            className="min-w-0 flex-1 truncate text-center text-base font-semibold hover:underline sm:min-w-[10rem] sm:flex-none sm:text-lg"
+            onClick={onToday}
+          >
+            {titleLabel}
+          </button>
+          <Button type="button" variant="ghost" size="icon" onClick={onNext} aria-label="下一页">
+            <ChevronRight className="size-5" />
+          </Button>
+        </div>
+        <CalendarViewSwitcher value={view} onChange={onViewChange} />
       </div>
-      <CalendarViewSwitcher value={view} onChange={onViewChange} />
+      <CalendarProjectFilter projectId={projectId} onChange={onProjectFilterChange} />
     </div>
   );
 }

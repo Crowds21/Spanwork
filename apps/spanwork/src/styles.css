@@ -133,6 +133,12 @@
   --toast-offset-top: calc(var(--safe-top) + 12px);
 }
 
+@media (max-width: 767px) {
+  :root {
+    --toast-offset-top: calc(var(--safe-top) + 28px);
+  }
+}
+
 /* iOS WKWebView: constant() fallback for older WebKit */
 @supports (padding: max(0px)) {
   :root {

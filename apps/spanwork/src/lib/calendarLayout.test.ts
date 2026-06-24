@@ -11,7 +11,7 @@ import { CALENDAR_PILL_HEIGHT } from '@/lib/calendarTimelineMetrics';
 
 describe('layoutTimelineSegments', () => {
   it('assigns full width when intervals do not overlap', () => {
-    const layout = layoutTimelineSegments([
+    const { segments: layout } = layoutTimelineSegments([
       { id: 'a', startAt: 0, endMs: 100 },
       { id: 'b', startAt: 200, endMs: 300 },
     ]);
@@ -21,7 +21,7 @@ describe('layoutTimelineSegments', () => {
   });
 
   it('splits width for two overlapping intervals', () => {
-    const layout = layoutTimelineSegments([
+    const { segments: layout } = layoutTimelineSegments([
       { id: 'a', startAt: 0, endMs: 200 },
       { id: 'b', startAt: 100, endMs: 300 },
     ]);
@@ -37,7 +37,7 @@ describe('layoutTimelineSegments', () => {
   });
 
   it('splits width for three concurrent intervals', () => {
-    const layout = layoutTimelineSegments([
+    const { segments: layout } = layoutTimelineSegments([
       { id: 'a', startAt: 0, endMs: 300 },
       { id: 'b', startAt: 0, endMs: 300 },
       { id: 'c', startAt: 0, endMs: 300 },
@@ -49,6 +49,26 @@ describe('layoutTimelineSegments', () => {
     expect(segments[0].column).toBe(0);
     expect(layout.get('b')![0].column).toBe(1);
     expect(layout.get('c')![0].column).toBe(2);
+  });
+
+  it('aggregates overflow when more than three intervals overlap', () => {
+    const { segments: layout, overflows } = layoutTimelineSegments([
+      { id: 'a', startAt: 0, endMs: 300 },
+      { id: 'b', startAt: 0, endMs: 300 },
+      { id: 'c', startAt: 0, endMs: 300 },
+      { id: 'd', startAt: 0, endMs: 300 },
+      { id: 'e', startAt: 0, endMs: 300 },
+    ]);
+
+    expect(layout.has('a')).toBe(true);
+    expect(layout.has('b')).toBe(true);
+    expect(layout.has('c')).toBe(false);
+    expect(layout.has('d')).toBe(false);
+    expect(layout.has('e')).toBe(false);
+    expect(overflows).toHaveLength(1);
+    expect(overflows[0].hiddenCount).toBe(3);
+    expect(overflows[0].column).toBe(2);
+    expect(overflows[0].columnCount).toBe(3);
   });
 });
 
@@ -126,7 +146,7 @@ describe('resolveCapsuleGeometries', () => {
   });
 
   it('returns one geometry per overlap segment with split width', () => {
-    const layout = layoutTimelineSegments([
+    const { segments: layout } = layoutTimelineSegments([
       { id: 'a', startAt: startMs, endMs },
       { id: 'b', startAt: startMs + 30 * 60_000, endMs: startMs + 90 * 60_000 },
     ]);

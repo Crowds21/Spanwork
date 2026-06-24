@@ -7,6 +7,7 @@ import type { ActiveTimerDto, CalendarTimeBlockDto } from '@spanwork/shared-type
 import { CalendarActiveTimerBlock } from '@/components/calendar/CalendarActiveTimerBlock';
 import { CalendarTimelineCapsule } from '@/components/calendar/CalendarTimelineCapsule';
 import { CalendarTimelineMarker } from '@/components/calendar/CalendarTimelineMarker';
+import { CalendarTimelineOverflowChip } from '@/components/calendar/CalendarTimelineOverflowChip';
 import { useCalendarHourHeight } from '@/hooks/useIsMobile';
 import {
   layoutTimelineSegments,
@@ -46,7 +47,7 @@ export function CalendarDayTimeline({ timeBlocks, activeTimer }: CalendarDayTime
     [visibleBlocks],
   );
 
-  const layout = useMemo(() => {
+  const { layout, overflowSegments } = useMemo(() => {
     const intervals = intervalBlocks
       .map((block) => {
         const range = blockIntervalTimeRange(block);
@@ -55,7 +56,8 @@ export function CalendarDayTimeline({ timeBlocks, activeTimer }: CalendarDayTime
       })
       .filter((interval): interval is NonNullable<typeof interval> => interval != null);
 
-    return layoutTimelineSegments(intervals);
+    const { segments, overflows } = layoutTimelineSegments(intervals);
+    return { layout: segments, overflowSegments: overflows };
   }, [intervalBlocks]);
 
   const totalHeight = CALENDAR_TIMELINE_TOP_INSET + hourHeight * 24;
@@ -94,6 +96,13 @@ export function CalendarDayTimeline({ timeBlocks, activeTimer }: CalendarDayTime
               key={block.id}
               block={block}
               topPx={msToTopPx(block.startAt, hourHeight)}
+            />
+          ))}
+          {overflowSegments.map((segment, index) => (
+            <CalendarTimelineOverflowChip
+              key={`overflow-${segment.startMs}-${index}`}
+              segment={segment}
+              hourHeight={hourHeight}
             />
           ))}
           {activeTimer && (
