@@ -1,17 +1,23 @@
-name: Desktop Client Packages
+name: Desktop Release
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   package:
     name: Build ${{ matrix.name }} installer
     runs-on: ${{ matrix.os }}
+    if: github.ref == 'refs/heads/main'
     timeout-minutes: 60
 
     strategy:
@@ -71,7 +77,7 @@ jobs:
     name: Publish GitHub Release
     needs: package
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
 
@@ -94,9 +100,10 @@ jobs:
 
           version="$(node -p "require('./package.json').version")"
           short_sha="${GITHUB_SHA::7}"
+          run_number="${GITHUB_RUN_NUMBER}"
 
-          echo "tag=desktop-v${version}-${short_sha}" >> "$GITHUB_OUTPUT"
-          echo "title=Spanwork Desktop v${version} (${short_sha})" >> "$GITHUB_OUTPUT"
+          echo "tag=desktop-v${version}-${run_number}-${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "title=Spanwork Desktop v${version} build ${run_number} (${short_sha})" >> "$GITHUB_OUTPUT"
 
       - name: Publish release assets
         shell: bash
@@ -114,7 +121,7 @@ jobs:
             exit 1
           fi
 
-          notes="Automated desktop client release for commit ${GITHUB_SHA}."
+          notes="Automated desktop client release from main for commit ${GITHUB_SHA}."
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release edit "$RELEASE_TAG" \
