@@ -70,6 +70,68 @@ jobs:
           retention-days: 30
           path: |
             target/release/bundle/dmg/*.dmg
-            target/release/bundle/macos/*.app
             target/release/bundle/msi/*.msi
             target/release/bundle/nsis/*.exe
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: package
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download packaged installers
+        uses: actions/download-artifact@v4
+        with:
+          pattern: spanwork-*-installers-${{ github.sha }}
+          path: release-assets
+          merge-multiple: true
+
+      - name: Prepare release metadata
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version="$(node -p "require('./package.json').version")"
+          short_sha="${GITHUB_SHA::7}"
+
+          echo "tag=desktop-v${version}-${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "title=Spanwork Desktop v${version} (${short_sha})" >> "$GITHUB_OUTPUT"
+
+      - name: Publish release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_TITLE: ${{ steps.release.outputs.title }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          assets=(release-assets/*)
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "No release assets were downloaded." >&2
+            exit 1
+          fi
+
+          notes="Automated desktop client release for commit ${GITHUB_SHA}."
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" \
+              --title "$RELEASE_TITLE" \
+              --notes "$notes" \
+              --latest
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --target "$GITHUB_SHA" \
+              --title "$RELEASE_TITLE" \
+              --notes "$notes" \
+              --latest
+          fi
