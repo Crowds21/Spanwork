@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Spanwork 需要在局域网内发现并对等同步您的项目与习惯数据。</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_spanwork._tcp</string>
+	</array>
+</dict>
+</plist>

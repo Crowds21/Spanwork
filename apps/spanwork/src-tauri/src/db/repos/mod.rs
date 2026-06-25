@@ -10,3 +10,5 @@ pub mod time_entry;
 pub mod habit_rule;
 pub mod habit_occurrence;
 pub mod calendar;
+pub mod sync_peer;
+pub mod sync_session;

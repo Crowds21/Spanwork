@@ -8,6 +8,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { CalendarClock, ListTodo, Repeat2 } from 'lucide-react';
 import { useState } from 'react';
 import type { CreateHabitRuleInput, CreateProjectInput, HabitFrequency, ProjectDetailDto, ProjectType } from '@spanwork/shared-types';
+import { projectTypeLabel } from '@spanwork/shared-types';
 
 import { CategorySelect } from '@/components/project/CategorySelect';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +55,7 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
-  const [projectType, setProjectType] = useState<ProjectType>('task');
+  const [projectType, setProjectType] = useState<ProjectType>('aim');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState<string | undefined>();
   const [includeFirstHabit, setIncludeFirstHabit] = useState(true);
@@ -116,7 +117,7 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
     <Card>
       <CardHeader>
         <CardTitle>新建项目</CardTitle>
-        <CardDescription>创建任务式或习惯式长期项目</CardDescription>
+        <CardDescription>创建目标式或习惯式长期项目</CardDescription>
       </CardHeader>
       <form className="contents" onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
@@ -140,7 +141,7 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
                 <SelectValue placeholder="选择类型" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="task">任务式 — 可拆分子任务</SelectItem>
+                <SelectItem value="aim">目标式 — 可拆分子任务</SelectItem>
                 <SelectItem value="habit">习惯式 — 同一主题下可有多条习惯</SelectItem>
               </SelectContent>
             </Select>
@@ -349,15 +350,15 @@ export function ProjectList() {
               <CardHeader className="pb-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge
-                    variant={project.projectType === 'task' ? 'default' : 'habit'}
+                    variant={project.projectType === 'aim' ? 'default' : 'habit'}
                     className="gap-1"
                   >
-                    {project.projectType === 'task' ? (
+                    {project.projectType === 'aim' ? (
                       <ListTodo className="size-3" />
                     ) : (
                       <Repeat2 className="size-3" />
                     )}
-                    {project.projectType === 'task' ? '任务式' : '习惯式'}
+                    {projectTypeLabel(project.projectType)}
                   </Badge>
                   <Badge variant="outline">{statusLabels[project.status] ?? project.status}</Badge>
                   {project.categoryName && (

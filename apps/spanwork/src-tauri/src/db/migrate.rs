@@ -1,5 +1,5 @@
 //! 版本化 schema 迁移，按序执行 migrations/*.sql 并记录 schema_migrations。
-//! 当前版本 SCHEMA_VERSION = 10，对外暴露 schema_version 供 app_get_info 使用。
+//! 当前版本 SCHEMA_VERSION = 14，对外暴露 schema_version 供 app_get_info 使用。
 
 use rusqlite::Connection;
 
@@ -15,7 +15,11 @@ const MIGRATION_007: &str = include_str!("../../migrations/007_habit_fogg_fields
 const MIGRATION_008: &str = include_str!("../../migrations/008_behavior_design_enabled.sql");
 const MIGRATION_009: &str = include_str!("../../migrations/009_habit_schedule_multi.sql");
 const MIGRATION_010: &str = include_str!("../../migrations/010_task_behavior_design.sql");
-const SCHEMA_VERSION: i32 = 10;
+const MIGRATION_011: &str = include_str!("../../migrations/011_sync_flm.sql");
+const MIGRATION_012: &str = include_str!("../../migrations/012_sync_triggers.sql");
+const MIGRATION_013: &str = include_str!("../../migrations/013_project_type_aim.sql");
+const MIGRATION_014: &str = include_str!("../../migrations/014_project_type_aim_cleanup.sql");
+const SCHEMA_VERSION: i32 = 14;
 
 pub fn run_migrations(conn: &Connection) -> AppResult<()> {
     conn.execute(
@@ -77,6 +81,23 @@ pub fn run_migrations(conn: &Connection) -> AppResult<()> {
 
     if current < 10 {
         apply_migration(conn, 10, MIGRATION_010)?;
+    }
+
+    if current < 11 {
+        apply_migration(conn, 11, MIGRATION_011)?;
+    }
+
+    if current < 12 {
+        apply_migration(conn, 12, MIGRATION_012)?;
+        crate::sync::triggers::install_sync_triggers(conn)?;
+    }
+
+    if current < 13 {
+        apply_migration_disable_fk(conn, 13, MIGRATION_013)?;
+    }
+
+    if current < 14 {
+        apply_migration(conn, 14, MIGRATION_014)?;
     }
 
     Ok(())

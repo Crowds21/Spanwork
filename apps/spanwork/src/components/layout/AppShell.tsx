@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { AppStatusLine } from '@/components/layout/AppStatusLine';
+import { SyncNotifications } from '@/components/sync/SyncNotifications';
 import { Toaster } from '@/components/ui/sonner';
 import {
   TimerBarExpanded,
@@ -31,7 +32,8 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <TimerBarProvider>
       <AppShellLayout>{children}</AppShellLayout>
-      <Toaster />
+      <SyncNotifications />
+      <Toaster richColors closeButton />
     </TimerBarProvider>
   );
 }

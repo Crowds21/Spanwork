@@ -17,6 +17,7 @@ import {
 import { useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import type { ProjectDto, ProjectType } from '@spanwork/shared-types';
+import { projectTypeLabel } from '@spanwork/shared-types';
 
 import { SidebarProjectFilterDialog } from '@/components/layout/SidebarProjectFilterDialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -201,7 +202,7 @@ export function AppSidebar() {
   });
 
   const projects = projectsQuery.data ?? [];
-  const taskProjects = projects.filter((p) => p.projectType === 'task');
+  const aimProjects = projects.filter((p) => p.projectType === 'aim');
   const habitProjects = projects.filter((p) => p.projectType === 'habit');
 
   return (
@@ -223,14 +224,14 @@ export function AppSidebar() {
           ) : (
             <>
               <ProjectGroup
-                label="任务式"
+                label={projectTypeLabel('aim')}
                 icon={ListTodo}
-                projectType="task"
-                projects={taskProjects}
-                emptyHint="暂无任务式项目"
+                projectType="aim"
+                projects={aimProjects}
+                emptyHint="暂无目标式项目"
               />
               <ProjectGroup
-                label="习惯式"
+                label={projectTypeLabel('habit')}
                 icon={Repeat2}
                 projectType="habit"
                 projects={habitProjects}

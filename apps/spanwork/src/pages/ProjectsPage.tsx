@@ -10,7 +10,7 @@ export function ProjectsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">项目</h1>
-        <p className="mt-1 text-muted-foreground">管理任务式与习惯式长期项目</p>
+        <p className="mt-1 text-muted-foreground">管理目标式与习惯式长期项目</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(280px,360px)_1fr] lg:items-start">

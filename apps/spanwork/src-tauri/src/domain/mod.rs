@@ -5,6 +5,7 @@ pub mod habit_fogg;
 pub mod habit_schedule;
 pub mod habit_time;
 pub mod project_lifecycle;
+pub mod sync_ids;
 pub mod task_time;
 pub mod task_tree;
 pub mod time_display;

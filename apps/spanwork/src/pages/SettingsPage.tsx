@@ -36,10 +36,22 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">局域网同步</CardTitle>
+          <CardDescription>同一 Wi‑Fi 下与 Mac / iPhone 双向同步项目与习惯数据</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" asChild>
+            <Link to="/settings/sync">打开同步设置</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card className="border-dashed">
         <CardHeader>
           <CardTitle className="text-lg text-muted-foreground">更多设置</CardTitle>
-          <CardDescription>设备名称、数据导出与同步将在 M5 交付</CardDescription>
+          <CardDescription>设备名称、数据导出将在后续版本交付</CardDescription>
         </CardHeader>
       </Card>
     </div>

@@ -6,6 +6,7 @@
 
 ```
 ├── apps/spanwork/       # Tauri 桌面/移动应用（React + Rust）
+│   └── GLOSSARY.md      # 团队术语表（类型、缩写、同步词汇）
 ├── packages/
 │   └── shared-types/    # 前后端共享 TypeScript 类型
 └── doc/                 # 设计文档

@@ -2,8 +2,19 @@
  * Spanwork 前后端共享 DTO 与类型定义
  *
  * Rust serde 与 TypeScript 共用同一份契约；IPC 入参/出参、React Query 缓存类型均由此导出。
+ * 枚举含义与团队术语见 apps/spanwork/GLOSSARY.md
  */
-export type ProjectType = 'task' | 'habit';
+export type ProjectType = 'aim' | 'habit';
+
+/** UI 展示用项目类型中文名（代码枚举仍为 aim / habit） */
+export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
+  aim: '目标式',
+  habit: '习惯式',
+};
+
+export function projectTypeLabel(type: ProjectType): string {
+  return PROJECT_TYPE_LABELS[type];
+}
 export type ProjectStatus = 'active' | 'archived' | 'completed';
 export type Platform = 'macos' | 'windows' | 'ios' | 'android' | 'linux' | 'unknown';
 export type TaskStatus = 'todo' | 'in_progress' | 'done' | 'cancelled';
@@ -455,6 +466,72 @@ export interface WriteLogInput {
   target: string;
   message: string;
   detail?: string;
+}
+
+export interface PeerInfoDto {
+  deviceId: string;
+  deviceName: string;
+  platform: Platform;
+  host: string;
+  port: number;
+  lastSeenAt: number;
+  lastChangeSeq?: number;
+  lastSyncAt?: number;
+}
+
+export interface SyncDiscoveryStatusDto {
+  active: boolean;
+  port: number;
+  peers: PeerInfoDto[];
+  /** 本机可用于同步的私有 IPv4 */
+  localSyncHosts?: string[];
+  /** 热点场景建议手动填写的对端 IP */
+  suggestedPeerHost?: string;
+  onHotspot?: boolean;
+}
+
+export interface SyncPairingDto {
+  code: string;
+  expiresAt: number;
+}
+
+export interface SyncProgressDto {
+  phase: string;
+  percent: number;
+  message?: string;
+}
+
+export interface SyncResultDto {
+  peerDeviceId: string;
+  peerDeviceName?: string;
+  recordsSent: number;
+  recordsReceived: number;
+  ackedChangeSeq: number;
+  /** success | failed | cancelled */
+  status?: 'success' | 'failed' | 'cancelled';
+  errorMessage?: string;
+}
+
+export interface SyncSessionLogDto {
+  id: string;
+  peerDeviceId: string;
+  peerDeviceName?: string;
+  direction: string;
+  startedAt: number;
+  finishedAt?: number;
+  status: string;
+  recordsPushed: number;
+  recordsPulled: number;
+  conflicts: number;
+  errorMessage?: string;
+}
+
+export interface SyncStartParams {
+  peerDeviceId: string;
+  peerDeviceName?: string;
+  host: string;
+  port: number;
+  pairingCode: string;
 }
 
 export interface LogInfoDto {

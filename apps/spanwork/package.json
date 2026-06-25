@@ -16,7 +16,8 @@
     "icons:sync": "bash src-tauri/scripts/sync-icons.sh",
     "tauri:ios:init": "tauri ios init",
     "tauri:ios:dev": "tauri ios dev --host $(ipconfig getifaddr en0 2>/dev/null || echo 0.0.0.0)",
-    "tauri:ios:build": "tauri ios build"
+    "tauri:ios:build": "tauri ios build",
+    "tauri:dev:peer": "bash scripts/dev-sync-peer.sh"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.10",

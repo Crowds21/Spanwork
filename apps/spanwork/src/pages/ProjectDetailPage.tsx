@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { deleteProject, getProject, updateProject } from '@/lib/tauri/project';
+import { projectTypeLabel } from '@spanwork/shared-types';
 import type { ProjectViewMode } from '@/lib/taskUtils';
 import { readStoredViewMode, storeViewMode } from '@/lib/taskUtils';
 import { queryKeys } from '@/queries/keys';
@@ -106,7 +107,7 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
     );
   }
 
-  if (project.projectType !== 'task') {
+  if (project.projectType !== 'aim') {
     return (
       <HabitProjectDetail
         project={project}
@@ -136,7 +137,7 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
               {project.name}
             </h1>
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <Badge>任务式</Badge>
+              <Badge>{projectTypeLabel(project.projectType)}</Badge>
               {project.status === 'archived' && <Badge variant="outline">已归档</Badge>}
               {project.categoryName && (
                 <Badge variant="outline" className="max-w-[8rem] shrink-0 gap-1.5 truncate">

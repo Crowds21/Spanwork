@@ -12,3 +12,4 @@ pub mod timer;
 pub mod today;
 pub mod habit;
 pub mod calendar;
+pub mod sync;

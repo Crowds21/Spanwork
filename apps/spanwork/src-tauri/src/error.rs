@@ -28,8 +28,14 @@ pub enum AppError {
     #[error("database error: {0}")]
     Db(#[from] rusqlite::Error),
 
+    #[error("io error: {0}")]
+    Io(#[from] std::io::Error),
+
     #[error("{0}")]
     Internal(String),
+
+    #[error("sync error {code}: {message}")]
+    Sync { code: String, message: String },
 }
 
 #[derive(Serialize)]
@@ -63,7 +69,9 @@ impl AppError {
                 format!("分类名称已存在: {name}"),
             ),
             AppError::Db(err) => ("DB_ERROR".to_string(), err.to_string()),
+            AppError::Io(err) => ("IO_ERROR".to_string(), err.to_string()),
             AppError::Internal(msg) => ("INTERNAL_ERROR".to_string(), msg.clone()),
+            AppError::Sync { code, message } => (code.clone(), message.clone()),
         };
         ErrorBody { code, message }
     }
