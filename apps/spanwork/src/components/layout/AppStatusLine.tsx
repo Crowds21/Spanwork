@@ -7,6 +7,7 @@
 import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { getAppVersionLabel } from '@/lib/appVersion';
 import { dismissAppStatus, useAppStatus } from '@/lib/status/appStatus';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +21,15 @@ export function AppStatusLine({ placement = 'desktop' }: AppStatusLineProps) {
   const { hasError, entry } = useAppStatus();
 
   if (placement === 'mobile-chrome' && !hasError) {
-    return null;
+    return (
+      <footer
+        className="flex h-5 shrink-0 items-center border-b border-border/50 bg-muted/20 px-4 md:hidden"
+        role="status"
+        aria-label="客户端版本"
+      >
+        <AppVersionLabel className="ml-auto" />
+      </footer>
+    );
   }
 
   if (placement === 'desktop' && !hasError) {
@@ -34,6 +43,7 @@ export function AppStatusLine({ placement = 'desktop' }: AppStatusLineProps) {
       >
         <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" aria-hidden />
         <span className="text-muted-foreground">就绪</span>
+        <AppVersionLabel className="ml-auto" />
       </footer>
     );
   }
@@ -48,6 +58,7 @@ export function AppStatusLine({ placement = 'desktop' }: AppStatusLineProps) {
         aria-live="polite"
       >
         <StatusErrorContent entry={entry} />
+        <AppVersionLabel className="ml-2 shrink-0" />
       </footer>
     );
   }
@@ -60,11 +71,26 @@ export function AppStatusLine({ placement = 'desktop' }: AppStatusLineProps) {
         aria-live="polite"
       >
         <StatusErrorContent entry={entry} />
+        <AppVersionLabel className="ml-2 shrink-0" />
       </footer>
     );
   }
 
   return null;
+}
+
+function AppVersionLabel({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        'font-mono text-[10px] leading-none text-muted-foreground tabular-nums',
+        className,
+      )}
+      title="客户端版本与构建时间"
+    >
+      {getAppVersionLabel()}
+    </span>
+  );
 }
 
 function StatusErrorContent({

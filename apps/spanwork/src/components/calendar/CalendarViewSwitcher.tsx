@@ -1,5 +1,5 @@
 /**
- * 日历视图切换（日 / 月；周视图 P1 占位）
+ * 日历视图切换（日 / 周 / 月）
  */
 import type { CalendarViewMode } from '@/lib/calendarUtils';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ interface CalendarViewSwitcherProps {
 
 const modes: { id: CalendarViewMode; label: string }[] = [
   { id: 'day', label: '日' },
+  { id: 'week', label: '周' },
   { id: 'month', label: '月' },
 ];
 

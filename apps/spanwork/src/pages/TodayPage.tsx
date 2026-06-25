@@ -182,17 +182,21 @@ export function TodayPage() {
               ) : (
                 <ul className="divide-y">
                   {dashboard.recentTasks.map((task) => (
-                    <li key={task.id} className="flex flex-wrap items-center gap-3 py-3">
+                    <li key={task.id} className="flex items-center gap-2 py-3">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm">
-                          <TitleWithProject title={task.title} projectName={task.projectName} />
-                        </p>
-                        <p className="text-xs text-muted-foreground">
+                        <TitleWithProject
+                          title={task.title}
+                          projectName={task.projectName}
+                          className="text-sm"
+                        />
+                        <p className="truncate text-xs text-muted-foreground">
                           更新 {new Date(task.updatedAt).toLocaleString()}
                         </p>
                       </div>
-                      <TaskStatusBadge status={task.status} />
-                      <Button size="sm" variant="ghost" asChild>
+                      <span className="shrink-0">
+                        <TaskStatusBadge status={task.status} />
+                      </span>
+                      <Button size="sm" variant="ghost" className="shrink-0" asChild>
                         <Link to="/projects/$projectId" params={{ projectId: task.projectId }}>
                           打开
                         </Link>

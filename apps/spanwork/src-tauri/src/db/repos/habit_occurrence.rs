@@ -3,6 +3,7 @@
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::domain::habit_schedule::{dates_for_rule, format_date, parse_date, today_local_date};
+use crate::domain::sync_ids::deterministic_occurrence_id;
 use crate::dto::{
     HabitOccurrenceDto, HabitOccurrenceListParams, HabitOccurrenceStatus, UpdateHabitOccurrenceInput,
 };
@@ -29,15 +30,20 @@ pub fn ensure_range(conn: &Connection, from_date: &str, to_date: &str) -> AppRes
     let mut inserted = 0_i64;
 
     for rule in &rules {
-        let dates = dates_for_rule(rule, from, to)?;
+        let dates = match dates_for_rule(rule, from, to) {
+            Ok(d) => d,
+            Err(AppError::Validation { .. }) => continue,
+            Err(err) => return Err(err),
+        };
         for date in dates {
             let scheduled = format_date(date);
+            let id = deterministic_occurrence_id(&rule.project_id, &rule.id, &scheduled);
             let changed = conn.execute(
                 "INSERT OR IGNORE INTO habit_occurrences (
                     id, project_id, rule_id, scheduled_date, status,
                     created_at, updated_at, origin_device_id
                  ) VALUES (?1, ?2, ?3, ?4, 'pending', ?5, ?5, ?6)",
-                rusqlite::params![new_id(), rule.project_id, rule.id, scheduled, now, origin],
+                rusqlite::params![id, rule.project_id, rule.id, scheduled, now, origin],
             )?;
             inserted += changed as i64;
         }

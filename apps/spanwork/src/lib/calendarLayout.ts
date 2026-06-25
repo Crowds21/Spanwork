@@ -1,14 +1,28 @@
 /**
- * 日历时间轴重叠块布局（按时间切片等分宽度）
+ * 日历时间轴重叠块布局（按时间切片等分宽度；最多 3 列，超出聚合为 +N）
  */
 import type { CalendarTimeBlockDto } from '@spanwork/shared-types';
 
 import { isLongCalendarBlock, isShortCalendarBlock } from '@/lib/calendarDuration';
+import { MAX_TIMELINE_COLUMNS } from '@/lib/calendarUtils';
 import {
   CALENDAR_PILL_HEIGHT,
   msToHeightPx,
   msToTopPx,
 } from '@/lib/calendarTimelineMetrics';
+
+export interface TimelineOverflowSegment {
+  startMs: number;
+  endMs: number;
+  hiddenCount: number;
+  column: number;
+  columnCount: number;
+}
+
+export interface TimelineLayoutResult {
+  segments: Map<string, TimelineBlockSegmentLayout[]>;
+  overflows: TimelineOverflowSegment[];
+}
 
 export interface TimelineInterval {
   id: string;
@@ -105,13 +119,14 @@ function mergeSegments(
 }
 
 /**
- * 在每个无重叠变化的时间切片内，对活跃块等宽并排；无重叠时占满整行。
+ * 在每个无重叠变化的时间切片内，对活跃块等宽并排；超过 MAX_TIMELINE_COLUMNS 时聚合 +N。
  */
 export function layoutTimelineSegments(
   blocks: TimelineInterval[],
-): Map<string, TimelineBlockSegmentLayout[]> {
+): TimelineLayoutResult {
   const result = new Map<string, TimelineBlockSegmentLayout[]>();
-  if (blocks.length === 0) return result;
+  const overflows: TimelineOverflowSegment[] = [];
+  if (blocks.length === 0) return { segments: result, overflows };
 
   const boundaries = [...new Set(blocks.flatMap((b) => [b.startAt, b.endMs]))].sort(
     (a, b) => a - b,
@@ -128,24 +143,58 @@ export function layoutTimelineSegments(
 
     if (active.length === 0) continue;
 
-    active.forEach((block, column) => {
+    const hasOverflow = active.length > MAX_TIMELINE_COLUMNS;
+    const visible = hasOverflow ? active.slice(0, MAX_TIMELINE_COLUMNS - 1) : active;
+    const columnCount = hasOverflow ? MAX_TIMELINE_COLUMNS : active.length;
+
+    visible.forEach((block, column) => {
       const segment: TimelineBlockSegmentLayout = {
         startMs: sliceStart,
         endMs: sliceEnd,
         column,
-        columnCount: active.length,
+        columnCount,
       };
       const list = result.get(block.id) ?? [];
       list.push(segment);
       result.set(block.id, list);
     });
+
+    if (hasOverflow) {
+      overflows.push({
+        startMs: sliceStart,
+        endMs: sliceEnd,
+        hiddenCount: active.length - visible.length,
+        column: MAX_TIMELINE_COLUMNS - 1,
+        columnCount,
+      });
+    }
   }
 
   for (const [id, segments] of result) {
     result.set(id, mergeSegments(segments));
   }
 
-  return result;
+  return { segments: result, overflows: mergeOverflows(overflows) };
+}
+
+function mergeOverflows(segments: TimelineOverflowSegment[]): TimelineOverflowSegment[] {
+  if (segments.length <= 1) return segments;
+  const merged: TimelineOverflowSegment[] = [];
+  for (const seg of segments) {
+    const prev = merged[merged.length - 1];
+    if (
+      prev &&
+      prev.endMs === seg.startMs &&
+      prev.column === seg.column &&
+      prev.columnCount === seg.columnCount &&
+      prev.hiddenCount === seg.hiddenCount
+    ) {
+      prev.endMs = seg.endMs;
+    } else {
+      merged.push({ ...seg });
+    }
+  }
+  return merged;
 }
 
 export interface CapsuleGeometry {

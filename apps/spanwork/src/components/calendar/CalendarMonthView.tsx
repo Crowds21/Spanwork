@@ -61,7 +61,7 @@ export function CalendarMonthView({
               className={cn(
                 'flex min-h-14 flex-col items-center rounded-lg p-1 text-sm transition-colors hover:bg-muted/60',
                 !cell.inMonth && 'text-muted-foreground/50',
-                isToday && 'ring-2 ring-red-500 ring-offset-1',
+                isToday && 'ring-2 ring-inset ring-red-500',
               )}
               onClick={() => onSelectDate(cell.dateKey!)}
             >

@@ -18,8 +18,10 @@ export function TitleWithProject({
   titleClassName,
   projectClassName,
 }: TitleWithProjectProps) {
+  const fullLabel = projectName ? `${title} · ${projectName}` : title;
+
   return (
-    <span className={cn('min-w-0 truncate', className)}>
+    <span className={cn('block min-w-0 truncate', className)} title={fullLabel}>
       <span className={cn('font-medium text-foreground', titleClassName)}>{title}</span>
       {projectName ? (
         <span

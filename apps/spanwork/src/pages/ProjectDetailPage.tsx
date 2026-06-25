@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { deleteProject, getProject, updateProject } from '@/lib/tauri/project';
+import { projectTypeLabel } from '@spanwork/shared-types';
 import type { ProjectViewMode } from '@/lib/taskUtils';
 import { readStoredViewMode, storeViewMode } from '@/lib/taskUtils';
 import { queryKeys } from '@/queries/keys';
@@ -106,7 +107,7 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
     );
   }
 
-  if (project.projectType !== 'task') {
+  if (project.projectType !== 'aim') {
     return (
       <HabitProjectDetail
         project={project}
@@ -121,7 +122,7 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           <Button variant="ghost" size="sm" asChild>
             <Link to="/projects">
               <ArrowLeft className="size-4" />
@@ -129,19 +130,24 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
             </Link>
           </Button>
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{project.name}</h1>
-              <Badge>任务式</Badge>
+            <h1
+              className="truncate text-2xl font-bold tracking-tight sm:text-3xl"
+              title={project.name}
+            >
+              {project.name}
+            </h1>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Badge>{projectTypeLabel(project.projectType)}</Badge>
               {project.status === 'archived' && <Badge variant="outline">已归档</Badge>}
               {project.categoryName && (
-                <Badge variant="outline" className="gap-1.5">
+                <Badge variant="outline" className="max-w-[8rem] shrink-0 gap-1.5 truncate">
                   {project.categoryColor && (
                     <span
-                      className="size-2 rounded-full"
+                      className="size-2 shrink-0 rounded-full"
                       style={{ backgroundColor: project.categoryColor }}
                     />
                   )}
-                  {project.categoryName}
+                  <span className="truncate">{project.categoryName}</span>
                 </Badge>
               )}
             </div>

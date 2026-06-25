@@ -11,6 +11,7 @@
     "tauri": "pnpm --filter @spanwork/app tauri",
     "icons:sync": "pnpm --filter @spanwork/app icons:sync",
     "tauri:dev": "pnpm dev:kill-port && pnpm --filter @spanwork/app tauri dev",
+    "tauri:dev:peer": "pnpm --filter @spanwork/app tauri:dev:peer",
     "tauri:build": "pnpm --filter @spanwork/app tauri build",
     "tauri:ios:init": "pnpm --filter @spanwork/app tauri ios init",
     "tauri:ios:dev": "pnpm dev:kill-port && pnpm --filter @spanwork/app tauri ios dev --host $(ipconfig getifaddr en0 2>/dev/null || echo 0.0.0.0)",
@@ -20,7 +21,7 @@
     "typecheck": "pnpm -r run typecheck"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   },
   "packageManager": "pnpm@11.8.0"
 }

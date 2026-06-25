@@ -108,7 +108,7 @@ pub fn create(conn: &Connection, input: &CreateProjectInput) -> AppResult<Projec
     let now = now_ms();
 
     let project_type = match input.project_type {
-        ProjectType::Task => "task",
+        ProjectType::Aim => "aim",
         ProjectType::Habit => "habit",
     };
 
@@ -258,8 +258,9 @@ fn map_project_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<ProjectDto> {
 
 fn parse_project_type(value: &str) -> ProjectType {
     match value {
+        "aim" => ProjectType::Aim,
         "habit" => ProjectType::Habit,
-        _ => ProjectType::Task,
+        _ => ProjectType::Aim,
     }
 }
 

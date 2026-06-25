@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { AppStatusLine } from '@/components/layout/AppStatusLine';
+import { SyncNotifications } from '@/components/sync/SyncNotifications';
 import { Toaster } from '@/components/ui/sonner';
 import {
   TimerBarExpanded,
@@ -31,7 +32,8 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <TimerBarProvider>
       <AppShellLayout>{children}</AppShellLayout>
-      <Toaster />
+      <SyncNotifications />
+      <Toaster richColors closeButton />
     </TimerBarProvider>
   );
 }
@@ -47,21 +49,12 @@ function AppShellLayout({ children }: AppShellProps) {
         <AppSidebar />
 
         <div className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col">
-          <header
+          <main
             className={cn(
-              'flex min-h-11 shrink-0 items-center border-b bg-card/80 px-4 py-2 backdrop-blur md:hidden',
-              !showCollapsedTimerStrip && 'pt-safe',
+              'flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-3 sm:px-4 md:p-8',
+              showCollapsedTimerStrip ? 'py-3' : 'pb-3 pt-safe',
             )}
           >
-            <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
-                SW
-              </div>
-              <span className="font-semibold">Spanwork</span>
-            </div>
-          </header>
-
-          <main className="flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-3 py-3 sm:px-4 md:p-8">
             <div className="mx-auto max-w-6xl">{children}</div>
           </main>
 

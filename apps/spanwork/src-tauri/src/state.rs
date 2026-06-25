@@ -1,18 +1,41 @@
-//! Tauri 全局状态 `AppState`：SQLite 连接池（Mutex）与文件日志器。
-//! `with_db` 封装数据库访问，出错时自动写入日志并向上返回 `AppError`。
+//! Tauri 全局状态 `AppState`：SQLite 连接池（Mutex）、文件日志器与局域网同步运行时。
 
-use std::sync::Mutex;
+use std::net::TcpStream;
+use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, Mutex};
 
 use rusqlite::Connection;
 
 use crate::error::{AppError, AppResult};
 use crate::logging::{FileLogger, LogLevel};
+use crate::sync::discovery::SyncDiscovery;
+use crate::sync::listener::SyncListener;
+use crate::sync::pairing::PairingManager;
 
 pub type DbPool = Mutex<Connection>;
+
+pub const DEFAULT_SYNC_PORT: u16 = 38472;
+
+/// 同步 TCP 监听端口。开发双实例时可通过 `SPANWORK_SYNC_PORT` 覆盖（如 38473）。
+pub fn sync_listen_port() -> u16 {
+    std::env::var("SPANWORK_SYNC_PORT")
+        .ok()
+        .and_then(|raw| raw.parse().ok())
+        .filter(|port| *port > 0)
+        .unwrap_or(DEFAULT_SYNC_PORT)
+}
 
 pub struct AppState {
     pub db: DbPool,
     pub logger: FileLogger,
+    pub db_path: PathBuf,
+    pub pairing: Arc<PairingManager>,
+    pub sync_session: Mutex<Option<String>>,
+    pub sync_abort: Arc<AtomicBool>,
+    pub sync_stream: Mutex<Option<TcpStream>>,
+    pub discovery: Mutex<Option<SyncDiscovery>>,
+    pub listener: Mutex<Option<SyncListener>>,
 }
 
 impl AppState {

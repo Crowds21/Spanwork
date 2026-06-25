@@ -51,6 +51,17 @@ pub struct FileLogger {
     inner: Mutex<()>,
 }
 
+impl Clone for FileLogger {
+    fn clone(&self) -> Self {
+        Self {
+            log_path: self.log_path.clone(),
+            max_bytes: self.max_bytes,
+            backup_count: self.backup_count,
+            inner: Mutex::new(()),
+        }
+    }
+}
+
 impl FileLogger {
     pub fn new(log_dir: PathBuf, max_bytes: u64, backup_count: u32) -> AppResult<Self> {
         fs::create_dir_all(&log_dir)

@@ -345,4 +345,30 @@ mod tests {
         .unwrap();
         assert!(dates_2025.is_empty());
     }
+
+    #[test]
+    fn multiple_rules_coexist_on_same_range() {
+        let daily = rule(HabitFrequency::Daily, None, None, None);
+        let weekly = rule(HabitFrequency::Weekly, Some(vec![1, 5]), None, None);
+        let from = parse_date("2026-06-22").unwrap();
+        let to = parse_date("2026-06-28").unwrap();
+
+        let daily_dates = dates_for_rule(&daily, from, to).unwrap();
+        let weekly_dates = dates_for_rule(&weekly, from, to).unwrap();
+
+        assert_eq!(daily_dates.len(), 7);
+        assert_eq!(
+            weekly_dates.iter().map(|d| format_date(*d)).collect::<Vec<_>>(),
+            vec!["2026-06-22", "2026-06-26"]
+        );
+
+        let mut combined: Vec<String> = daily_dates
+            .iter()
+            .chain(weekly_dates.iter())
+            .map(|d| format_date(*d))
+            .collect();
+        combined.sort();
+        combined.dedup();
+        assert_eq!(combined.len(), 7);
+    }
 }

@@ -1,6 +1,8 @@
 //! SQLite 连接池初始化：打开 spanwork.db、启用 WAL 与外键，执行迁移。
 //! 首次启动写入 device_config 默认记录。依赖 tauri AppHandle 解析 app data 目录。
 
+use std::path::PathBuf;
+
 use rusqlite::Connection;
 use tauri::{AppHandle, Manager};
 
@@ -8,7 +10,7 @@ use crate::db::migrate::run_migrations;
 use crate::error::{default_device_name, detect_platform, new_id, now_ms, AppResult};
 use crate::state::DbPool;
 
-pub fn init_db(app: &AppHandle) -> AppResult<DbPool> {
+pub fn init_db(app: &AppHandle) -> AppResult<(DbPool, PathBuf)> {
     let app_dir = app
         .path()
         .app_data_dir()
@@ -17,7 +19,7 @@ pub fn init_db(app: &AppHandle) -> AppResult<DbPool> {
         .map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
 
     let db_path = app_dir.join("spanwork.db");
-    let conn = Connection::open(db_path)?;
+    let conn = Connection::open(&db_path)?;
     conn.execute_batch("PRAGMA foreign_keys = ON;")?;
     // journal_mode returns a row — must use query_row, not execute
     let _: String = conn.query_row("PRAGMA journal_mode = WAL", [], |row| row.get(0))?;
@@ -25,7 +27,16 @@ pub fn init_db(app: &AppHandle) -> AppResult<DbPool> {
     run_migrations(&conn)?;
     ensure_device_config(&conn)?;
 
-    Ok(DbPool::new(conn))
+    Ok((DbPool::new(conn), db_path))
+}
+
+/// 打开已有 spanwork.db（WAL + busy_timeout），供 sync listener 等并发读写的场景。
+pub fn open_db_at_path(db_path: &PathBuf) -> AppResult<Connection> {
+    let conn = Connection::open(db_path)?;
+    conn.execute_batch("PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;")?;
+    let _: String = conn.query_row("PRAGMA journal_mode = WAL", [], |row| row.get(0))?;
+    run_migrations(&conn)?;
+    Ok(conn)
 }
 
 fn ensure_device_config(conn: &Connection) -> AppResult<()> {

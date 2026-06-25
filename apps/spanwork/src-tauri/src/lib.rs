@@ -9,10 +9,14 @@ mod dto;
 mod error;
 mod logging;
 mod state;
+mod sync;
 mod timer;
 
 use logging::{FileLogger, LogLevel, DEFAULT_MAX_BYTES};
 use state::AppState;
+use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, Mutex};
+use crate::sync::pairing::PairingManager;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -35,10 +39,20 @@ pub fn run() {
                 Some(env!("CARGO_PKG_VERSION")),
             );
 
-            let db = db::init_db(app.handle())?;
+            let (db, db_path) = db::init_db(app.handle())?;
             let _ = logger.write(LogLevel::Info, "db", "database initialized", None);
 
-            app.manage(AppState { db, logger });
+            app.manage(AppState {
+                db,
+                logger,
+                db_path,
+                pairing: Arc::new(PairingManager::new()),
+                sync_session: Mutex::new(None),
+                sync_abort: Arc::new(AtomicBool::new(false)),
+                sync_stream: Mutex::new(None),
+                discovery: Mutex::new(None),
+                listener: Mutex::new(None),
+            });
 
             Ok(())
         })
@@ -94,6 +108,15 @@ pub fn run() {
             commands::habit::habit_streak_get,
             commands::calendar::calendar_get_day,
             commands::calendar::calendar_get_range,
+            commands::sync::sync_discovery_start,
+            commands::sync::sync_discovery_stop,
+            commands::sync::sync_discovery_list,
+            commands::sync::sync_pairing_request,
+            commands::sync::sync_start,
+            commands::sync::sync_connect_manual,
+            commands::sync::sync_cancel,
+            commands::sync::sync_history_list,
+            commands::sync::sync_get_peer_cursors,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -135,7 +158,7 @@ mod tests {
             &CreateProjectInput {
                 name: "Demo".into(),
                 description: None,
-                project_type: ProjectType::Task,
+                project_type: ProjectType::Aim,
                 color: None,
                 icon: None,
                 start_date: None,
@@ -156,7 +179,7 @@ mod tests {
             &CreateProjectInput {
                 name: "Demo".into(),
                 description: Some("desc".into()),
-                project_type: ProjectType::Task,
+                project_type: ProjectType::Aim,
                 color: None,
                 icon: None,
                 start_date: None,
@@ -795,7 +818,7 @@ mod tests {
             &CreateProjectInput {
                 name: "Cat Project".into(),
                 description: None,
-                project_type: ProjectType::Task,
+                project_type: ProjectType::Aim,
                 color: None,
                 icon: None,
                 start_date: None,

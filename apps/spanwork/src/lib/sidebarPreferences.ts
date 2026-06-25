@@ -18,9 +18,21 @@ const DEFAULT_FILTER: SidebarProjectFilter = {
 const filterKey = (type: ProjectType) => `spanwork:sidebar:filter:${type}`;
 const collapsedKey = (type: ProjectType) => `spanwork:sidebar:collapsed:${type}`;
 
+/** 侧栏 localStorage 键曾使用 `task` 表示目标式分组，一次性迁移为 `aim` */
+function migrateLegacySidebarKey(prefix: string, type: ProjectType): string {
+  if (type !== 'aim') return prefix + type;
+  const legacy = prefix + 'task';
+  const next = prefix + 'aim';
+  if (localStorage.getItem(next) == null && localStorage.getItem(legacy) != null) {
+    localStorage.setItem(next, localStorage.getItem(legacy)!);
+    localStorage.removeItem(legacy);
+  }
+  return next;
+}
+
 export function readSidebarProjectFilter(type: ProjectType): SidebarProjectFilter {
   try {
-    const raw = localStorage.getItem(filterKey(type));
+    const raw = localStorage.getItem(migrateLegacySidebarKey('spanwork:sidebar:filter:', type));
     if (!raw) return { ...DEFAULT_FILTER };
     const parsed = JSON.parse(raw) as Partial<SidebarProjectFilter>;
     return {
@@ -62,7 +74,7 @@ export function applySidebarProjectFilter(
 }
 
 export function readSidebarGroupCollapsed(type: ProjectType): boolean {
-  return localStorage.getItem(collapsedKey(type)) === '1';
+  return localStorage.getItem(migrateLegacySidebarKey('spanwork:sidebar:collapsed:', type)) === '1';
 }
 
 export function storeSidebarGroupCollapsed(type: ProjectType, collapsed: boolean): void {

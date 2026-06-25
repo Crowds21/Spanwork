@@ -4,5 +4,6 @@
 pub mod migrate;
 pub mod pool;
 pub mod repos;
+pub mod sync_log;
 
 pub use pool::init_db;

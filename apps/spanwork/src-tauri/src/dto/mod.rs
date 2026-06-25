@@ -1,5 +1,6 @@
 //! 前后端共享数据结构，serde 序列化/反序列化，字段统一 camelCase。
 //! 包含各实体的 DTO、Input/Params 类型与 ProjectType、TaskStatus 等枚举。
+//! 枚举与术语说明见 `apps/spanwork/GLOSSARY.md`。
 
 use serde::{Deserialize, Serialize};
 
@@ -22,7 +23,7 @@ pub struct AppInfoDto {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ProjectType {
-    Task,
+    Aim,
     Habit,
 }
 
@@ -748,4 +749,140 @@ pub struct WriteLogInput {
     pub target: String,
     pub message: String,
     pub detail: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PeerInfoDto {
+    pub device_id: String,
+    pub device_name: String,
+    pub platform: String,
+    pub host: String,
+    pub port: u16,
+    pub last_seen_at: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_change_seq: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_sync_at: Option<i64>,
+}
+
+impl From<crate::sync::discovery::DiscoveredPeer> for PeerInfoDto {
+    fn from(peer: crate::sync::discovery::DiscoveredPeer) -> Self {
+        Self {
+            device_id: peer.device_id,
+            device_name: peer.device_name,
+            platform: peer.platform,
+            host: peer.host,
+            port: peer.port,
+            last_seen_at: peer.last_seen_at,
+            last_change_seq: None,
+            last_sync_at: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncDiscoveryStatusDto {
+    pub active: bool,
+    pub port: u16,
+    pub peers: Vec<PeerInfoDto>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub local_sync_hosts: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub suggested_peer_host: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub on_hotspot: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncPairingDto {
+    pub code: String,
+    pub expires_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncProgressDto {
+    pub phase: String,
+    pub percent: u8,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncResultDto {
+    pub peer_device_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub peer_device_name: Option<String>,
+    pub records_sent: i32,
+    pub records_received: i32,
+    pub acked_change_seq: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error_message: Option<String>,
+}
+
+impl SyncResultDto {
+    pub fn success(
+        peer_device_id: String,
+        peer_device_name: Option<String>,
+        records_sent: i32,
+        records_received: i32,
+        acked_change_seq: i64,
+    ) -> Self {
+        Self {
+            peer_device_id,
+            peer_device_name,
+            records_sent,
+            records_received,
+            acked_change_seq,
+            status: Some("success".into()),
+            error_message: None,
+        }
+    }
+
+    pub fn failed(
+        peer_device_id: String,
+        peer_device_name: Option<String>,
+        message: String,
+    ) -> Self {
+        Self {
+            peer_device_id,
+            peer_device_name,
+            records_sent: 0,
+            records_received: 0,
+            acked_change_seq: 0,
+            status: Some("failed".into()),
+            error_message: Some(message),
+        }
+    }
+
+    pub fn cancelled(peer_device_id: String, peer_device_name: Option<String>) -> Self {
+        Self {
+            peer_device_id,
+            peer_device_name,
+            records_sent: 0,
+            records_received: 0,
+            acked_change_seq: 0,
+            status: Some("cancelled".into()),
+            error_message: None,
+        }
+    }
+}
+
+pub type SyncSessionLogDto = crate::db::repos::sync_session::SyncSessionLogDto;
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncStartParams {
+    pub peer_device_id: String,
+    #[serde(default)]
+    pub peer_device_name: Option<String>,
+    pub host: String,
+    pub port: u16,
+    pub pairing_code: String,
 }

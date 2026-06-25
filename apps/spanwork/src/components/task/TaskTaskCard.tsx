@@ -31,7 +31,7 @@ import { getActiveTimer, startTimer } from '@/lib/tauri/timer';
 import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
 
-const iconBtnClass = 'size-8 shrink-0';
+const iconBtnClass = 'size-8 max-md:size-11 shrink-0';
 
 interface TaskTaskCardProps {
   task: TaskDto;
@@ -123,8 +123,8 @@ export function TaskTaskCard({
       >
         <CardContent className="space-y-3 p-4" aria-labelledby={titleId}>
           <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 space-y-1">
-              <div className="flex flex-wrap items-center gap-1.5">
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex min-w-0 items-center gap-1.5">
                 {hasChildren ? (
                   <button
                     type="button"
@@ -140,11 +140,15 @@ export function TaskTaskCard({
                     )}
                   </button>
                 ) : null}
-                <h3 id={titleId} className="text-base font-semibold leading-tight">
+                <h3
+                  id={titleId}
+                  className="min-w-0 truncate text-base font-semibold leading-tight"
+                  title={task.title}
+                >
                   {hasChildren ? (
                     <button
                       type="button"
-                      className="text-left hover:underline"
+                      className="block w-full truncate text-left hover:underline"
                       onClick={onToggleExpand}
                     >
                       {task.title}
@@ -154,7 +158,7 @@ export function TaskTaskCard({
                   )}
                 </h3>
                 {task.isMilestone && (
-                  <Badge variant="secondary" className="gap-1">
+                  <Badge variant="secondary" className="shrink-0 gap-1">
                     <Flag className="size-3" />
                     里程碑
                   </Badge>

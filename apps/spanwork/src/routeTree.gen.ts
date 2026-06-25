@@ -14,6 +14,7 @@ import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProjectCategoriesIndexRouteImport } from './routes/project-categories/index'
 import { Route as CalendarIndexRouteImport } from './routes/calendar/index'
+import { Route as SettingsSyncRouteImport } from './routes/settings/sync'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,11 @@ const CalendarIndexRoute = CalendarIndexRouteImport.update({
   path: '/calendar/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsSyncRoute = SettingsSyncRouteImport.update({
+  id: '/settings/sync',
+  path: '/settings/sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
   id: '/projects/$projectId',
   path: '/projects/$projectId',
@@ -50,6 +56,7 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/settings/sync': typeof SettingsSyncRoute
   '/calendar/': typeof CalendarIndexRoute
   '/project-categories/': typeof ProjectCategoriesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/settings/sync': typeof SettingsSyncRoute
   '/calendar': typeof CalendarIndexRoute
   '/project-categories': typeof ProjectCategoriesIndexRoute
   '/projects': typeof ProjectsIndexRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/settings/sync': typeof SettingsSyncRoute
   '/calendar/': typeof CalendarIndexRoute
   '/project-categories/': typeof ProjectCategoriesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/projects/$projectId'
+    | '/settings/sync'
     | '/calendar/'
     | '/project-categories/'
     | '/projects/'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/projects/$projectId'
+    | '/settings/sync'
     | '/calendar'
     | '/project-categories'
     | '/projects'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/projects/$projectId'
+    | '/settings/sync'
     | '/calendar/'
     | '/project-categories/'
     | '/projects/'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
+  SettingsSyncRoute: typeof SettingsSyncRoute
   CalendarIndexRoute: typeof CalendarIndexRoute
   ProjectCategoriesIndexRoute: typeof ProjectCategoriesIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
@@ -145,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalendarIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/sync': {
+      id: '/settings/sync'
+      path: '/settings/sync'
+      fullPath: '/settings/sync'
+      preLoaderRoute: typeof SettingsSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects/$projectId': {
       id: '/projects/$projectId'
       path: '/projects/$projectId'
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
+  SettingsSyncRoute: SettingsSyncRoute,
   CalendarIndexRoute: CalendarIndexRoute,
   ProjectCategoriesIndexRoute: ProjectCategoriesIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,

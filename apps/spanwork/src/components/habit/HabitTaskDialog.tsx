@@ -2,16 +2,18 @@
  * 添加 / 编辑习惯任务 Dialog（编辑时展示当前状态与完成记录）
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronRight, Flame } from 'lucide-react';
+import { ChevronDown, ChevronRight, Check, CalendarClock, Flame } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import type {
   CreateHabitRuleInput,
   HabitFrequency,
+  HabitOccurrenceDto,
   HabitRuleDto,
   UpdateHabitRuleInput,
 } from '@spanwork/shared-types';
 
 import { HabitFrequencyBadge } from '@/components/habit/HabitFrequencyBadge';
+import { HabitRescheduleDialog } from '@/components/habit/HabitRescheduleDialog';
 import { HabitFoggFields } from '@/components/habit/HabitFoggFields';
 import { HabitMonthlyDayPicker } from '@/components/habit/HabitMonthlyDayPicker';
 import { HabitYearlyDatePicker } from '@/components/habit/HabitYearlyDatePicker';
@@ -57,8 +59,10 @@ import {
   ensureHabitOccurrences,
   getHabitStreak,
   listHabitOccurrences,
+  updateHabitOccurrence,
   updateHabitRule,
 } from '@/lib/tauri/habit';
+import { canUpdateHabitCheckIn } from '@/lib/habitOccurrenceUtils';
 import {
   emptyFoggFormState,
   foggFormStateFromRule,
@@ -125,6 +129,7 @@ export function HabitTaskDialog({
   const [formErrors, setFormErrors] = useState<HabitTaskFormErrors>({});
   const [recordsOpen, setRecordsOpen] = useState(true);
   const [recordsPage, setRecordsPage] = useState(0);
+  const [rescheduleOcc, setRescheduleOcc] = useState<HabitOccurrenceDto | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -174,6 +179,18 @@ export function HabitTaskDialog({
         toDate: today,
       }),
     enabled: open && inTauri && isEdit,
+  });
+
+  const occurrenceStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'done' | 'skipped' }) =>
+      updateHabitOccurrence({ id, patch: { status } }),
+    meta: { errorSource: '更新打卡' },
+    onSuccess: () => {
+      void historyQuery.refetch();
+      void todayQuery.refetch();
+      void streakQuery.refetch();
+      invalidateAfterHabitRuleChange(queryClient, projectId);
+    },
   });
 
   const ruleHistory = useMemo(
@@ -279,6 +296,7 @@ export function HabitTaskDialog({
   });
 
   return (
+    <>
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
@@ -470,14 +488,17 @@ export function HabitTaskDialog({
                           <table className="w-full table-fixed text-left text-sm">
                             <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
                               <tr>
-                                <th className="w-[22%] px-3 py-2.5 font-medium">日期</th>
-                                <th className="w-[22%] px-3 py-2.5 font-medium">状态</th>
-                                <th className="w-[22%] px-3 py-2.5 font-medium">时长</th>
+                                <th className="w-[18%] px-3 py-2.5 font-medium">日期</th>
+                                <th className="w-[16%] px-3 py-2.5 font-medium">状态</th>
+                                <th className="w-[16%] px-3 py-2.5 font-medium">时长</th>
                                 <th className="px-3 py-2.5 font-medium">备注</th>
+                                <th className="w-[20%] px-3 py-2.5 font-medium">操作</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {pagedOccurrences.map((occ) => (
+                              {pagedOccurrences.map((occ) => {
+                                const canBackfill = canUpdateHabitCheckIn(occ);
+                                return (
                                 <tr key={occ.id} className="border-b last:border-b-0">
                                   <td className="px-3 py-2.5 tabular-nums">
                                     {formatShortDate(occ.scheduledDate)}
@@ -493,8 +514,43 @@ export function HabitTaskDialog({
                                   <td className="truncate px-3 py-2.5 text-muted-foreground">
                                     {occ.note ?? '—'}
                                   </td>
+                                  <td className="px-3 py-2.5">
+                                    {canBackfill ? (
+                                      <div className="flex flex-wrap gap-1">
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          className="h-7 gap-1 px-2"
+                                          disabled={occurrenceStatusMutation.isPending}
+                                          onClick={() =>
+                                            occurrenceStatusMutation.mutate({
+                                              id: occ.id,
+                                              status: 'done',
+                                            })
+                                          }
+                                        >
+                                          <Check className="size-3" />
+                                          补打卡
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-7 gap-1 px-2"
+                                          onClick={() => setRescheduleOcc(occ)}
+                                        >
+                                          <CalendarClock className="size-3" />
+                                          改期
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
+                                  </td>
                                 </tr>
-                              ))}
+                              );
+                              })}
                             </tbody>
                           </table>
                         </div>
@@ -548,5 +604,24 @@ export function HabitTaskDialog({
         </form>
       </Card>
     </Dialog>
+    {rescheduleOcc && rule && (
+      <HabitRescheduleDialog
+        open={Boolean(rescheduleOcc)}
+        onOpenChange={(next) => {
+          if (!next) setRescheduleOcc(null);
+        }}
+        projectId={projectId}
+        ruleId={rule.id}
+        occurrenceId={rescheduleOcc.id}
+        currentDate={rescheduleOcc.scheduledDate}
+        title={rule.title}
+        onSuccess={() => {
+          void historyQuery.refetch();
+          invalidateAfterHabitRuleChange(queryClient, projectId);
+          setRescheduleOcc(null);
+        }}
+      />
+    )}
+    </>
   );
 }
