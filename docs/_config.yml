@@ -1,0 +1,29 @@
+title: Spanwork
+description: Spanwork（跨度）官方文档 — 隐私政策、CI 与发布说明
+remote_theme: just-the-docs/just-the-docs
+
+url: https://crowds21.github.io
+baseurl: /Spanwork
+
+permalink: pretty
+
+plugins:
+  - jekyll-remote-theme
+  - jekyll-seo-tag
+  - jekyll-feed
+  - jekyll-include-cache
+
+color_scheme: light
+
+heading_anchors: true
+search_enabled: true
+
+aux_links:
+  GitHub 仓库: //github.com/Crowds21/Spanwork
+
+footer_content: "Copyright &copy; Spanwork. 数据本地优先，由您掌控。"
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor

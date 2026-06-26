@@ -1,6 +1,12 @@
-# Spanwork（跨度）隐私政策
+---
+title: 隐私政策
+layout: default
+nav_order: 2
+permalink: /privacy-policy/
+---
 
-> **文档状态**：草案（Draft）  > **生效日期**：2026 年 6 月 26 日  
+> **文档状态**：草案（Draft）  
+> **生效日期**：2026 年 6 月 26 日  
 > **适用版本**：Spanwork v0.1.0 及后续版本（macOS、Windows、iOS）
 
 ---

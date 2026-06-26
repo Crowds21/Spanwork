@@ -1,4 +1,9 @@
-# CI 失败原因复盘
+---
+title: CI 失败复盘
+layout: default
+nav_order: 4
+permalink: /ci-failure-analysis/
+---
 
 本文记录近期 Spanwork CI 打包流程中几次失败的原因、表现和修复结果，方便后续维护 tag-driven release 与 iOS-only 测试流程。
 

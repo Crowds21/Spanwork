@@ -1,4 +1,9 @@
-# CI 提交与多端打包发布流程
+---
+title: CI 与发布流程
+layout: default
+nav_order: 3
+permalink: /ci-release-flow/
+---
 
 本文说明 Spanwork 的 CI 分支策略、提交方式和打包触发规则。目标是：日常提交不误触发耗时打包；需要发布时，可以用明确的 tag 直接触发 iOS、macOS、Windows 等多端构建与发布。
 
