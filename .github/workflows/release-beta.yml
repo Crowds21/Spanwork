@@ -23,5 +23,5 @@ jobs:
     uses: ./.github/workflows/release-common.yml
     with:
       channel: beta
-      tag_name: ${{ inputs.tag_name || '' }}
+      tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || '' }}
     secrets: inherit
