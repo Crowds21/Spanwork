@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+      - '!v*-beta.*'
   workflow_dispatch:
     inputs:
       tag_name:
@@ -75,6 +76,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: bash .github/scripts/select-xcode.sh 26
 
       - uses: pnpm/action-setup@v4
 
@@ -171,6 +175,9 @@ jobs:
 
       - name: Sync iOS app icons
         run: pnpm icons:sync
+
+      - name: Remove iOS app icon alpha channel
+        run: bash .github/scripts/fix-ios-icon-alpha.sh
 
       - name: Fix generated iOS Podfile
         run: bash .github/scripts/fix-tauri-ios-podfile.sh
