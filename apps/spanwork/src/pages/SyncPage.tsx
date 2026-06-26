@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useT } from '@/lib/i18n/useT';
 import {
   cancelSync,
   connectSyncManual,
@@ -34,6 +35,7 @@ import {
 } from '@/lib/tauri/sync';
 
 export function SyncPage() {
+  const t = useT();
   const queryClient = useQueryClient();
   const [discoveryActive, setDiscoveryActive] = useState(false);
   const [listenPort, setListenPort] = useState<number>();
@@ -76,14 +78,14 @@ export function SyncPage() {
             setActiveSyncPeerLabel(undefined);
             activeSyncPeerLabelRef.current = undefined;
           }, 1500);
-          return { phase: 'done', percent: 100, message: '同步完成' };
+          return { phase: 'done', percent: 100, message: t('sync.syncComplete') };
         });
       }),
     ];
     return () => {
       void Promise.all(unsubs).then((fns) => fns.forEach((fn) => fn()));
     };
-  }, [queryClient]);
+  }, [queryClient, t]);
 
   const refreshPairingCode = async () => {
     const pairing = await requestSyncPairingCode();
@@ -100,7 +102,7 @@ export function SyncPage() {
       await stopSyncDiscovery();
       return null;
     },
-    meta: { errorSource: '局域网发现' },
+    meta: { errorSource: t('errors.lanDiscovery') },
     onSuccess: (status, action) => {
       if (action === 'start' && status) {
         setDiscoveryActive(true);
@@ -126,12 +128,12 @@ export function SyncPage() {
     setSyncingDeviceId(params.peerDeviceId);
     setActiveSyncPeerLabel(label);
     activeSyncPeerLabelRef.current = label;
-    setProgress({ phase: 'starting', percent: 5, message: '正在启动同步…' });
+    setProgress({ phase: 'starting', percent: 5, message: t('sync.startingSync') });
   };
 
   const handleSyncError = (error: ErrorBody) => {
     if (error.code === 'SYNC_CANCELLED') {
-      setProgress({ phase: 'cancelled', percent: 0, message: '同步已取消' });
+      setProgress({ phase: 'cancelled', percent: 0, message: t('sync.syncCancelled') });
       window.setTimeout(() => {
         setProgress(null);
         setActiveSyncPeerLabel(undefined);
@@ -146,7 +148,7 @@ export function SyncPage() {
 
   const finishSyncUi = () => {
     setSyncingDeviceId(undefined);
-    setProgress({ phase: 'done', percent: 100, message: '同步完成' });
+    setProgress({ phase: 'done', percent: 100, message: t('sync.syncComplete') });
     window.setTimeout(() => {
       setProgress(null);
       setActiveSyncPeerLabel(undefined);
@@ -156,7 +158,7 @@ export function SyncPage() {
 
   const runSyncMutation = useMutation({
     mutationFn: startSync,
-    meta: { errorSource: '双向同步' },
+    meta: { errorSource: t('errors.bidirectionalSync') },
     onMutate: (params) => {
       beginSyncUi(params);
       setCodeDialogPeer(null);
@@ -169,7 +171,7 @@ export function SyncPage() {
 
   const manualSyncMutation = useMutation({
     mutationFn: connectSyncManual,
-    meta: { errorSource: '手动同步' },
+    meta: { errorSource: t('errors.manualSync') },
     onMutate: (params) => beginSyncUi(params),
     onSuccess: () => finishSyncUi(),
     onSettled: () => setSyncingDeviceId(undefined),
@@ -178,9 +180,9 @@ export function SyncPage() {
 
   const cancelSyncMutation = useMutation({
     mutationFn: cancelSync,
-    meta: { errorSource: '取消同步' },
+    meta: { errorSource: t('errors.cancelSync') },
     onError: (error: ErrorBody) => {
-      toast.error(error.message || '无法取消同步');
+      toast.error(error.message || t('sync.cannotCancelSync'));
     },
   });
 
@@ -193,7 +195,7 @@ export function SyncPage() {
   const refreshPeersMutation = useMutation({
     mutationFn: listDiscoveredPeers,
     onSuccess: (next) => setPeers(next),
-    meta: { errorSource: '刷新设备列表' },
+    meta: { errorSource: t('errors.refreshPeers') },
   });
 
   const refreshPeers = () => {
@@ -217,8 +219,8 @@ export function SyncPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">局域网同步</h1>
-          <p className="mt-1 text-muted-foreground">同一 Wi‑Fi 下 Mac / iOS 双向 FLM 同步</p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('sync.title')}</h1>
+          <p className="mt-1 text-muted-foreground">{t('sync.subtitle')}</p>
         </div>
       </div>
 
@@ -279,15 +281,15 @@ export function SyncPage() {
 
       <Card className="border-dashed">
         <CardHeader>
-          <CardTitle className="text-base">Mac ↔ iPhone 验收清单</CardTitle>
-          <CardDescription>真机走查（同一局域网）</CardDescription>
+          <CardTitle className="text-base">{t('sync.checklistTitle')}</CardTitle>
+          <CardDescription>{t('sync.checklistDesc')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-1 text-sm text-muted-foreground">
-          <p>1. 两端开启发现，iPhone 允许「本地网络」权限</p>
-          <p>2. iPhone 开热点 + Mac 连热点时，mDNS 常失效，依赖 TCP 探测或手动 IP（172.20.10.1 ↔ .2）</p>
-          <p>3. Mac 代理软件需绕过 172.20.10.0/24，否则 TCP 同步会失败</p>
-          <p>4. 接收端展示配对码，发起端输入后执行双向同步</p>
-          <p>5. 验证项目/任务增量同步与二次增量（compaction 后）</p>
+          <p>{t('sync.checklist1')}</p>
+          <p>{t('sync.checklist2')}</p>
+          <p>{t('sync.checklist3')}</p>
+          <p>{t('sync.checklist4')}</p>
+          <p>{t('sync.checklist5')}</p>
         </CardContent>
       </Card>
 
@@ -299,14 +301,16 @@ export function SyncPage() {
       >
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>输入配对码</CardTitle>
+            <CardTitle>{t('sync.enterPairingCode')}</CardTitle>
             <CardDescription>
-              请输入 {codeDialogPeer?.deviceName ?? '对端'} 屏幕上显示的 6 位码
+              {t('sync.enterPairingCodeDesc', {
+                device: codeDialogPeer?.deviceName ?? t('common.peer'),
+              })}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="peer-pair-code">配对码</Label>
+              <Label htmlFor="peer-pair-code">{t('sync.pairingCode')}</Label>
               <Input
                 id="peer-pair-code"
                 inputMode="numeric"
@@ -335,7 +339,7 @@ export function SyncPage() {
                 });
               }}
             >
-              开始双向同步
+              {t('sync.startBidirectionalSync')}
             </Button>
           </CardContent>
         </Card>

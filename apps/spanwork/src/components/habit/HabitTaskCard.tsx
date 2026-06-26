@@ -33,6 +33,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useHabitOccurrenceActions } from '@/hooks/useHabitOccurrenceActions';
 import { formatDuration } from '@/lib/format';
+import { useT } from '@/lib/i18n/useT';
 import {
   canManualHabitTimeEntry,
   canStartHabitTimer,
@@ -101,6 +102,7 @@ export function HabitTaskCard({
   onEdit,
   onDelete,
 }: HabitTaskCardProps) {
+  const t = useT();
   const queryClient = useQueryClient();
   const [entryOpen, setEntryOpen] = useState(false);
   const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
@@ -192,7 +194,7 @@ export function HabitTaskCard({
             </div>
             <div
               className="flex shrink-0 items-center gap-1 text-sm font-medium"
-              aria-label={`连续完成 ${streakLabel}`}
+              aria-label={t('habit.streakComplete', { label: streakLabel })}
             >
               <Flame className="size-4 text-orange-500" aria-hidden />
               <span>{streakQuery.isLoading ? '—' : streakLabel}</span>
@@ -208,13 +210,15 @@ export function HabitTaskCard({
           <HabitFoggHints rule={rule} />
 
           <p className="text-xs text-muted-foreground">
-            {totalSeconds > 0 ? `累计 ${formatDuration(totalSeconds)}` : '累计 0'}
-            {lastDone ? ` · 上次 ${formatShortDate(lastDone)}` : ''}
-            {!lastDone && totalSeconds === 0 ? ' · 尚未完成记录' : ''}
+            {totalSeconds > 0
+              ? t('habit.accumulated', { duration: formatDuration(totalSeconds) })
+              : t('habit.accumulatedZero')}
+            {lastDone ? t('habit.lastDone', { date: formatShortDate(lastDone) }) : ''}
+            {!lastDone && totalSeconds === 0 ? t('habit.noRecordYet') : ''}
           </p>
 
           {isTimingThis && (
-            <p className="text-xs font-medium text-primary">计时中…（保存计时不等于打卡完成）</p>
+            <p className="text-xs font-medium text-primary">{t('habit.timingNoCheckIn')}</p>
           )}
 
           {!readOnly && (
@@ -225,13 +229,13 @@ export function HabitTaskCard({
                     active={activeTimer}
                     projectId={project.id}
                     onComplete={invalidate}
-                    completeTooltip="保存计时（不会自动打卡）"
-                    completeAriaLabel="保存计时"
+                    completeTooltip={t('habit.saveTimerNoCheckIn')}
+                    completeAriaLabel={t('habit.saveTimer')}
                   />
                 ) : (
                   <>
                     {canStartTimer && (
-                      <Tooltip label="开始计时" side="bottom">
+                      <Tooltip label={t('task.startTimer')} side="bottom">
                         <Button
                           type="button"
                           size="icon"
@@ -239,7 +243,7 @@ export function HabitTaskCard({
                           className={ROW_ICON_BUTTON_CLASS}
                           disabled={startMutation.isPending || isTimingOther}
                           onClick={() => startMutation.mutate()}
-                          aria-label="开始计时"
+                          aria-label={t('task.startTimer')}
                         >
                           <Play className="size-4 fill-current" />
                         </Button>
@@ -247,7 +251,7 @@ export function HabitTaskCard({
                     )}
                     {canAct && (
                       <>
-                        <Tooltip label="打卡完成" side="bottom">
+                        <Tooltip label={t('habit.checkInComplete')} side="bottom">
                           <Button
                             type="button"
                             size="icon"
@@ -255,12 +259,12 @@ export function HabitTaskCard({
                             className={ROW_ICON_BUTTON_CLASS}
                             onClick={() => statusMutation.mutate('done')}
                             disabled={statusMutation.isPending}
-                            aria-label="打卡完成"
+                            aria-label={t('habit.checkInComplete')}
                           >
                             <Check className="size-4" />
                           </Button>
                         </Tooltip>
-                        <Tooltip label="跳过今日" side="bottom">
+                        <Tooltip label={t('habit.skipToday')} side="bottom">
                           <Button
                             type="button"
                             size="icon"
@@ -268,7 +272,7 @@ export function HabitTaskCard({
                             className={ROW_ICON_BUTTON_CLASS}
                             onClick={() => setSkipConfirmOpen(true)}
                             disabled={statusMutation.isPending}
-                            aria-label="跳过今日"
+                            aria-label={t('habit.skipToday')}
                           >
                             <SkipForward className="size-4" />
                           </Button>
@@ -276,27 +280,27 @@ export function HabitTaskCard({
                       </>
                     )}
                     {canManualEntry && (
-                      <Tooltip label="补录时间" side="bottom">
+                      <Tooltip label={t('task.manualTimeEntry')} side="bottom">
                         <Button
                           type="button"
                           size="icon"
                           variant="ghost"
                           className={cn(ROW_ICON_BUTTON_CLASS, entryOpen && 'ring-2 ring-primary/40')}
                           onClick={() => setEntryOpen(true)}
-                          aria-label="补录时间"
+                          aria-label={t('task.manualTimeEntry')}
                         >
                           <Clock className="size-4" />
                         </Button>
                       </Tooltip>
                     )}
-                    <Tooltip label="查看详情" side="bottom">
+                    <Tooltip label={t('task.viewDetail')} side="bottom">
                       <Button
                         type="button"
                         size="icon"
                         variant="ghost"
                         className={ROW_ICON_BUTTON_CLASS}
                         onClick={onEdit}
-                        aria-label="查看详情"
+                        aria-label={t('task.viewDetail')}
                       >
                         <PencilLine className="size-4" />
                       </Button>
@@ -305,13 +309,13 @@ export function HabitTaskCard({
                 )}
               </div>
               <div ref={menuButtonRef} className="relative">
-                <Tooltip label="更多操作" side="bottom">
+                <Tooltip label={t('common.moreActions')} side="bottom">
                   <Button
                     type="button"
                     size="icon"
                     variant="ghost"
                     className={ROW_ICON_BUTTON_CLASS}
-                    aria-label="更多操作"
+                    aria-label={t('common.moreActions')}
                     aria-expanded={menuOpen}
                     onClick={() => setMenuOpen((v) => !v)}
                   >
@@ -331,7 +335,7 @@ export function HabitTaskCard({
             <button
               type="button"
               className="fixed inset-0 z-40"
-              aria-label="关闭菜单"
+              aria-label={t('common.closeMenuOverlay')}
               onClick={() => setMenuOpen(false)}
             />
             <div
@@ -348,7 +352,7 @@ export function HabitTaskCard({
               >
                 <Link to="/calendar" search={{ projectId: project.id, view: 'day' }}>
                   <CalendarDays className="size-4" />
-                  在日历中查看
+                  {t('common.viewInCalendar')}
                 </Link>
               </Button>
               <Button
@@ -362,7 +366,7 @@ export function HabitTaskCard({
                 }}
               >
                 <Trash2 className="size-4" />
-                删除习惯任务
+                {t('habit.deleteHabitTask')}
               </Button>
             </div>
           </>,
@@ -372,9 +376,9 @@ export function HabitTaskCard({
       <ConfirmDialog
         open={skipConfirmOpen}
         onOpenChange={setSkipConfirmOpen}
-        title="跳过今日"
-        description={`确定跳过「${rule.title}」今日打卡？跳过后今日将记为已跳过。`}
-        confirmLabel="跳过"
+        title={t('habit.skipToday')}
+        description={t('habit.skipTodayConfirm', { title: rule.title })}
+        confirmLabel={t('habit.skip')}
         loading={statusMutation.isPending}
         onConfirm={() => {
           statusMutation.mutate('skipped', {

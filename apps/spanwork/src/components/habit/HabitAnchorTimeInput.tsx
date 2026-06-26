@@ -2,6 +2,7 @@
  * 情境锚点 · 时间（勾选启用 + TimePicker）
  */
 import { TimePicker, normalizeTimeValue } from '@/components/ui/time-picker';
+import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
 interface HabitAnchorTimeInputProps {
@@ -19,6 +20,7 @@ export function HabitAnchorTimeInput({
   onEnabledChange,
   onChange,
 }: HabitAnchorTimeInputProps) {
+  const t = useT();
   const displayTime = normalizeTimeValue(value) || '07:00';
 
   return (
@@ -47,9 +49,9 @@ export function HabitAnchorTimeInput({
         />
         <span className="min-w-0 flex-1 space-y-2">
           <span className="space-y-0.5">
-            <span className="block text-sm font-medium">情境锚点 · 时间</span>
+            <span className="block text-sm font-medium">{t('habit.anchorTime')}</span>
             <span className="block text-xs text-muted-foreground">
-              {enabled ? '已启用，将在该时间点作为习惯提醒锚点（预留）' : '未启用时间锚点'}
+              {enabled ? t('habit.anchorTimeEnabled') : t('habit.anchorTimeDisabled')}
             </span>
           </span>
           {enabled && (
@@ -57,7 +59,7 @@ export function HabitAnchorTimeInput({
               id={id}
               value={displayTime}
               onChange={onChange}
-              aria-label="情境锚点时间"
+              aria-label={t('habit.anchorTimeAria')}
             />
           )}
         </span>

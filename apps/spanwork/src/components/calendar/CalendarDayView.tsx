@@ -4,6 +4,7 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarDayAgenda } from '@/components/calendar/CalendarDayAgenda';
 import { CalendarDayTimeline } from '@/components/calendar/CalendarDayTimeline';
+import { useT } from '@/lib/i18n/useT';
 import { useCalendarDay } from '@/hooks/useCalendarDay';
 
 interface CalendarDayViewProps {
@@ -12,6 +13,7 @@ interface CalendarDayViewProps {
 }
 
 export function CalendarDayView({ dateKey, projectId }: CalendarDayViewProps) {
+  const t = useT();
   const dayQuery = useCalendarDay(dateKey, projectId);
 
   if (dayQuery.isLoading) {
@@ -30,7 +32,7 @@ export function CalendarDayView({ dateKey, projectId }: CalendarDayViewProps) {
     <div className="space-y-6">
       <CalendarDayAgenda dateKey={dateKey} occurrences={day.occurrences} />
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-muted-foreground">时间轴</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground">{t('calendar.timeline')}</h3>
         <CalendarDayTimeline
           timeBlocks={day.timeBlocks ?? []}
           activeTimer={day.activeTimer}

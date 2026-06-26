@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Dialog } from '@/components/ui/dialog';
+import { useT } from '@/lib/i18n/useT';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -30,12 +31,16 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = '确认',
-  cancelLabel = '取消',
+  confirmLabel,
+  cancelLabel,
   destructive,
   loading,
   onConfirm,
 }: ConfirmDialogProps) {
+  const t = useT();
+  const resolvedConfirm = confirmLabel ?? t('common.confirm');
+  const resolvedCancel = cancelLabel ?? t('common.cancel');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange} contentClassName="sm:max-w-md">
       <Card className="rounded-t-2xl border-0 shadow-lg sm:rounded-2xl sm:border">
@@ -45,7 +50,7 @@ export function ConfirmDialog({
         </CardHeader>
         <CardFooter className="flex justify-end gap-2 border-t pt-4">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            {cancelLabel}
+            {resolvedCancel}
           </Button>
           <Button
             type="button"
@@ -56,10 +61,10 @@ export function ConfirmDialog({
             {loading ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                处理中…
+                {t('common.processing')}
               </>
             ) : (
-              confirmLabel
+              resolvedConfirm
             )}
           </Button>
         </CardFooter>

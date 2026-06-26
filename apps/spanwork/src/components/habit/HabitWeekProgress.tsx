@@ -2,6 +2,7 @@
  * 习惯任务周期进度条（本周 / 本月 / 本年）
  */
 import { formatFrequencyLabelVerbose, getProgressPeriod } from '@/lib/habitUtils';
+import { useT } from '@/lib/i18n/useT';
 import type { HabitRuleDto } from '@spanwork/shared-types';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +19,7 @@ export function HabitWeekProgress({
   total,
   className,
 }: HabitWeekProgressProps) {
+  const t = useT();
   const period = getProgressPeriod(rule);
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
@@ -36,7 +38,7 @@ export function HabitWeekProgress({
         aria-valuenow={done}
         aria-valuemin={0}
         aria-valuemax={Math.max(total, 1)}
-        aria-label={`${period.label}完成 ${done}/${total}`}
+        aria-label={t('habit.periodComplete', { period: period.label, done, total })}
       >
         <div
           className="h-full rounded-full bg-primary transition-[width] duration-300"

@@ -9,6 +9,7 @@ import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getAppVersionLabel } from '@/lib/appVersion';
 import { showDiagnostics } from '@/lib/buildProfile';
+import { useT } from '@/lib/i18n/useT';
 import { dismissAppStatus, useAppStatus } from '@/lib/status/appStatus';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +20,7 @@ interface AppStatusLineProps {
 }
 
 export function AppStatusLine({ placement = 'desktop' }: AppStatusLineProps) {
+  const t = useT();
   const { hasError, entry } = useAppStatus();
   const diagnostics = showDiagnostics();
 
@@ -36,7 +38,7 @@ export function AppStatusLine({ placement = 'desktop' }: AppStatusLineProps) {
         aria-live="polite"
       >
         <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" aria-hidden />
-        <span className="text-muted-foreground">就绪</span>
+        <span className="text-muted-foreground">{t('common.ready')}</span>
         {diagnostics && <AppVersionLabel className="ml-auto" />}
       </footer>
     );
@@ -74,13 +76,15 @@ export function AppStatusLine({ placement = 'desktop' }: AppStatusLineProps) {
 }
 
 function AppVersionLabel({ className }: { className?: string }) {
+  const t = useT();
+
   return (
     <span
       className={cn(
         'font-mono text-[10px] leading-none text-muted-foreground tabular-nums',
         className,
       )}
-      title="客户端版本与构建时间"
+      title={t('common.clientVersionTitle')}
     >
       {getAppVersionLabel()}
     </span>
@@ -94,6 +98,8 @@ function StatusErrorContent({
   entry: ReturnType<typeof useAppStatus>['entry'];
   showLogHint?: boolean;
 }) {
+  const t = useT();
+
   if (!entry) return null;
 
   return (
@@ -102,7 +108,7 @@ function StatusErrorContent({
       <span className="shrink-0 text-muted-foreground">{entry.source}：</span>
       <span className="min-w-0 truncate text-destructive">{entry.message}</span>
       {showLogHint && (
-        <span className="hidden shrink-0 text-muted-foreground sm:inline">· 已写入日志</span>
+        <span className="hidden shrink-0 text-muted-foreground sm:inline">{t('common.loggedToFile')}</span>
       )}
       <Button
         type="button"
@@ -110,7 +116,7 @@ function StatusErrorContent({
         size="icon"
         className="ml-auto size-5 shrink-0 text-muted-foreground hover:text-foreground"
         onClick={dismissAppStatus}
-        aria-label="关闭错误提示"
+        aria-label={t('common.dismissError')}
       >
         <X className="size-3" />
       </Button>

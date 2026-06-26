@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { addDays, todayDateKey } from '@/lib/calendarUtils';
 import { formatShortDate } from '@/lib/habitUtils';
+import { useT } from '@/lib/i18n/useT';
 import { updateHabitOccurrence } from '@/lib/tauri/habit';
 import { invalidateHabitProjectQueries } from '@/queries/invalidate';
 
@@ -44,6 +45,7 @@ export function HabitRescheduleDialog({
   dateKey,
   onSuccess,
 }: HabitRescheduleDialogProps) {
+  const t = useT();
   const queryClient = useQueryClient();
   const [newDate, setNewDate] = useState(() => addDays(currentDate, 1));
 
@@ -53,7 +55,7 @@ export function HabitRescheduleDialog({
         id: occurrenceId,
         patch: { scheduledDate: newDate },
       }),
-    meta: { errorSource: '改期习惯' },
+    meta: { errorSource: t('errors.rescheduleHabit') },
     onSuccess: () => {
       invalidateHabitProjectQueries(queryClient, projectId, { dateKey, ruleId });
       onSuccess?.();
@@ -65,14 +67,17 @@ export function HabitRescheduleDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <Card className="w-full max-w-md border-0 shadow-none">
         <CardHeader>
-          <CardTitle>改期</CardTitle>
+          <CardTitle>{t('habit.rescheduleTitle')}</CardTitle>
           <CardDescription>
-            将「{title}」从 {formatShortDate(currentDate)} 改到其他日期。原日期将记为未完成。
+            {t('habit.rescheduleDesc', {
+              title,
+              fromDate: formatShortDate(currentDate),
+            })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-2">
-            <Label htmlFor="reschedule-date">新日期</Label>
+            <Label htmlFor="reschedule-date">{t('habit.newDate')}</Label>
             <Input
               id="reschedule-date"
               type="date"
@@ -84,14 +89,14 @@ export function HabitRescheduleDialog({
         </CardContent>
         <CardFooter className="justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            取消
+            {t('common.cancel')}
           </Button>
           <Button
             type="button"
             disabled={mutation.isPending || newDate === currentDate}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending ? '改期中…' : '确认改期'}
+            {mutation.isPending ? t('habit.rescheduling') : t('habit.confirmReschedule')}
           </Button>
         </CardFooter>
       </Card>

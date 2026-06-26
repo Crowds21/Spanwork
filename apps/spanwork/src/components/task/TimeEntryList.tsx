@@ -8,8 +8,9 @@ import {
   formatDateTime,
   formatDuration,
   formatDurationLive,
-  timeEntrySourceLabels,
+  getTimeEntrySourceLabels,
 } from '@/lib/format';
+import { useT } from '@/lib/i18n/useT';
 
 interface TimeEntryListProps {
   entries: TimeEntryDto[];
@@ -24,12 +25,15 @@ export function TimeEntryList({
   activeElapsed,
   showActiveOnPage,
 }: TimeEntryListProps) {
+  const t = useT();
+  const timeEntrySourceLabels = getTimeEntrySourceLabels();
+  const emDash = t('common.emDash');
   const isEmpty = !showActiveOnPage && entries.length === 0 && !activeTimer;
 
   if (isEmpty) {
     return (
       <p className="rounded-lg border px-4 py-6 text-center text-sm text-muted-foreground">
-        暂无时间记录。点击「计时」或「补录」开始记录。
+        {t('task.noTimeRecords')}
       </p>
     );
   }
@@ -40,11 +44,11 @@ export function TimeEntryList({
         <table className="w-full min-w-[36rem] text-left text-sm">
           <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
             <tr>
-              <th className="px-3 py-2 font-medium">开始时间</th>
-              <th className="px-3 py-2 font-medium">结束时间</th>
-              <th className="px-3 py-2 font-medium">时长</th>
-              <th className="px-3 py-2 font-medium">来源</th>
-              <th className="px-3 py-2 font-medium">备注</th>
+              <th className="px-3 py-2 font-medium">{t('task.startTime')}</th>
+              <th className="px-3 py-2 font-medium">{t('task.endTime')}</th>
+              <th className="px-3 py-2 font-medium">{t('common.duration')}</th>
+              <th className="px-3 py-2 font-medium">{t('common.source')}</th>
+              <th className="px-3 py-2 font-medium">{t('common.note')}</th>
             </tr>
           </thead>
           <tbody>
@@ -54,22 +58,22 @@ export function TimeEntryList({
                   {formatDateTime(activeTimer.sessionStartedAt)}
                 </td>
                 <td className="px-3 py-2 text-primary">
-                  {activeTimer.isPaused ? '已暂停' : '计时中…'}
+                  {activeTimer.isPaused ? t('task.timingPaused') : t('task.timing')}
                 </td>
                 <td className="px-3 py-2 font-mono tabular-nums">
                   {formatDurationLive(activeElapsed)}
                 </td>
                 <td className="px-3 py-2">
-                  <Badge variant="outline">计时</Badge>
+                  <Badge variant="outline">{t('task.sourceTimer')}</Badge>
                 </td>
-                <td className="px-3 py-2 text-muted-foreground">—</td>
+                <td className="px-3 py-2 text-muted-foreground">{emDash}</td>
               </tr>
             )}
             {entries.map((entry) => (
               <tr key={entry.id} className="border-b last:border-b-0">
                 <td className="px-3 py-2 tabular-nums">{formatDateTime(entry.startAt)}</td>
                 <td className="px-3 py-2 tabular-nums">
-                  {entry.endAt != null ? formatDateTime(entry.endAt) : '—'}
+                  {entry.endAt != null ? formatDateTime(entry.endAt) : emDash}
                 </td>
                 <td className="px-3 py-2 font-mono tabular-nums">
                   {formatDuration(entry.durationSeconds)}
@@ -80,14 +84,14 @@ export function TimeEntryList({
                   </Badge>
                 </td>
                 <td className="max-w-[12rem] truncate px-3 py-2 text-muted-foreground">
-                  {entry.note ?? '—'}
+                  {entry.note ?? emDash}
                 </td>
               </tr>
             ))}
             {!showActiveOnPage && entries.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-3 py-6 text-center text-sm text-muted-foreground">
-                  本页暂无记录
+                  {t('task.noRecordsThisPage')}
                 </td>
               </tr>
             )}
@@ -99,10 +103,10 @@ export function TimeEntryList({
         {showActiveOnPage && activeTimer && (
           <TimeEntryCard
             start={formatDateTime(activeTimer.sessionStartedAt)}
-            end={activeTimer.isPaused ? '已暂停' : '计时中…'}
+            end={activeTimer.isPaused ? t('task.timingPaused') : t('task.timing')}
             duration={formatDurationLive(activeElapsed)}
-            source="计时"
-            note="—"
+            source={t('task.sourceTimer')}
+            note={emDash}
             highlight
           />
         )}
@@ -110,15 +114,15 @@ export function TimeEntryList({
           <TimeEntryCard
             key={entry.id}
             start={formatDateTime(entry.startAt)}
-            end={entry.endAt != null ? formatDateTime(entry.endAt) : '—'}
+            end={entry.endAt != null ? formatDateTime(entry.endAt) : emDash}
             duration={formatDuration(entry.durationSeconds)}
             source={timeEntrySourceLabels[entry.source] ?? entry.source}
-            note={entry.note ?? '—'}
+            note={entry.note ?? emDash}
           />
         ))}
         {!showActiveOnPage && entries.length === 0 && (
           <p className="rounded-lg border px-4 py-4 text-center text-sm text-muted-foreground">
-            本页暂无记录
+            {t('task.noRecordsThisPage')}
           </p>
         )}
       </div>
@@ -141,6 +145,9 @@ function TimeEntryCard({
   note: string;
   highlight?: boolean;
 }) {
+  const t = useT();
+  const emDash = t('common.emDash');
+
   return (
     <div
       className={`rounded-lg border p-3 text-sm ${highlight ? 'border-primary/30 bg-primary/5' : 'bg-card'}`}
@@ -148,17 +155,17 @@ function TimeEntryCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 space-y-1">
           <p className="tabular-nums text-muted-foreground">
-            <span className="text-xs">开始</span> {start}
+            <span className="text-xs">{t('common.start')}</span> {start}
           </p>
           <p className={highlight ? 'text-primary' : 'tabular-nums text-muted-foreground'}>
-            <span className="text-xs">结束</span> {end}
+            <span className="text-xs">{t('common.end')}</span> {end}
           </p>
         </div>
         <span className="shrink-0 font-mono text-base font-semibold tabular-nums">{duration}</span>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
         <Badge variant="outline">{source}</Badge>
-        {note !== '—' && <span className="min-w-0 truncate text-muted-foreground">{note}</span>}
+        {note !== emDash && <span className="min-w-0 truncate text-muted-foreground">{note}</span>}
       </div>
     </div>
   );

@@ -4,8 +4,8 @@
 import type { HabitFrequency, HabitOccurrenceDto, HabitRuleDto } from '@spanwork/shared-types';
 
 import { addDays, parseDateKey, toDateKey, todayDateKey } from '@/lib/calendarUtils';
-
-const WEEKDAY_SHORT = ['一', '二', '三', '四', '五', '六', '日'];
+import type { Locale } from '@/lib/i18n';
+import { getTranslator } from '@/lib/i18n/translate';
 
 type FrequencyRuleInput = Pick<
   HabitRuleDto,
@@ -35,43 +35,61 @@ function yearlyDates(rule: FrequencyRuleInput): string[] {
   return [];
 }
 
-export function formatFrequencyLabelVerbose(rule: FrequencyRuleInput): string {
+function weekdayShort(isoWeekday: number, locale?: Locale): string {
+  const t = getTranslator(locale);
+  return t(`calendar.weekdayShort.${isoWeekday}`);
+}
+
+function listSeparator(locale?: Locale): string {
+  return getTranslator(locale)('habit.listSeparator');
+}
+
+export function formatFrequencyLabelVerbose(rule: FrequencyRuleInput, locale?: Locale): string {
+  const t = getTranslator(locale);
   switch (rule.frequency) {
     case 'daily':
-      return '每天';
+      return t('habit.frequency.daily');
     case 'weekly': {
       const days = weeklyDays(rule);
-      if (days.length === 0) return '每周';
-      return `每周${days.map((d) => WEEKDAY_SHORT[d - 1]).join('、')}`;
+      if (days.length === 0) return t('habit.frequency.weekly');
+      const dayLabels = days.map((d) => weekdayShort(d, locale)).join(listSeparator(locale));
+      return t('habit.frequency.weeklyDays', { days: dayLabels });
     }
     case 'monthly': {
       const days = monthlyDays(rule);
-      if (days.length === 0) return '每月';
-      return `每月 ${days.join('、')} 日`;
+      if (days.length === 0) return t('habit.frequency.monthly');
+      return t('habit.frequency.monthlyDays', { days: days.join(listSeparator(locale)) });
     }
     case 'yearly': {
       const dates = yearlyDates(rule);
-      if (dates.length === 0) return '每年';
-      return `每年 ${dates.join('、')}`;
+      if (dates.length === 0) return t('habit.frequency.yearly');
+      return t('habit.frequency.yearlyDates', { dates: dates.join(listSeparator(locale)) });
     }
   }
 }
 
-export function formatFrequencyLabel(rule: FrequencyRuleInput): string {
+export function formatFrequencyLabel(rule: FrequencyRuleInput, locale?: Locale): string {
+  const t = getTranslator(locale);
   switch (rule.frequency) {
     case 'daily':
-      return '每天';
+      return t('habit.frequency.daily');
     case 'weekly': {
       const count = weeklyDays(rule).length;
-      return count === 0 ? '每周' : `每周 · ${count} 天`;
+      return count === 0
+        ? t('habit.frequency.weekly')
+        : t('habit.frequency.weeklyCount', { count });
     }
     case 'monthly': {
       const count = monthlyDays(rule).length;
-      return count === 0 ? '每月' : `每月 · ${count} 天`;
+      return count === 0
+        ? t('habit.frequency.monthly')
+        : t('habit.frequency.monthlyCount', { count });
     }
     case 'yearly': {
       const count = yearlyDates(rule).length;
-      return count === 0 ? '每年' : `每年 · ${count} 天`;
+      return count === 0
+        ? t('habit.frequency.yearly')
+        : t('habit.frequency.yearlyCount', { count });
     }
   }
 }
@@ -80,53 +98,73 @@ export function buildDisplayTitle(projectName: string, ruleTitle: string): strin
   return `${projectName} · ${ruleTitle}`;
 }
 
-export function formatStreakLabel(streak: number, frequency: HabitFrequency): string {
+export function formatStreakLabel(
+  streak: number,
+  frequency: HabitFrequency,
+  locale?: Locale,
+): string {
   if (streak <= 0) return '—';
+  const t = getTranslator(locale);
   switch (frequency) {
     case 'weekly':
-      return `${streak} 周`;
+      return t('habit.streak.week', { count: streak });
     case 'monthly':
-      return `${streak} 月`;
+      return t('habit.streak.month', { count: streak });
     case 'yearly':
-      return `${streak} 年`;
+      return t('habit.streak.year', { count: streak });
     default:
-      return `${streak} 天`;
+      return t('habit.streak.day', { count: streak });
   }
 }
 
-export function getWeekRange(dateKey?: string): { from: string; to: string; label: string } {
+export function getWeekRange(
+  dateKey?: string,
+  locale?: Locale,
+): { from: string; to: string; label: string } {
+  const t = getTranslator(locale);
   const today = dateKey ?? todayDateKey();
   const { year, month, day } = parseDateKey(today);
   const date = new Date(year, month, day);
   const dow = (date.getDay() + 6) % 7;
   const from = addDays(today, -dow);
   const to = addDays(from, 6);
-  return { from, to, label: '本周' };
+  return { from, to, label: t('habit.period.thisWeek') };
 }
 
-export function getMonthRange(dateKey?: string): { from: string; to: string; label: string } {
+export function getMonthRange(
+  dateKey?: string,
+  locale?: Locale,
+): { from: string; to: string; label: string } {
+  const t = getTranslator(locale);
   const today = dateKey ?? todayDateKey();
   const { year, month } = parseDateKey(today);
   const from = toDateKey(year, month, 1);
   const lastDay = new Date(year, month + 1, 0).getDate();
   const to = toDateKey(year, month, lastDay);
-  return { from, to, label: '本月' };
+  return { from, to, label: t('habit.period.thisMonth') };
 }
 
-export function getYearRange(dateKey?: string): { from: string; to: string; label: string } {
+export function getYearRange(
+  dateKey?: string,
+  locale?: Locale,
+): { from: string; to: string; label: string } {
+  const t = getTranslator(locale);
   const today = dateKey ?? todayDateKey();
   const year = parseDateKey(today).year;
-  return { from: `${year}-01-01`, to: `${year}-12-31`, label: '本年' };
+  return { from: `${year}-01-01`, to: `${year}-12-31`, label: t('habit.period.thisYear') };
 }
 
-export function getProgressPeriod(rule: HabitRuleDto): { from: string; to: string; label: string } {
+export function getProgressPeriod(
+  rule: HabitRuleDto,
+  locale?: Locale,
+): { from: string; to: string; label: string } {
   switch (rule.frequency) {
     case 'monthly':
-      return getMonthRange();
+      return getMonthRange(undefined, locale);
     case 'yearly':
-      return getYearRange();
+      return getYearRange(undefined, locale);
     default:
-      return getWeekRange();
+      return getWeekRange(undefined, locale);
   }
 }
 
@@ -259,31 +297,37 @@ export function formatShortDate(dateKey: string): string {
 
 export function todayStatusLabel(
   status: HabitOccurrenceDto['status'] | 'none',
+  locale?: Locale,
 ): string {
+  const t = getTranslator(locale);
   switch (status) {
     case 'pending':
-      return '今日待完成';
+      return t('habit.todayStatus.pending');
     case 'done':
-      return '今日已完成';
+      return t('habit.todayStatus.done');
     case 'skipped':
-      return '今日已跳过';
+      return t('habit.todayStatus.skipped');
     case 'missed':
-      return '今日未完成';
+      return t('habit.todayStatus.missed');
     default:
-      return '今日无计划';
+      return t('habit.todayStatus.none');
   }
 }
 
-export function occurrenceStatusLabel(status: HabitOccurrenceDto['status']): string {
+export function occurrenceStatusLabel(
+  status: HabitOccurrenceDto['status'],
+  locale?: Locale,
+): string {
+  const t = getTranslator(locale);
   switch (status) {
     case 'pending':
-      return '待完成';
+      return t('habit.occurrenceStatus.pending');
     case 'done':
-      return '已完成';
+      return t('habit.occurrenceStatus.done');
     case 'skipped':
-      return '已跳过';
+      return t('habit.occurrenceStatus.skipped');
     case 'missed':
-      return '未完成';
+      return t('habit.occurrenceStatus.missed');
   }
 }
 
@@ -317,9 +361,10 @@ export function computeProjectPeriodRate(
 
 export function formatAnchorHint(
   rule: Pick<HabitRuleDto, 'anchorTime' | 'anchorHabit'>,
+  locale?: Locale,
 ): string | null {
   const time = rule.anchorTime?.trim();
-  if (time) return `建议 ${time} 开始`;
+  if (time) return getTranslator(locale)('habit.anchorHint', { time });
   return null;
 }
 
@@ -332,18 +377,20 @@ export function formatHabitNotesHint(
 
 export function formatMinimumDurationHint(
   rule: Pick<HabitRuleDto, 'minimumDurationSeconds'>,
+  locale?: Locale,
 ): string | null {
   if (rule.minimumDurationSeconds != null && rule.minimumDurationSeconds > 0) {
+    const t = getTranslator(locale);
     const total = rule.minimumDurationSeconds;
     const hours = Math.floor(total / 3600);
     const minutes = Math.floor((total % 3600) / 60);
     if (hours > 0 && minutes > 0) {
-      return `微习惯：至少 ${hours} 小时 ${minutes} 分钟也算完成`;
+      return t('habit.minimumDuration.hoursAndMinutes', { hours, minutes });
     }
     if (hours > 0) {
-      return `微习惯：至少 ${hours} 小时也算完成`;
+      return t('habit.minimumDuration.hoursOnly', { hours });
     }
-    return `微习惯：至少 ${Math.max(1, minutes)} 分钟也算完成`;
+    return t('habit.minimumDuration.minutesOnly', { minutes: Math.max(1, minutes) });
   }
   return null;
 }

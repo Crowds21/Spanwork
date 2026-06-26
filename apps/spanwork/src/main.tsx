@@ -12,6 +12,8 @@ import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@ta
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 
 import { RoutePending } from '@/components/layout/RoutePending';
+import { I18nProvider } from '@/lib/i18n/I18nProvider';
+import { getTranslator } from '@/lib/i18n/translate';
 import { queryKeyLabel, reportAppError } from '@/lib/status/appStatus';
 import { initSafeAreaInsets } from '@/lib/safeArea';
 import { routeTree } from './routeTree.gen';
@@ -30,7 +32,7 @@ const queryClient = new QueryClient({
       const source =
         typeof mutation.meta?.errorSource === 'string'
           ? mutation.meta.errorSource
-          : '操作';
+          : getTranslator()('common.operation');
       reportAppError(source, error);
     },
   }),
@@ -56,8 +58,10 @@ declare module '@tanstack/react-router' {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <I18nProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </I18nProvider>
   </StrictMode>,
 );

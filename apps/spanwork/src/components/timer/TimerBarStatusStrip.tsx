@@ -7,9 +7,11 @@ import { useTimerBar } from '@/components/timer/TimerBarContext';
 import { TimerBarCancelButton } from '@/components/timer/TimerBarCancelButton';
 import { Button } from '@/components/ui/button';
 import { formatDurationLive } from '@/lib/format';
+import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
 export function TimerBarStatusStrip() {
+  const t = useT();
   const {
     inTauri,
     active,
@@ -48,7 +50,9 @@ export function TimerBarStatusStrip() {
               )}
               aria-hidden
             />
-            <span className="hidden shrink-0 sm:inline">{isPaused ? '已暂停' : '计时中'}</span>
+            <span className="hidden shrink-0 sm:inline">
+              {isPaused ? t('timer.paused') : t('timer.timing')}
+            </span>
             <span className={cn('hidden shrink-0 sm:inline', isPaused ? 'text-amber-600/35' : 'text-primary/35')}>
               ·
             </span>
@@ -69,7 +73,7 @@ export function TimerBarStatusStrip() {
               onClick={handleViewProject}
               disabled={!active}
             >
-              查看任务
+              {t('timer.viewTask')}
             </button>
           </div>
           <div className="absolute right-0 top-1/2 z-[3] flex -translate-y-1/2 items-center gap-0.5 overflow-visible">
@@ -91,7 +95,7 @@ export function TimerBarStatusStrip() {
                   : 'text-primary/80 hover:text-primary',
               )}
               onClick={() => setMinimized(false)}
-              aria-label="展开计时栏"
+              aria-label={t('timer.expandTimerBar')}
             >
               <ChevronDown className="size-3.5" />
             </Button>

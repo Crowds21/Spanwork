@@ -11,6 +11,7 @@ import {
 } from '@/components/habit/HabitDurationGoalsInput';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
 export interface HabitFoggFormState {
@@ -103,6 +104,8 @@ interface HabitFoggFieldsProps {
 }
 
 export function HabitFoggFields({ state, onChange }: HabitFoggFieldsProps) {
+  const t = useT();
+
   return (
     <section className="space-y-3 rounded-lg border bg-muted/15 p-4">
       <label
@@ -129,21 +132,21 @@ export function HabitFoggFields({ state, onChange }: HabitFoggFieldsProps) {
           }
         />
         <span className="space-y-0.5">
-          <span className="block text-sm font-semibold">行为设计</span>
-          <span className="block text-xs text-muted-foreground">动机 · 能力 · 提示（可选）</span>
+          <span className="block text-sm font-semibold">{t('habit.behaviorDesign')}</span>
+          <span className="block text-xs text-muted-foreground">{t('habit.behaviorDesignDesc')}</span>
         </span>
       </label>
 
       {state.enabled && (
         <div className="space-y-4 border-t pt-4">
           <div className="space-y-2">
-            <Label htmlFor="habit-why">为什么要做（动机）</Label>
+            <Label htmlFor="habit-why">{t('habit.whyMotivation')}</Label>
             <Textarea
               id="habit-why"
               rows={2}
               value={state.why}
               onChange={(e) => onChange({ why: e.target.value })}
-              placeholder="例如：保持专注，让大脑更清醒"
+              placeholder={t('habit.whyPlaceholder')}
               maxLength={512}
             />
           </div>
@@ -157,9 +160,9 @@ export function HabitFoggFields({ state, onChange }: HabitFoggFieldsProps) {
               onChange={(e) => onChange({ celebrationOnComplete: e.target.checked })}
             />
             <span className="space-y-0.5">
-              <span className="block text-sm font-medium">完成时鼓励提醒</span>
+              <span className="block text-sm font-medium">{t('habit.celebrationOnComplete')}</span>
               <span className="block text-xs text-muted-foreground">
-                勾选后，每次完成将从 App 内置 300 条鼓励语中随机展示
+                {t('habit.celebrationOnCompleteDesc')}
               </span>
             </span>
           </label>
@@ -183,13 +186,13 @@ export function HabitFoggFields({ state, onChange }: HabitFoggFieldsProps) {
           />
 
           <div className="space-y-2">
-            <Label htmlFor="habit-notes">备注（可选）</Label>
+            <Label htmlFor="habit-notes">{t('common.noteOptional')}</Label>
             <Textarea
               id="habit-notes"
               rows={3}
               value={state.notes}
               onChange={(e) => onChange({ notes: e.target.value })}
-              placeholder="这个习惯嵌入情景锚点是什么？执行困难时，降低难度可以降低到什么程度？"
+              placeholder={t('habit.notesPlaceholder')}
               maxLength={512}
             />
           </div>

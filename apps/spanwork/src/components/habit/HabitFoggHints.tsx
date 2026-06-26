@@ -10,6 +10,7 @@ import {
   formatHabitNotesHint,
   formatMinimumDurationHint,
 } from '@/lib/habitUtils';
+import { useT } from '@/lib/i18n/useT';
 
 interface HabitFoggHintsProps {
   rule: HabitRuleDto;
@@ -17,6 +18,8 @@ interface HabitFoggHintsProps {
 }
 
 export function HabitFoggHints({ rule, className }: HabitFoggHintsProps) {
+  const t = useT();
+
   if (!rule.behaviorDesignEnabled) {
     return null;
   }
@@ -58,7 +61,9 @@ export function HabitFoggHints({ rule, className }: HabitFoggHintsProps) {
       )}
       {rule.targetDurationSeconds != null && rule.targetDurationSeconds > 0 && (
         <p className="text-xs text-muted-foreground">
-          目标时长 {formatDuration(rule.targetDurationSeconds)}
+          {t('habit.targetDuration', {
+            duration: formatDuration(rule.targetDurationSeconds),
+          })}
         </p>
       )}
     </div>

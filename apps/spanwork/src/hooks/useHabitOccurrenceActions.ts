@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { HabitOccurrenceDto } from '@spanwork/shared-types';
 
 import { celebrateHabitCompletion } from '@/lib/habitCelebration';
+import { getTranslator } from '@/lib/i18n/translate';
 import { isTauri } from '@/lib/tauri/env';
 import { updateHabitOccurrence } from '@/lib/tauri/habit';
 import { getActiveTimer, startTimer } from '@/lib/tauri/timer';
@@ -26,6 +27,7 @@ export function useHabitOccurrenceActions({
   dateKey,
   onInvalidate,
 }: UseHabitOccurrenceActionsOptions) {
+  const t = getTranslator();
   const queryClient = useQueryClient();
   const inTauri = isTauri();
 
@@ -46,7 +48,7 @@ export function useHabitOccurrenceActions({
         id: occurrenceId,
         patch: { status },
       }),
-    meta: { errorSource: '更新习惯' },
+    meta: { errorSource: t('errors.updateHabit') },
     onSuccess: async (_data, status) => {
       invalidate();
       if (status === 'done') {
@@ -62,7 +64,7 @@ export function useHabitOccurrenceActions({
         targetType: 'habit_occurrence',
         targetId: occurrenceId,
       }),
-    meta: { errorSource: '开始计时' },
+    meta: { errorSource: t('errors.startTimer') },
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.activeTimer, data);
       invalidate();

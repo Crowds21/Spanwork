@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useT } from '@/lib/i18n/useT';
 import { listProjects } from '@/lib/tauri/project';
 import { queryKeys } from '@/queries/keys';
 
@@ -21,6 +22,7 @@ interface CalendarProjectFilterProps {
 }
 
 export function CalendarProjectFilter({ projectId, onChange }: CalendarProjectFilterProps) {
+  const t = useT();
   const { data: projects = [] } = useQuery({
     queryKey: queryKeys.projects({ status: 'active', sortBy: 'name', sortOrder: 'asc' }),
     queryFn: () =>
@@ -42,10 +44,10 @@ export function CalendarProjectFilter({ projectId, onChange }: CalendarProjectFi
         onValueChange={(value) => onChange(value === '__all__' ? undefined : value)}
       >
         <SelectTrigger className="h-8 w-[min(100%,12rem)] max-w-full text-xs">
-          <SelectValue placeholder="全部习惯项目" />
+          <SelectValue placeholder={t('calendar.allHabitProjects')} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="__all__">全部习惯项目</SelectItem>
+          <SelectItem value="__all__">{t('calendar.allHabitProjects')}</SelectItem>
           {habitProjects.map((project) => (
             <SelectItem key={project.id} value={project.id}>
               {project.name}
@@ -59,7 +61,7 @@ export function CalendarProjectFilter({ projectId, onChange }: CalendarProjectFi
           variant="ghost"
           size="icon"
           className="size-8 max-md:size-9 shrink-0"
-          aria-label="清除项目筛选"
+          aria-label={t('calendar.clearProjectFilter')}
           onClick={() => onChange(undefined)}
         >
           <X className="size-4" />

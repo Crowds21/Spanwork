@@ -9,6 +9,7 @@ import { Play } from 'lucide-react';
 import { TimerSessionControls } from '@/components/timer/TimerSessionControls';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
+import { useT } from '@/lib/i18n/useT';
 import { isTauri } from '@/lib/tauri/client';
 import { getActiveTimer, startTimer } from '@/lib/tauri/timer';
 import { queryKeys } from '@/queries/keys';
@@ -29,6 +30,7 @@ export function TimerButton({
   variant?: 'ghost' | 'default';
   className?: string;
 }) {
+  const t = useT();
   const queryClient = useQueryClient();
   const inTauri = isTauri();
 
@@ -43,7 +45,7 @@ export function TimerButton({
 
   const startMutation = useMutation({
     mutationFn: () => startTimer({ projectId, targetType: 'task', targetId }),
-    meta: { errorSource: '开始计时' },
+    meta: { errorSource: t('errors.startTimer') },
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.activeTimer, data);
       queryClient.invalidateQueries({ queryKey: queryKeys.todayDashboard });
@@ -54,7 +56,7 @@ export function TimerButton({
   if (isTimingThis) return null;
 
   return (
-    <Tooltip label="开始计时">
+    <Tooltip label={t('task.startTimer')}>
       <Button
         type="button"
         size="icon"
@@ -62,7 +64,7 @@ export function TimerButton({
         className={cn('size-8 shrink-0', className)}
         disabled={disabled || startMutation.isPending || isTimingOther}
         onClick={() => startMutation.mutate()}
-        aria-label="开始计时"
+        aria-label={t('task.startTimer')}
       >
         <Play className="size-4 fill-current" />
       </Button>
@@ -81,6 +83,7 @@ export function TaskTimerControls({
   trackable?: boolean;
   className?: string;
 }) {
+  const t = useT();
   const inTauri = isTauri();
 
   const timerQuery = useQuery({
@@ -110,7 +113,7 @@ export function TaskTimerControls({
           active.isPaused ? 'text-amber-700 dark:text-amber-300' : 'text-primary',
         )}
       >
-        {active.isPaused ? '已暂停' : '正在计时'}
+        {active.isPaused ? t('timer.paused') : t('timer.timingActive')}
       </span>
       <TimerSessionControls active={active} projectId={projectId} className="ml-auto" />
     </div>

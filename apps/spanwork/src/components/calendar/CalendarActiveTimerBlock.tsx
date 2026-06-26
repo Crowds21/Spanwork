@@ -17,6 +17,7 @@ import {
   msToTopPx,
 } from '@/lib/calendarTimelineMetrics';
 import { useActiveTimerElapsed } from '@/lib/timer/useActiveTimerElapsed';
+import { useT } from '@/lib/i18n/useT';
 
 interface CalendarActiveTimerBlockProps {
   active: ActiveTimerDto;
@@ -29,6 +30,7 @@ export function CalendarActiveTimerBlock({
   hourHeight,
   projectColor,
 }: CalendarActiveTimerBlockProps) {
+  const t = useT();
   const elapsed = useActiveTimerElapsed(active);
   const effectiveSeconds = calendarEffectiveDurationSeconds(elapsed);
   if (effectiveSeconds == null) return null;
@@ -47,7 +49,7 @@ export function CalendarActiveTimerBlock({
           backgroundColor: calendarColorWithAlpha(color, 0.06),
           borderColor: calendarColorWithAlpha(color, 0.45),
         }}
-        title="进行中计时"
+        title={t('calendar.activeTimer')}
       />
     );
   }
@@ -66,7 +68,7 @@ export function CalendarActiveTimerBlock({
         backgroundColor: calendarColorWithAlpha(color, 0.06),
         borderLeft: `2px dashed ${calendarColorWithAlpha(color, 0.45)}`,
       }}
-      title="进行中计时"
+      title={t('calendar.activeTimer')}
     />
   );
 }

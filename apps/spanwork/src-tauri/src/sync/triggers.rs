@@ -176,4 +176,38 @@ mod tests {
             .is_some();
         assert!(has_note);
     }
+
+    #[test]
+    fn trigger_logs_project_soft_delete() {
+        let conn = mem_conn();
+        let now = now_ms();
+        conn.execute(
+            "INSERT INTO projects (id, name, project_type, status, sort_order, created_at, updated_at, origin_device_id)
+             VALUES ('p1', 'P', 'aim', 'active', 0, ?1, ?1, 'dev-a')",
+            [now],
+        )
+        .unwrap();
+
+        let before = count_pending(&conn).unwrap();
+        let later = now + 1000;
+        conn.execute(
+            "UPDATE projects SET deleted_at = ?1, updated_at = ?1 WHERE id = 'p1'",
+            [later],
+        )
+        .unwrap();
+        let after = count_pending(&conn).unwrap();
+        assert!(after > before);
+
+        let has_deleted_at: bool = conn
+            .query_row(
+                "SELECT 1 FROM sync_field_changes
+                 WHERE table_name = 'projects' AND pk = 'p1' AND column_name = 'deleted_at'",
+                [],
+                |_| Ok(true),
+            )
+            .optional()
+            .unwrap()
+            .is_some();
+        assert!(has_deleted_at);
+    }
 }

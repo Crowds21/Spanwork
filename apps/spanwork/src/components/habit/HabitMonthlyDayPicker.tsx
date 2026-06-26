@@ -2,6 +2,7 @@
  * 每月重复日期选择（热力图式格子）
  */
 import { Label } from '@/components/ui/label';
+import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -13,6 +14,7 @@ interface HabitMonthlyDayPickerProps {
 }
 
 export function HabitMonthlyDayPicker({ value, onChange, error }: HabitMonthlyDayPickerProps) {
+  const t = useT();
   const selected = new Set(value);
 
   function toggle(day: number) {
@@ -25,14 +27,14 @@ export function HabitMonthlyDayPicker({ value, onChange, error }: HabitMonthlyDa
 
   return (
     <div className="space-y-2">
-      <Label>每月日期（点选 1–31 日）</Label>
+      <Label>{t('habit.monthlyDaysLabel')}</Label>
       <div
         className={cn(
           'grid grid-cols-7 gap-0.5 rounded-lg border p-1.5',
           error && 'border-destructive',
         )}
         role="group"
-        aria-label="每月重复日期"
+        aria-label={t('habit.monthlyDaysAria')}
       >
         {DAYS.map((day) => {
           const isSelected = selected.has(day);
@@ -60,7 +62,9 @@ export function HabitMonthlyDayPicker({ value, onChange, error }: HabitMonthlyDa
         </p>
       ) : (
         <p className="text-xs text-muted-foreground">
-          {value.length > 0 ? `已选 ${value.length} 天` : '未选择日期'}
+          {value.length > 0
+            ? t('habit.daysSelected', { count: value.length })
+            : t('habit.noDaysSelected')}
         </p>
       )}
     </div>

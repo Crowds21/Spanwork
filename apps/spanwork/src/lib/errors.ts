@@ -5,15 +5,16 @@
  */
 import type { ErrorBody } from '@spanwork/shared-types';
 
+import { getTranslator } from '@/lib/i18n/translate';
 import { parseInvokeError } from '@/lib/tauri/client';
 
-export function getErrorMessage(error: unknown, fallback = '未知错误'): string {
+export function getErrorMessage(error: unknown, fallback?: string): string {
   if (error == null) return '';
   const parsed = parseInvokeError(error);
   if (parsed.message.trim().length > 0) {
     return parsed.message;
   }
-  return fallback;
+  return fallback ?? getTranslator()('errors.unknown');
 }
 
 export function getErrorCode(error: unknown): string {

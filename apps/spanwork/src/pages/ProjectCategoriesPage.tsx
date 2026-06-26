@@ -22,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useT } from '@/lib/i18n/useT';
 import {
   createProjectCategory,
   deleteProjectCategory,
@@ -41,13 +42,14 @@ function CategoryFormDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useT();
   const queryClient = useQueryClient();
   const [name, setName] = useState(category?.name ?? '');
   const [color, setColor] = useState(category?.color ?? PRESET_COLORS[0]);
 
   const createMutation = useMutation({
     mutationFn: () => createProjectCategory({ name: name.trim(), color }),
-    meta: { errorSource: '创建分类' },
+    meta: { errorSource: t('errors.createCategory') },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.projectCategories });
       queryClient.invalidateQueries({ queryKey: queryKeys.projectsRoot });
@@ -57,7 +59,7 @@ function CategoryFormDialog({
 
   const updateMutation = useMutation({
     mutationFn: () => updateProjectCategory(category!.id, { name: name.trim(), color }),
-    meta: { errorSource: '更新分类' },
+    meta: { errorSource: t('errors.updateCategory') },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.projectCategories });
       queryClient.invalidateQueries({ queryKey: queryKeys.projectsRoot });
@@ -72,8 +74,10 @@ function CategoryFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>{category ? '编辑分类' : '新建分类'}</CardTitle>
-          <CardDescription>为项目创建组织标签，如工作、学习、生活</CardDescription>
+          <CardTitle>
+            {category ? t('projectCategories.edit') : t('projectCategories.create')}
+          </CardTitle>
+          <CardDescription>{t('projectCategories.createDesc')}</CardDescription>
         </CardHeader>
         <form
           className="contents"
@@ -86,18 +90,18 @@ function CategoryFormDialog({
         >
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="category-name">名称</Label>
+              <Label htmlFor="category-name">{t('common.name')}</Label>
               <Input
                 id="category-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="例如：工作"
+                placeholder={t('projectCategories.namePlaceholder')}
                 maxLength={64}
                 autoFocus
               />
             </div>
             <div className="space-y-2">
-              <Label>颜色</Label>
+              <Label>{t('common.color')}</Label>
               <div className="flex flex-wrap gap-2">
                 {PRESET_COLORS.map((c) => (
                   <button
@@ -109,7 +113,7 @@ function CategoryFormDialog({
                       boxShadow: color === c ? `0 0 0 2px ${c}` : undefined,
                     }}
                     onClick={() => setColor(c)}
-                    aria-label={`选择颜色 ${c}`}
+                    aria-label={t('common.selectColor', { color: c })}
                   />
                 ))}
               </div>
@@ -117,10 +121,10 @@ function CategoryFormDialog({
           </CardContent>
           <CardFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={!canSubmit}>
-              {isPending ? '保存中…' : '保存'}
+              {isPending ? t('common.saving') : t('common.save')}
             </Button>
           </CardFooter>
         </form>
@@ -130,6 +134,7 @@ function CategoryFormDialog({
 }
 
 export function ProjectCategoriesPage() {
+  const t = useT();
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ProjectCategoryDto | undefined>();
@@ -141,7 +146,7 @@ export function ProjectCategoriesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: deleteProjectCategory,
-    meta: { errorSource: '删除分类' },
+    meta: { errorSource: t('errors.deleteCategory') },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.projectCategories });
       queryClient.invalidateQueries({ queryKey: queryKeys.projectsRoot });
@@ -164,13 +169,15 @@ export function ProjectCategoriesPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Tags className="size-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">项目分类</h1>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              {t('projectCategories.title')}
+            </h1>
           </div>
-          <p className="text-muted-foreground">管理项目分类，便于筛选与组织</p>
+          <p className="text-muted-foreground">{t('projectCategories.subtitle')}</p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="size-4" />
-          新建分类
+          {t('projectCategories.create')}
         </Button>
       </div>
 
@@ -184,10 +191,10 @@ export function ProjectCategoriesPage() {
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <Tags className="mb-3 size-10 text-muted-foreground/60" />
-            <p className="font-medium">还没有分类</p>
-            <p className="mt-1 text-sm text-muted-foreground">创建分类并在新建项目时选择</p>
+            <p className="font-medium">{t('projectCategories.emptyTitle')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t('projectCategories.emptyDesc')}</p>
             <Button className="mt-4" onClick={openCreate}>
-              新建第一个分类
+              {t('projectCategories.createFirst')}
             </Button>
           </CardContent>
         </Card>
@@ -204,7 +211,9 @@ export function ProjectCategoriesPage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{category.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {category.projectCount ?? 0} 个项目
+                      {t('common.projectsCount', {
+                        count: category.projectCount ?? 0,
+                      })}
                     </p>
                   </div>
                   <Badge variant="outline">{category.sortOrder}</Badge>
@@ -214,7 +223,7 @@ export function ProjectCategoriesPage() {
                       size="icon"
                       variant="ghost"
                       onClick={() => openEdit(category)}
-                      aria-label="编辑分类"
+                      aria-label={t('projectCategories.editCategory')}
                     >
                       <Pencil className="size-4" />
                     </Button>
@@ -225,7 +234,7 @@ export function ProjectCategoriesPage() {
                       className="text-destructive hover:text-destructive"
                       onClick={() => deleteMutation.mutate(category.id)}
                       disabled={deleteMutation.isPending}
-                      aria-label="删除分类"
+                      aria-label={t('projectCategories.deleteCategory')}
                     >
                       <Trash2 className="size-4" />
                     </Button>

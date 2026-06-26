@@ -4,6 +4,7 @@
 import { Clock } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
+import { getTranslator } from '@/lib/i18n/translate';
 import { cn } from '@/lib/utils';
 
 interface TimePickerProps {
@@ -50,7 +51,7 @@ export function TimePicker({
         step={300}
         value={normalized}
         disabled={disabled}
-        aria-label={ariaLabel ?? '选择时间'}
+        aria-label={ariaLabel ?? getTranslator()('common.selectTime')}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
           'bg-background pl-9',

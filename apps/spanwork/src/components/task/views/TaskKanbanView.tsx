@@ -5,7 +5,8 @@ import { TaskDetailDialog } from '@/components/task/TaskDetailDialog';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
-import { formatDuration, TASK_STATUSES, taskStatusMeta } from '@/lib/format';
+import { formatDuration, getTaskStatusMeta, TASK_STATUSES } from '@/lib/format';
+import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
 interface TaskKanbanViewProps {
@@ -21,6 +22,8 @@ function KanbanCard({
   parentTitle?: string;
   onOpen: () => void;
 }) {
+  const t = useT();
+
   return (
     <button
       type="button"
@@ -29,10 +32,12 @@ function KanbanCard({
     >
       <p className="font-medium leading-snug">{task.title}</p>
       {parentTitle && (
-        <p className="mt-1 text-xs text-muted-foreground">里程碑：{parentTitle}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t('task.kanbanMilestone', { title: parentTitle })}
+        </p>
       )}
       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        {task.dueDate && <span>截止 {task.dueDate}</span>}
+        {task.dueDate && <span>{t('task.kanbanDue', { date: task.dueDate })}</span>}
         {task.totalTimeSeconds != null && task.totalTimeSeconds > 0 && (
           <span>{formatDuration(task.totalTimeSeconds)}</span>
         )}
@@ -47,8 +52,10 @@ function KanbanCard({
 }
 
 export function TaskKanbanView({ projectId }: TaskKanbanViewProps) {
+  const t = useT();
   const { tasksByStatus, taskById, isLoading } = useProjectTasks(projectId);
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
+  const taskStatusMeta = getTaskStatusMeta();
 
   if (isLoading) {
     return (
@@ -80,7 +87,9 @@ export function TaskKanbanView({ projectId }: TaskKanbanViewProps) {
               </div>
               <div className="flex flex-1 flex-col gap-2 p-2">
                 {columnTasks.length === 0 ? (
-                  <p className="px-2 py-6 text-center text-xs text-muted-foreground">暂无任务</p>
+                  <p className="px-2 py-6 text-center text-xs text-muted-foreground">
+                    {t('task.kanbanEmpty')}
+                  </p>
                 ) : (
                   columnTasks.map((task) => {
                     const parent = task.parentId ? taskById.get(task.parentId) : undefined;

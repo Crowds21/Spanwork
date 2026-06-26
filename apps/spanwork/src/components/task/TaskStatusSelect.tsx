@@ -10,13 +10,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { TASK_STATUSES, taskStatusMeta } from '@/lib/format';
+import { getTaskStatusMeta, TASK_STATUSES } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
-function StatusDot({ status, className }: { status: TaskStatus; className?: string }) {
+function StatusDot({
+  status,
+  className,
+  meta,
+}: {
+  status: TaskStatus;
+  className?: string;
+  meta: ReturnType<typeof getTaskStatusMeta>;
+}) {
   return (
     <span
-      className={cn('size-2 shrink-0 rounded-full', taskStatusMeta[status].dot, className)}
+      className={cn('size-2 shrink-0 rounded-full', meta[status].dot, className)}
       aria-hidden
     />
   );
@@ -35,6 +43,7 @@ export function TaskStatusSelect({
   disabled,
   className,
 }: TaskStatusSelectProps) {
+  const taskStatusMeta = getTaskStatusMeta();
   const current = taskStatusMeta[value];
 
   return (
@@ -49,7 +58,7 @@ export function TaskStatusSelect({
       >
         <SelectValue>
           <span className="flex items-center gap-1.5">
-            <StatusDot status={value} />
+            <StatusDot status={value} meta={taskStatusMeta} />
             {current.label}
           </span>
         </SelectValue>
@@ -64,7 +73,7 @@ export function TaskStatusSelect({
               className={cn('rounded-md text-xs font-medium', meta.item)}
             >
               <span className="flex items-center gap-1.5">
-                <StatusDot status={status} />
+                <StatusDot status={status} meta={taskStatusMeta} />
                 {meta.label}
               </span>
             </SelectItem>
@@ -76,6 +85,7 @@ export function TaskStatusSelect({
 }
 
 export function TaskStatusBadge({ status }: { status: TaskStatus }) {
+  const taskStatusMeta = getTaskStatusMeta();
   const meta = taskStatusMeta[status];
   return (
     <span
@@ -84,7 +94,7 @@ export function TaskStatusBadge({ status }: { status: TaskStatus }) {
         meta.badge,
       )}
     >
-      <StatusDot status={status} className="size-1.5" />
+      <StatusDot status={status} className="size-1.5" meta={taskStatusMeta} />
       {meta.label}
     </span>
   );

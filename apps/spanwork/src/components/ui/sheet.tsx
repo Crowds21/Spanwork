@@ -4,6 +4,7 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 
+import { getTranslator } from '@/lib/i18n/translate';
 import { cn } from '@/lib/utils';
 
 interface SheetProps {
@@ -21,7 +22,7 @@ export function Sheet({
   children,
   side = 'left',
   contentClassName,
-  title = '导航菜单',
+  title = getTranslator()('nav.navMenu'),
 }: SheetProps) {
   React.useEffect(() => {
     if (!open) return;
@@ -39,7 +40,7 @@ export function Sheet({
       <button
         type="button"
         className="absolute inset-0 bg-black/50"
-        aria-label="关闭菜单"
+        aria-label={getTranslator()('nav.closeMenu')}
         onClick={() => onOpenChange(false)}
       />
       <div

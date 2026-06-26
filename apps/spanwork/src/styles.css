@@ -34,6 +34,37 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  /* 系统 UI + 各平台 CJK 字体；勿把 Inter / SF Pro Text 置于栈首（iOS 会缺中文字形） */
+  --font-sans:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei UI',
+    'Microsoft YaHei',
+    'Noto Sans SC',
+    sans-serif,
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Segoe UI Symbol';
+  /* 等宽字体后追加 CJK 无衬线，避免 mono 区域中文缺字 */
+  --font-mono:
+    ui-monospace,
+    SFMono-Regular,
+    'SF Mono',
+    Menlo,
+    Consolas,
+    'Liberation Mono',
+    'Courier New',
+    monospace,
+    'PingFang SC',
+    'Microsoft YaHei',
+    'Noto Sans SC',
+    sans-serif;
 }
 
 /* Default: light theme */
@@ -108,15 +139,9 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background font-sans text-foreground antialiased;
     overflow-x: hidden;
     max-width: 100%;
-    font-family:
-      'Inter',
-      'SF Pro Text',
-      system-ui,
-      -apple-system,
-      sans-serif;
   }
 
   #root {

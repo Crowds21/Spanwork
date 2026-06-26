@@ -7,6 +7,7 @@
 import { useSyncExternalStore } from 'react';
 
 import { getErrorCode, getErrorMessage } from '@/lib/errors';
+import { getTranslator } from '@/lib/i18n/translate';
 
 export interface StatusEntry {
   id: string;
@@ -37,8 +38,9 @@ function emit() {
 }
 
 function formatStatusMessage(error: unknown): string {
+  const t = getTranslator();
   const code = getErrorCode(error);
-  if (code === 'CONFLICT') return '已有计时在运行';
+  if (code === 'CONFLICT') return t('errors.timerAlreadyRunning');
   return getErrorMessage(error);
 }
 
@@ -86,25 +88,26 @@ export function useAppStatus() {
 }
 
 export function queryKeyLabel(queryKey: readonly unknown[]): string {
+  const t = getTranslator();
   const root = queryKey[0];
   switch (root) {
     case 'projects':
-      return '项目列表';
+      return t('queryKey.projects');
     case 'project':
-      return '项目详情';
+      return t('queryKey.project');
     case 'tasks':
-      return '任务';
+      return t('queryKey.tasks');
     case 'milestones':
-      return '里程碑';
+      return t('queryKey.milestones');
     case 'today-dashboard':
-      return '今日概览';
+      return t('queryKey.todayDashboard');
     case 'active-timer':
-      return '计时器';
+      return t('queryKey.activeTimer');
     case 'time-entries':
-      return '时间记录';
+      return t('queryKey.timeEntries');
     case 'log-info':
-      return '日志信息';
+      return t('queryKey.logInfo');
     default:
-      return '数据加载';
+      return t('queryKey.default');
   }
 }

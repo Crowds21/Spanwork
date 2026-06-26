@@ -620,4 +620,45 @@ mod tests {
         .unwrap();
         assert!(sync_log::count_pending(&conn).unwrap() >= 1);
     }
+
+    #[test]
+    fn apply_remote_project_delete_hides_project() {
+        let conn = mem_conn();
+        seed_project(&conn, "p1");
+        let delete_at = now_ms() + 5000;
+
+        apply_batch(
+            &conn,
+            &[FieldChangeRecord {
+                change_seq: 1,
+                table_name: "projects".into(),
+                pk: "p1".into(),
+                column_name: "deleted_at".into(),
+                value: Some(delete_at.to_string()),
+                updated_at: delete_at,
+                device_id: "remote-dev".into(),
+                op: "update".into(),
+            }],
+        )
+        .unwrap();
+
+        let visible: Option<i64> = conn
+            .query_row(
+                "SELECT deleted_at FROM projects WHERE id = 'p1' AND deleted_at IS NULL",
+                [],
+                |row| row.get(0),
+            )
+            .optional()
+            .unwrap();
+        assert!(visible.is_none());
+
+        let deleted_at: i64 = conn
+            .query_row(
+                "SELECT deleted_at FROM projects WHERE id = 'p1'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(deleted_at, delete_at);
+    }
 }

@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
 export function SyncPeerList({
@@ -30,26 +31,28 @@ export function SyncPeerList({
   onRefresh: () => void;
   onSync: (peer: PeerInfoDto) => void;
 }) {
+  const t = useT();
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
-          <CardTitle className="text-lg">附近设备</CardTitle>
-          <CardDescription>选择对端后输入其 6 位配对码，执行双向同步</CardDescription>
+          <CardTitle className="text-lg">{t('sync.nearbyDevices')}</CardTitle>
+          <CardDescription>{t('sync.nearbyDevicesDesc')}</CardDescription>
         </div>
         <Button
           variant="ghost"
           size="icon"
           disabled={refreshing}
           onClick={onRefresh}
-          aria-label="刷新设备列表"
+          aria-label={t('sync.refreshPeers')}
         >
           <RefreshCw className={cn('size-4', refreshing && 'animate-spin')} />
         </Button>
       </CardHeader>
       <CardContent className="space-y-2">
         {peers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">暂无设备。请确保两台设备在同一 Wi‑Fi 并已开启发现。</p>
+          <p className="text-sm text-muted-foreground">{t('sync.noPeers')}</p>
         ) : (
           peers.map((peer) => (
             <div
@@ -73,7 +76,7 @@ export function SyncPeerList({
                   disabled={syncingDeviceId === peer.deviceId || isSyncing}
                   onClick={() => onSync(peer)}
                 >
-                  双向同步
+                  {t('sync.bidirectionalSync')}
                 </Button>
               </div>
             </div>

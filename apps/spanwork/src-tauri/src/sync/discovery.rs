@@ -10,10 +10,11 @@ use mdns_sd::{ServiceDaemon, ServiceEvent, ServiceInfo};
 
 use crate::error::{AppError, AppResult};
 use crate::sync::net_addr::{pick_sync_peer_address, primary_sync_ipv4, registration_ipv4_csv};
-use crate::sync::probe::scan_hotspot_peers;
+use crate::sync::probe::{scan_hotspot_peers, scan_lan_peers};
 
 const SERVICE_TYPE: &str = "_spanwork._tcp.local.";
 const HOTSPOT_PROBE_INTERVAL: Duration = Duration::from_secs(3);
+const LAN_PROBE_INTERVAL: Duration = Duration::from_secs(12);
 
 pub type PeerNotifyFn = Arc<dyn Fn(Vec<DiscoveredPeer>) + Send + Sync>;
 
@@ -94,6 +95,9 @@ impl SyncDiscovery {
         let on_peers_for_probe = on_peers_updated.clone();
 
         thread::spawn(move || {
+            let mut last_lan_probe = std::time::Instant::now()
+                - LAN_PROBE_INTERVAL
+                - Duration::from_secs(1);
             while !probe_stop_flag.load(Ordering::Relaxed) {
                 for peer in scan_hotspot_peers(port, &local_device_id_for_probe) {
                     merge_discovered_peer(
@@ -102,6 +106,17 @@ impl SyncDiscovery {
                         &local_device_id_for_probe,
                         peer,
                     );
+                }
+                if last_lan_probe.elapsed() >= LAN_PROBE_INTERVAL {
+                    last_lan_probe = std::time::Instant::now();
+                    for peer in scan_lan_peers(port, &local_device_id_for_probe) {
+                        merge_discovered_peer(
+                            &peers_for_probe,
+                            on_peers_for_probe.as_ref(),
+                            &local_device_id_for_probe,
+                            peer,
+                        );
+                    }
                 }
                 thread::sleep(HOTSPOT_PROBE_INTERVAL);
             }

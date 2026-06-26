@@ -14,14 +14,15 @@ import {
   Repeat2,
   Settings,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import type { ProjectDto, ProjectType } from '@spanwork/shared-types';
-import { projectTypeLabel } from '@spanwork/shared-types';
 
 import { SidebarProjectFilterDialog } from '@/components/layout/SidebarProjectFilterDialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Skeleton } from '@/components/ui/skeleton';
+import { projectTypeLabelI18n } from '@/lib/i18n/projectType';
+import { useT } from '@/lib/i18n/useT';
 import { isTauri } from '@/lib/tauri/env';
 import { listProjects } from '@/lib/tauri/project';
 import {
@@ -35,13 +36,6 @@ import {
 } from '@/lib/sidebarPreferences';
 import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
-
-const mainNav = [
-  { to: '/', label: '今日', icon: Home, exact: true },
-  { to: '/projects', label: '项目', icon: FolderKanban, exact: false },
-  { to: '/calendar', label: '全局日历', icon: CalendarClock, exact: false },
-  { to: '/settings', label: '设置', icon: Settings, exact: false },
-] as const;
 
 interface SidebarContentProps {
   onNavigate?: () => void;
@@ -129,6 +123,7 @@ function ProjectGroup({
   emptyHint: string;
   onNavigate?: () => void;
 }) {
+  const t = useT();
   const [collapsed, setCollapsed] = useState(() => readSidebarGroupCollapsed(projectType));
   const [filter, setFilter] = useState<SidebarProjectFilter>(() =>
     readSidebarProjectFilter(projectType),
@@ -174,7 +169,7 @@ function ProjectGroup({
               'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
               filterActive && 'text-primary',
             )}
-            aria-label={`筛选${label}项目`}
+            aria-label={t('nav.filterProjects', { type: label })}
             onClick={() => setFilterOpen(true)}
           >
             <ListFilter className="size-3.5" />
@@ -186,7 +181,7 @@ function ProjectGroup({
         <CollapsibleContent className="space-y-0.5 pt-1">
           {filteredProjects.length === 0 ? (
             <p className="px-2 py-1 text-xs text-muted-foreground/80">
-              {projects.length === 0 ? emptyHint : '无符合筛选条件的项目'}
+              {projects.length === 0 ? emptyHint : t('nav.noMatchingProjects')}
             </p>
           ) : (
             filteredProjects.map((project) => (
@@ -209,7 +204,20 @@ function ProjectGroup({
 }
 
 export function SidebarContent({ onNavigate }: SidebarContentProps) {
+  const t = useT();
   const inTauri = isTauri();
+
+  const mainNav = useMemo(
+    () =>
+      [
+        { to: '/', label: t('nav.today'), icon: Home, exact: true },
+        { to: '/projects', label: t('nav.projects'), icon: FolderKanban, exact: false },
+        { to: '/calendar', label: t('nav.globalCalendar'), icon: CalendarClock, exact: false },
+        { to: '/settings', label: t('nav.settings'), icon: Settings, exact: false },
+      ] as const,
+    [t],
+  );
+
   const projectsQuery = useQuery({
     queryKey: queryKeys.projects({ status: 'active', sortBy: 'updated', sortOrder: 'desc' }),
     queryFn: () =>
@@ -239,19 +247,19 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         ) : (
           <>
             <ProjectGroup
-              label={projectTypeLabel('aim')}
+              label={projectTypeLabelI18n('aim', t)}
               icon={ListTodo}
               projectType="aim"
               projects={aimProjects}
-              emptyHint="暂无目标式项目"
+              emptyHint={t('nav.emptyAimProjects')}
               onNavigate={onNavigate}
             />
             <ProjectGroup
-              label={projectTypeLabel('habit')}
+              label={projectTypeLabelI18n('habit', t)}
               icon={Repeat2}
               projectType="habit"
               projects={habitProjects}
-              emptyHint="暂无习惯式项目"
+              emptyHint={t('nav.emptyHabitProjects')}
               onNavigate={onNavigate}
             />
           </>

@@ -8,7 +8,6 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { CalendarClock, ListTodo, Repeat2 } from 'lucide-react';
 import { useState } from 'react';
 import type { CreateHabitRuleInput, CreateProjectInput, HabitFrequency, ProjectDetailDto, ProjectType } from '@spanwork/shared-types';
-import { projectTypeLabel } from '@spanwork/shared-types';
 
 import { CategorySelect } from '@/components/project/CategorySelect';
 import { Badge } from '@/components/ui/badge';
@@ -32,26 +31,22 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { projectTypeLabelI18n } from '@/lib/i18n/projectType';
+import { useT } from '@/lib/i18n/useT';
 import { createProject, listProjects } from '@/lib/tauri/project';
 import { listProjectCategories } from '@/lib/tauri/project_category';
 import { cn } from '@/lib/utils';
 import { queryKeys } from '@/queries/keys';
 
-const WEEKDAY_OPTIONS = [
-  { value: 1, label: '一' },
-  { value: 2, label: '二' },
-  { value: 3, label: '三' },
-  { value: 4, label: '四' },
-  { value: 5, label: '五' },
-  { value: 6, label: '六' },
-  { value: 7, label: '日' },
-];
+const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+const WEEKDAY_VALUES = [1, 2, 3, 4, 5, 6, 7] as const;
 
 interface CreateProjectFormProps {
   onCreated?: (project: ProjectDetailDto) => void;
 }
 
 export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
+  const t = useT();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
@@ -116,33 +111,33 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>新建项目</CardTitle>
-        <CardDescription>创建目标式或习惯式长期项目</CardDescription>
+        <CardTitle>{t('projects.createProject')}</CardTitle>
+        <CardDescription>{t('projects.createProjectDesc')}</CardDescription>
       </CardHeader>
       <form className="contents" onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="project-name">名称</Label>
+            <Label htmlFor="project-name">{t('common.name')}</Label>
             <Input
               id="project-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="例如：Side Project Alpha"
+              placeholder={t('projects.namePlaceholder')}
               maxLength={128}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="project-type">类型</Label>
+            <Label htmlFor="project-type">{t('projects.type')}</Label>
             <Select
               value={projectType}
               onValueChange={(value) => setProjectType(value as ProjectType)}
             >
               <SelectTrigger id="project-type" className="w-full">
-                <SelectValue placeholder="选择类型" />
+                <SelectValue placeholder={t('projects.selectType')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="aim">目标式 — 可拆分子任务</SelectItem>
-                <SelectItem value="habit">习惯式 — 同一主题下可有多条习惯</SelectItem>
+                <SelectItem value="aim">{t('projectType.aimLong')}</SelectItem>
+                <SelectItem value="habit">{t('projectType.habitLong')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -156,22 +151,22 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
                   checked={includeFirstHabit}
                   onChange={(e) => setIncludeFirstHabit(e.target.checked)}
                 />
-                <span className="text-sm">添加首个习惯任务</span>
+                <span className="text-sm">{t('projects.addFirstHabitTask')}</span>
               </label>
               {includeFirstHabit && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="habit-task-title">任务名称（可选）</Label>
+                    <Label htmlFor="habit-task-title">{t('projects.habitTaskNameOptional')}</Label>
                     <Input
                       id="habit-task-title"
                       value={habitTaskTitle}
                       onChange={(e) => setHabitTaskTitle(e.target.value)}
-                      placeholder="留空则使用项目名称"
+                      placeholder={t('projects.habitTaskNamePlaceholder')}
                       maxLength={128}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="habit-frequency">重复频率</Label>
+                    <Label htmlFor="habit-frequency">{t('projects.habitFrequency')}</Label>
                     <Select
                       value={habitFrequency}
                       onValueChange={(value) => setHabitFrequency(value as HabitFrequency)}
@@ -180,16 +175,16 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="daily">每天</SelectItem>
-                        <SelectItem value="weekly">每周</SelectItem>
-                        <SelectItem value="monthly">每月</SelectItem>
-                        <SelectItem value="yearly">每年</SelectItem>
+                        <SelectItem value="daily">{t('habit.daily')}</SelectItem>
+                        <SelectItem value="weekly">{t('habit.weekly')}</SelectItem>
+                        <SelectItem value="monthly">{t('habit.monthly')}</SelectItem>
+                        <SelectItem value="yearly">{t('habit.yearly')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   {habitFrequency === 'weekly' && (
                     <div className="flex flex-wrap gap-1.5">
-                      {WEEKDAY_OPTIONS.map(({ value, label }) => (
+                      {WEEKDAY_VALUES.map((value, index) => (
                         <Button
                           key={value}
                           type="button"
@@ -198,7 +193,7 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
                           className="h-8 min-w-9 px-2"
                           onClick={() => toggleWeekday(value)}
                         >
-                          {label}
+                          {t(`weekday.${WEEKDAY_KEYS[index]}`)}
                         </Button>
                       ))}
                     </div>
@@ -208,7 +203,7 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="project-category">分类（可选）</Label>
+            <Label htmlFor="project-category">{t('projects.categoryOptional')}</Label>
             <CategorySelect
               id="project-category"
               value={categoryId}
@@ -216,19 +211,19 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="project-desc">描述（可选）</Label>
+            <Label htmlFor="project-desc">{t('projects.descOptional')}</Label>
             <Textarea
               id="project-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              placeholder="简要说明项目目标"
+              placeholder={t('projects.descPlaceholder')}
             />
           </div>
         </CardContent>
         <CardFooter>
           <Button type="submit" disabled={mutation.isPending || !name.trim()} className="w-full">
-            {mutation.isPending ? '创建中…' : '创建项目'}
+            {mutation.isPending ? t('common.creating') : t('projects.submitCreate')}
           </Button>
         </CardFooter>
       </form>
@@ -236,13 +231,8 @@ export function CreateProjectForm({ onCreated }: CreateProjectFormProps) {
   );
 }
 
-const statusLabels: Record<string, string> = {
-  active: '进行中',
-  archived: '已归档',
-  completed: '已完成',
-};
-
 export function ProjectList() {
+  const t = useT();
   const [categoryFilter, setCategoryFilter] = useState<string | 'all' | 'uncategorized'>('all');
 
   const listParams =
@@ -280,8 +270,8 @@ export function ProjectList() {
       <Card className="border-dashed">
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
           <ListTodo className="mb-3 size-10 text-muted-foreground/60" />
-          <p className="font-medium">无法加载项目列表</p>
-          <p className="mt-1 text-sm text-muted-foreground">请查看底部状态栏了解详情</p>
+          <p className="font-medium">{t('projects.loadListFailed')}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t('projects.loadListFailedHint')}</p>
         </CardContent>
       </Card>
     );
@@ -289,10 +279,16 @@ export function ProjectList() {
 
   const emptyMessage =
     categoryFilter === 'all'
-      ? { title: '还没有项目', description: '在左侧表单创建你的第一个项目' }
+      ? { title: t('projects.emptyAllTitle'), description: t('projects.emptyAllDesc') }
       : categoryFilter === 'uncategorized'
-        ? { title: '暂无未分类项目', description: '切换其他分类或创建新项目' }
-        : { title: '该分类下暂无项目', description: '切换其他分类查看项目' };
+        ? {
+            title: t('projects.emptyUncategorizedTitle'),
+            description: t('projects.emptyUncategorizedDesc'),
+          }
+        : {
+            title: t('projects.emptyCategoryTitle'),
+            description: t('projects.emptyCategoryDesc'),
+          };
 
   return (
     <div className="space-y-4">
@@ -304,7 +300,7 @@ export function ProjectList() {
             variant={categoryFilter === 'all' ? 'default' : 'outline'}
             onClick={() => setCategoryFilter('all')}
           >
-            全部
+            {t('common.all')}
           </Button>
           <Button
             type="button"
@@ -312,7 +308,7 @@ export function ProjectList() {
             variant={categoryFilter === 'uncategorized' ? 'default' : 'outline'}
             onClick={() => setCategoryFilter('uncategorized')}
           >
-            未分类
+            {t('common.uncategorized')}
           </Button>
           {categories.map((cat) => (
             <Button
@@ -358,9 +354,9 @@ export function ProjectList() {
                     ) : (
                       <Repeat2 className="size-3" />
                     )}
-                    {projectTypeLabel(project.projectType)}
+                    {projectTypeLabelI18n(project.projectType, t)}
                   </Badge>
-                  <Badge variant="outline">{statusLabels[project.status] ?? project.status}</Badge>
+                  <Badge variant="outline">{t(`projectStatus.${project.status}`)}</Badge>
                   {project.categoryName && (
                     <Badge variant="secondary" className="gap-1">
                       {project.categoryColor && (
@@ -383,7 +379,9 @@ export function ProjectList() {
               <CardFooter className="justify-between border-t pt-4 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <CalendarClock className="size-3.5" />
-                  更新 {new Date(project.updatedAt).toLocaleString()}
+                  {t('common.updatedAt', {
+                    datetime: new Date(project.updatedAt).toLocaleString(),
+                  })}
                 </span>
                 <code className={cn('rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]')}>
                   {project.id.slice(0, 8)}…

@@ -21,6 +21,7 @@ import {
   listHabitRules,
 } from '@/lib/tauri/habit';
 import { isTauri } from '@/lib/tauri/env';
+import { useT } from '@/lib/i18n/useT';
 import { attemptTimerFocus, consumeTimerFocus } from '@/lib/timer/timerFocus';
 import { invalidateAfterHabitRuleChange } from '@/queries/invalidate';
 import { queryKeys } from '@/queries/keys';
@@ -31,6 +32,7 @@ interface HabitTaskListProps {
 }
 
 export function HabitTaskList({ project, readOnly }: HabitTaskListProps) {
+  const t = useT();
   const queryClient = useQueryClient();
   const inTauri = isTauri();
   const today = todayDateKey();
@@ -80,7 +82,7 @@ export function HabitTaskList({ project, readOnly }: HabitTaskListProps) {
 
   const deleteMutation = useMutation({
     mutationFn: (ruleId: string) => deleteHabitRule(ruleId),
-    meta: { errorSource: '删除习惯任务' },
+    meta: { errorSource: t('errors.deleteHabitTask') },
     onSuccess: () => {
       invalidateAfterHabitRuleChange(queryClient, project.id);
     },
@@ -124,16 +126,16 @@ export function HabitTaskList({ project, readOnly }: HabitTaskListProps) {
   if (rulesQuery.isError) {
     return (
       <Alert variant="destructive">
-        <AlertTitle>加载习惯任务失败</AlertTitle>
+        <AlertTitle>{t('habit.loadFailed')}</AlertTitle>
         <AlertDescription className="flex flex-wrap items-center gap-2">
-          <span>请检查网络或数据库后重试。</span>
+          <span>{t('habit.loadFailedHint')}</span>
           <Button
             type="button"
             size="sm"
             variant="outline"
             onClick={() => rulesQuery.refetch()}
           >
-            重试
+            {t('common.retry')}
           </Button>
         </AlertDescription>
       </Alert>
@@ -154,14 +156,12 @@ export function HabitTaskList({ project, readOnly }: HabitTaskListProps) {
       <>
         <div className="rounded-xl border border-dashed p-8 text-center">
           <Repeat2 className="mx-auto size-8 text-muted-foreground" aria-hidden />
-          <p className="mt-3 font-medium">还没有习惯任务</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            添加第一条习惯，例如「每日晨跑」
-          </p>
+          <p className="mt-3 font-medium">{t('habit.emptyTitle')}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t('habit.emptyDesc')}</p>
           {!readOnly && (
             <Button className="mt-4" onClick={() => setDialogOpen(true)}>
               <Plus className="size-4" />
-              添加习惯任务
+              {t('habit.addHabitTask')}
             </Button>
           )}
         </div>
@@ -206,7 +206,7 @@ export function HabitTaskList({ project, readOnly }: HabitTaskListProps) {
           }}
         >
           <Plus className="size-4" />
-          添加习惯任务
+          {t('habit.addHabitTask')}
         </Button>
       )}
 
@@ -226,13 +226,13 @@ export function HabitTaskList({ project, readOnly }: HabitTaskListProps) {
         onOpenChange={(open) => {
           if (!open) setDeletingRule(undefined);
         }}
-        title="删除习惯任务"
+        title={t('habit.deleteHabitTask')}
         description={
           deletingRule
-            ? `确定删除「${deletingRule.title}」？相关打卡记录与时间记录将一并移除，此操作不可撤销。`
+            ? t('habit.deleteHabitConfirm', { title: deletingRule.title })
             : undefined
         }
-        confirmLabel="删除"
+        confirmLabel={t('common.delete')}
         destructive
         loading={deleteMutation.isPending}
         onConfirm={() => {

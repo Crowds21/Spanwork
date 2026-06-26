@@ -8,6 +8,7 @@ import { CalendarViewSwitcher } from '@/components/calendar/CalendarViewSwitcher
 import { Button } from '@/components/ui/button';
 import type { CalendarViewMode } from '@/lib/calendarUtils';
 import { formatDateLabel, formatWeekLabel } from '@/lib/calendarUtils';
+import { useT } from '@/lib/i18n/useT';
 
 interface CalendarDateHeaderProps {
   dateKey: string;
@@ -30,6 +31,7 @@ export function CalendarDateHeader({
   onNext,
   onToday,
 }: CalendarDateHeaderProps) {
+  const t = useT();
   const titleLabel =
     view === 'day'
       ? formatDateLabel(dateKey)
@@ -41,7 +43,7 @@ export function CalendarDateHeader({
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-1">
-          <Button type="button" variant="ghost" size="icon" onClick={onPrev} aria-label="上一页">
+          <Button type="button" variant="ghost" size="icon" onClick={onPrev} aria-label={t('common.prevPage')}>
             <ChevronLeft className="size-5" />
           </Button>
           <button
@@ -51,7 +53,7 @@ export function CalendarDateHeader({
           >
             {titleLabel}
           </button>
-          <Button type="button" variant="ghost" size="icon" onClick={onNext} aria-label="下一页">
+          <Button type="button" variant="ghost" size="icon" onClick={onNext} aria-label={t('common.nextPage')}>
             <ChevronRight className="size-5" />
           </Button>
         </div>

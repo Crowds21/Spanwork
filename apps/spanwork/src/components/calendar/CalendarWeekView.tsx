@@ -6,9 +6,10 @@ import {
   formatDateLabel,
   todayDateKey,
   weekRangeKeys,
-  WEEKDAY_LABELS,
+  getWeekdayLabels,
 } from '@/lib/calendarUtils';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n/useT';
 import { useCalendarRange } from '@/hooks/useCalendarRange';
 
 interface CalendarWeekViewProps {
@@ -22,9 +23,11 @@ export function CalendarWeekView({
   projectId,
   onSelectDate,
 }: CalendarWeekViewProps) {
+  const t = useT();
   const { from, to, days } = weekRangeKeys(anchorDateKey);
   const rangeQuery = useCalendarRange(from, to, projectId);
   const today = todayDateKey();
+  const weekdayLabels = getWeekdayLabels();
 
   const summaryMap = new Map(
     (rangeQuery.data?.days ?? []).map((d) => [d.date, d]),
@@ -55,7 +58,7 @@ export function CalendarWeekView({
               onClick={() => onSelectDate(dateKey)}
             >
               <span className="text-center text-[10px] text-muted-foreground max-md:truncate md:text-xs">
-                {WEEKDAY_LABELS[index]}
+                {weekdayLabels[index]}
               </span>
               <span
                 className={cn(
@@ -84,7 +87,7 @@ export function CalendarWeekView({
         })}
       </div>
       <p className="mt-3 text-center text-xs text-muted-foreground">
-        点击日期进入日视图 · {formatDateLabel(from).split(' ')[0]} 起
+        {t('calendar.weekViewHint', { monthDay: formatDateLabel(from).split(' ')[0] })}
       </p>
     </div>
   );

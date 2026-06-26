@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useT } from '@/lib/i18n/useT';
 import { parseYearlyDate, yearlyDateFromParts } from '@/lib/habitTaskValidation';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +26,8 @@ interface HabitYearlyDatePickerProps {
 }
 
 export function HabitYearlyDatePicker({ value, onChange, error }: HabitYearlyDatePickerProps) {
+  const t = useT();
+
   function updateAt(index: number, month: number, day: number) {
     const next = [...value];
     next[index] = yearlyDateFromParts(month, day);
@@ -41,14 +44,14 @@ export function HabitYearlyDatePicker({ value, onChange, error }: HabitYearlyDat
 
   return (
     <div className="space-y-2">
-      <Label>每年日期（可添加多个）</Label>
+      <Label>{t('habit.yearlyDatesLabel')}</Label>
       <div
         className={cn('space-y-2 rounded-lg border p-3', error && 'border-destructive')}
         role="group"
-        aria-label="每年重复日期"
+        aria-label={t('habit.yearlyDatesAria')}
       >
         {value.length === 0 ? (
-          <p className="text-sm text-muted-foreground">尚未添加日期</p>
+          <p className="text-sm text-muted-foreground">{t('habit.noYearlyDates')}</p>
         ) : (
           value.map((md, index) => {
             const parsed = parseYearlyDate(md) ?? { month: 1, day: 1 };
@@ -58,13 +61,13 @@ export function HabitYearlyDatePicker({ value, onChange, error }: HabitYearlyDat
                   value={String(parsed.month)}
                   onValueChange={(m) => updateAt(index, Number(m), parsed.day)}
                 >
-                  <SelectTrigger className="w-24" aria-label="月份">
+                  <SelectTrigger className="w-24" aria-label={t('habit.month', { m: parsed.month })}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {MONTHS.map((m) => (
                       <SelectItem key={m} value={String(m)}>
-                        {m} 月
+                        {t('habit.month', { m })}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -73,13 +76,13 @@ export function HabitYearlyDatePicker({ value, onChange, error }: HabitYearlyDat
                   value={String(parsed.day)}
                   onValueChange={(d) => updateAt(index, parsed.month, Number(d))}
                 >
-                  <SelectTrigger className="w-24" aria-label="日期">
+                  <SelectTrigger className="w-24" aria-label={t('habit.day', { d: parsed.day })}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {DAYS.map((d) => (
                       <SelectItem key={d} value={String(d)}>
-                        {d} 日
+                        {t('habit.day', { d })}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -89,7 +92,7 @@ export function HabitYearlyDatePicker({ value, onChange, error }: HabitYearlyDat
                   size="icon"
                   variant="ghost"
                   className="size-8 shrink-0"
-                  aria-label="删除此日期"
+                  aria-label={t('habit.removeDate')}
                   onClick={() => removeAt(index)}
                 >
                   <X className="size-4" />
@@ -100,7 +103,7 @@ export function HabitYearlyDatePicker({ value, onChange, error }: HabitYearlyDat
         )}
         <Button type="button" size="sm" variant="outline" className="gap-1" onClick={addRow}>
           <Plus className="size-4" />
-          添加日期
+          {t('habit.addDate')}
         </Button>
       </div>
       {error && (

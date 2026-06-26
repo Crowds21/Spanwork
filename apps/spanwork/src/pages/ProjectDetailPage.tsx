@@ -15,8 +15,9 @@ import { TaskTree } from '@/components/task/TaskTree';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { projectTypeLabelI18n } from '@/lib/i18n/projectType';
+import { useT } from '@/lib/i18n/useT';
 import { deleteProject, getProject, updateProject } from '@/lib/tauri/project';
-import { projectTypeLabel } from '@spanwork/shared-types';
 import type { ProjectViewMode } from '@/lib/taskUtils';
 import { readStoredViewMode, storeViewMode } from '@/lib/taskUtils';
 import { queryKeys } from '@/queries/keys';
@@ -27,6 +28,7 @@ interface ProjectDetailPageProps {
 }
 
 export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageProps) {
+  const t = useT();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const search = useSearch({ strict: false }) as { view?: ProjectViewMode };
@@ -72,7 +74,7 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
 
   const archiveMutation = useMutation({
     mutationFn: () => updateProject(projectId, { status: 'archived' }),
-    meta: { errorSource: '存档项目' },
+    meta: { errorSource: t('errors.archiveProject') },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.projectsRoot });
       queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) });
@@ -99,10 +101,10 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
         <Button variant="ghost" size="sm" asChild>
           <Link to="/projects">
             <ArrowLeft className="size-4" />
-            返回
+            {t('common.back')}
           </Link>
         </Button>
-        <p className="text-sm text-muted-foreground">项目不存在或暂时无法加载</p>
+        <p className="text-sm text-muted-foreground">{t('projects.notFound')}</p>
       </div>
     );
   }
@@ -126,7 +128,7 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
           <Button variant="ghost" size="sm" asChild>
             <Link to="/projects">
               <ArrowLeft className="size-4" />
-              返回
+              {t('common.back')}
             </Link>
           </Button>
           <div>
@@ -137,8 +139,10 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
               {project.name}
             </h1>
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <Badge>{projectTypeLabel(project.projectType)}</Badge>
-              {project.status === 'archived' && <Badge variant="outline">已归档</Badge>}
+              <Badge>{projectTypeLabelI18n(project.projectType, t)}</Badge>
+              {project.status === 'archived' && (
+                <Badge variant="outline">{t('projectStatus.archived')}</Badge>
+              )}
               {project.categoryName && (
                 <Badge variant="outline" className="max-w-[8rem] shrink-0 gap-1.5 truncate">
                   {project.categoryColor && (
@@ -163,7 +167,7 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
               onClick={() => archiveMutation.mutate()}
               disabled={archiveMutation.isPending}
             >
-              存档
+              {t('common.archive')}
             </Button>
           )}
           <Button
@@ -172,24 +176,26 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
             onClick={() => deleteMutation.mutate()}
             disabled={deleteMutation.isPending}
           >
-            删除项目
+            {t('projects.deleteProject')}
           </Button>
         </div>
       </div>
 
       <ProjectOverviewStats
         items={[
-          { label: '任务数', value: project.taskCount ?? 0 },
+          { label: t('projects.taskCount'), value: project.taskCount ?? 0 },
           {
-            label: '累计时间',
-            shortLabel: '累计',
+            label: t('projects.totalTime'),
+            shortLabel: t('projects.totalTimeShort'),
             value: project.totalTimeSeconds
-              ? `${Math.round(project.totalTimeSeconds / 60)} 分钟`
-              : '0 分钟',
+              ? t('projects.totalTimeMinutes', {
+                  minutes: Math.round(project.totalTimeSeconds / 60),
+                })
+              : t('projects.zeroMinutes'),
           },
           {
-            label: '未完成里程碑任务',
-            shortLabel: '里程碑',
+            label: t('projects.openMilestones'),
+            shortLabel: t('projects.milestonesShort'),
             value: project.openMilestoneCount ?? 0,
           },
         ]}
@@ -197,7 +203,7 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">任务</h2>
+          <h2 className="text-lg font-semibold">{t('projects.tasksSection')}</h2>
           <TaskViewSwitcher value={viewMode} onChange={handleViewChange} />
         </div>
         {viewMode === 'list' && <TaskTree projectId={projectId} />}

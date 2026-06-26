@@ -12,20 +12,17 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
-const PHASE_LABEL: Record<string, string> = {
-  starting: '准备同步',
-  connecting: '连接对端',
-  exchanging: '交换数据',
-  merging: '合并变更',
-  done: '已完成',
-  cancelled: '已取消',
+const PHASE_KEYS: Record<string, string> = {
+  starting: 'sync.progressStarting',
+  connecting: 'sync.progressConnecting',
+  exchanging: 'sync.progressExchanging',
+  merging: 'sync.progressMerging',
+  done: 'sync.progressDone',
+  cancelled: 'sync.progressCancelled',
 };
-
-function phaseLabel(phase: string) {
-  return PHASE_LABEL[phase] ?? phase;
-}
 
 export function SyncProgressCard({
   active,
@@ -40,6 +37,13 @@ export function SyncProgressCard({
   cancelling?: boolean;
   onCancel?: () => void;
 }) {
+  const t = useT();
+
+  function phaseLabel(phase: string) {
+    const key = PHASE_KEYS[phase];
+    return key ? t(key) : phase;
+  }
+
   if (!active) return null;
 
   const phase = progress?.phase ?? 'starting';
@@ -60,10 +64,14 @@ export function SyncProgressCard({
             {!isDone && !isCancelled ? (
               <Loader2 className="size-5 shrink-0 animate-spin text-primary" />
             ) : null}
-            {isCancelled ? '同步已取消' : isDone ? '同步完成' : '正在同步'}
+            {isCancelled
+              ? t('sync.syncCancelledTitle')
+              : isDone
+                ? t('sync.syncDoneTitle')
+                : t('sync.syncingTitle')}
           </CardTitle>
           <CardDescription>
-            {peerLabel ? `与 ${peerLabel} 双向同步 · ` : null}
+            {peerLabel ? t('sync.syncingWithPeer', { peer: peerLabel }) : null}
             {progress?.message ?? phaseLabel(phase)}
           </CardDescription>
         </div>
@@ -80,7 +88,7 @@ export function SyncProgressCard({
             ) : (
               <XCircle className="size-4" />
             )}
-            取消同步
+            {t('sync.cancelSync')}
           </Button>
         ) : null}
       </CardHeader>

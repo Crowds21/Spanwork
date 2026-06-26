@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useHabitOccurrenceActions } from '@/hooks/useHabitOccurrenceActions';
 import { formatDuration } from '@/lib/format';
+import { useT } from '@/lib/i18n/useT';
 import {
   canManualHabitTimeEntry,
   canStartHabitTimer,
@@ -48,6 +49,7 @@ export function HabitOccurrenceRow({
   compact,
   showReschedule = true,
 }: HabitOccurrenceRowProps) {
+  const t = useT();
   const [entryOpen, setEntryOpen] = useState(false);
   const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
@@ -74,7 +76,7 @@ export function HabitOccurrenceRow({
     occurrence.ruleTitle ??
     occurrence.displayTitle ??
     occurrence.projectName ??
-    '习惯';
+    t('common.defaultHabit');
   const projectLabel =
     occurrence.ruleTitle && occurrence.projectName ? occurrence.projectName : undefined;
   const tooltipTitle = occurrence.displayTitle ?? title;
@@ -111,11 +113,13 @@ export function HabitOccurrenceRow({
               </p>
             </Tooltip>
             {isTimingThis && (
-              <p className="text-xs text-primary">计时中（保存计时不等于打卡完成）</p>
+              <p className="text-xs text-primary">{t('habit.timingNoCheckInShort')}</p>
             )}
             {!isTimingThis && occurrence.totalTimeSeconds != null && occurrence.totalTimeSeconds > 0 && (
               <p className="text-xs text-muted-foreground">
-                已 {formatDuration(occurrence.totalTimeSeconds)}
+                {t('habit.recordedDuration', {
+                  duration: formatDuration(occurrence.totalTimeSeconds),
+                })}
               </p>
             )}
           </div>
@@ -128,13 +132,13 @@ export function HabitOccurrenceRow({
                 active={activeTimer}
                 projectId={occurrence.projectId}
                 onComplete={invalidate}
-                completeTooltip="保存计时（不会自动打卡）"
-                completeAriaLabel="保存计时"
+                completeTooltip={t('habit.saveTimerNoCheckIn')}
+                completeAriaLabel={t('habit.saveTimer')}
               />
             ) : (
               <>
                 {canStartTimer && (
-                  <Tooltip label="开始计时" side="bottom">
+                  <Tooltip label={t('task.startTimer')} side="bottom">
                     <Button
                       type="button"
                       size="icon"
@@ -142,21 +146,21 @@ export function HabitOccurrenceRow({
                       className={ROW_ICON_BUTTON_CLASS}
                       disabled={startMutation.isPending || isTimingOther}
                       onClick={() => startMutation.mutate()}
-                      aria-label="开始计时"
+                      aria-label={t('task.startTimer')}
                     >
                       <Play className="size-4 fill-current" />
                     </Button>
                   </Tooltip>
                 )}
                 {canManualEntry && (
-                  <Tooltip label="补录时间" side="bottom">
+                  <Tooltip label={t('task.manualTimeEntry')} side="bottom">
                     <Button
                       type="button"
                       size="icon"
                       variant="ghost"
                       className={ROW_ICON_BUTTON_CLASS}
                       onClick={() => setEntryOpen(true)}
-                      aria-label="补录时间"
+                      aria-label={t('task.manualTimeEntry')}
                     >
                       <Clock className="size-4" />
                     </Button>
@@ -164,7 +168,7 @@ export function HabitOccurrenceRow({
                 )}
                 {canAct && (
                   <>
-                    <Tooltip label="打卡完成" side="bottom">
+                    <Tooltip label={t('habit.checkInComplete')} side="bottom">
                       <Button
                         type="button"
                         size="icon"
@@ -172,12 +176,12 @@ export function HabitOccurrenceRow({
                         className={ROW_ICON_BUTTON_CLASS}
                         onClick={() => statusMutation.mutate('done')}
                         disabled={statusMutation.isPending}
-                        aria-label="标记完成"
+                        aria-label={t('habit.markComplete')}
                       >
                         <Check className="size-4" />
                       </Button>
                     </Tooltip>
-                    <Tooltip label="跳过今日" side="bottom">
+                    <Tooltip label={t('habit.skipToday')} side="bottom">
                       <Button
                         type="button"
                         size="icon"
@@ -185,7 +189,7 @@ export function HabitOccurrenceRow({
                         className={ROW_ICON_BUTTON_CLASS}
                         onClick={() => setSkipConfirmOpen(true)}
                         disabled={statusMutation.isPending}
-                        aria-label="跳过今日"
+                        aria-label={t('habit.skipToday')}
                       >
                         <SkipForward className="size-4" />
                       </Button>
@@ -193,14 +197,14 @@ export function HabitOccurrenceRow({
                   </>
                 )}
                 {canReschedule && (
-                  <Tooltip label="改期" side="bottom">
+                  <Tooltip label={t('habit.reschedule')} side="bottom">
                     <Button
                       type="button"
                       size="icon"
                       variant="ghost"
                       className={ROW_ICON_BUTTON_CLASS}
                       onClick={() => setRescheduleOpen(true)}
-                      aria-label="改期"
+                      aria-label={t('habit.reschedule')}
                     >
                       <CalendarClock className="size-4" />
                     </Button>
@@ -216,9 +220,9 @@ export function HabitOccurrenceRow({
       <ConfirmDialog
         open={skipConfirmOpen}
         onOpenChange={setSkipConfirmOpen}
-        title="跳过今日"
-        description={`确定跳过「${title}」今日打卡？跳过后今日将记为已跳过。`}
-        confirmLabel="跳过"
+        title={t('habit.skipToday')}
+        description={t('habit.skipTodayConfirm', { title })}
+        confirmLabel={t('habit.skip')}
         loading={statusMutation.isPending}
         onConfirm={() => {
           statusMutation.mutate('skipped', {

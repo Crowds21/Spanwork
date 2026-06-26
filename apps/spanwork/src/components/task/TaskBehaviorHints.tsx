@@ -4,6 +4,7 @@
 import { CalendarDays, MessageSquare } from 'lucide-react';
 import type { TaskDto } from '@spanwork/shared-types';
 
+import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
 interface TaskBehaviorHintsProps {
@@ -11,13 +12,15 @@ interface TaskBehaviorHintsProps {
   className?: string;
 }
 
-function formatDateLabel(value: string): string {
+function formatDateLabel(value: string, t: ReturnType<typeof useT>): string {
   const [y, m, d] = value.split('-');
   if (!y || !m || !d) return value;
-  return `${y}年${Number(m)}月${Number(d)}日`;
+  return t('format.dateLabel', { year: y, month: Number(m), day: Number(d) });
 }
 
 export function TaskBehaviorHints({ task, className }: TaskBehaviorHintsProps) {
+  const t = useT();
+
   if (!task.behaviorDesignEnabled) {
     return null;
   }
@@ -37,10 +40,17 @@ export function TaskBehaviorHints({ task, className }: TaskBehaviorHintsProps) {
           <CalendarDays className="size-3.5 shrink-0" aria-hidden />
           <span>
             {hasStart && hasDue
-              ? `${formatDateLabel(task.startDate!)} — ${formatDateLabel(task.dueDate!)}`
+              ? t('task.dateRange', {
+                  start: formatDateLabel(task.startDate!, t),
+                  end: formatDateLabel(task.dueDate!, t),
+                })
               : hasStart
-                ? `开始 ${formatDateLabel(task.startDate!)}`
-                : `截止 ${formatDateLabel(task.dueDate!)}`}
+                ? t('task.startDateLabel', {
+                    date: formatDateLabel(task.startDate!, t),
+                  })
+                : t('task.dueDateLabel', {
+                    date: formatDateLabel(task.dueDate!, t),
+                  })}
           </span>
         </p>
       )}

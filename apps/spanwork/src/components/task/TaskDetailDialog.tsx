@@ -36,6 +36,7 @@ import {
   formatDateTime,
   formatDuration,
 } from '@/lib/format';
+import { useT } from '@/lib/i18n/useT';
 import { isTauri } from '@/lib/tauri/client';
 import { getActiveTimer } from '@/lib/tauri/timer';
 import { listTimeEntries } from '@/lib/tauri/time_entry';
@@ -59,6 +60,7 @@ export function TaskDetailDialog({
   open,
   onOpenChange,
 }: TaskDetailDialogProps) {
+  const t = useT();
   const queryClient = useQueryClient();
   const inTauri = isTauri();
 
@@ -101,9 +103,9 @@ export function TaskDetailDialog({
   const isMilestoneContainer = isMilestoneRoot && hasSubtasks;
   const canToggleMilestone = !isSubtask && !(task?.isMilestone && hasSubtasks);
   const milestoneDisabledReason = isSubtask
-    ? '里程碑的子任务不能标记为里程碑'
+    ? t('task.milestoneChildCannotBeMilestone')
     : hasSubtasks
-      ? '已有子任务的里程碑任务不能改为普通任务'
+      ? t('task.milestoneWithChildrenCannotDemote')
       : null;
 
   useEffect(() => {
@@ -150,7 +152,7 @@ export function TaskDetailDialog({
       if (canToggleMilestone) patch.isMilestone = isMilestone;
       return updateTask(taskId, patch);
     },
-    meta: { errorSource: '保存任务' },
+    meta: { errorSource: t('errors.saveTask') },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.task(taskId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
@@ -170,8 +172,8 @@ export function TaskDetailDialog({
     >
       <Card className="max-h-[85vh] gap-0 overflow-hidden py-0 shadow-lg">
         <CardHeader className="py-6">
-          <CardTitle>任务详情</CardTitle>
-          <CardDescription>查看与编辑任务信息，以及每次计时会话记录</CardDescription>
+          <CardTitle>{t('task.taskDetail')}</CardTitle>
+          <CardDescription>{t('task.taskDetailDesc')}</CardDescription>
         </CardHeader>
 
         {taskQuery.isLoading ? (
@@ -182,14 +184,14 @@ export function TaskDetailDialog({
           </CardContent>
         ) : !task ? (
           <CardContent className="pb-6">
-            <p className="text-sm text-muted-foreground">任务不存在或已删除</p>
+            <p className="text-sm text-muted-foreground">{t('task.taskNotFound')}</p>
           </CardContent>
         ) : (
           <>
             <CardContent className="max-h-[calc(85vh-11rem)] space-y-6 overflow-y-auto pb-6">
               <section className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="task-detail-id">任务 ID</Label>
+                  <Label htmlFor="task-detail-id">{t('task.taskId')}</Label>
                   <div className="flex gap-2">
                     <Input
                       id="task-detail-id"
@@ -197,13 +199,13 @@ export function TaskDetailDialog({
                       value={task.id}
                       className="font-mono text-xs text-muted-foreground"
                     />
-                    <Tooltip label="复制任务 ID">
+                    <Tooltip label={t('task.copyTaskId')}>
                       <Button
                         type="button"
                         size="icon"
                         variant="outline"
                         className="size-9 shrink-0"
-                        aria-label="复制任务 ID"
+                        aria-label={t('task.copyTaskId')}
                         onClick={() => void navigator.clipboard.writeText(task.id)}
                       >
                         <Copy className="size-3.5" />
@@ -213,7 +215,7 @@ export function TaskDetailDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="task-detail-title">标题</Label>
+                  <Label htmlFor="task-detail-title">{t('task.title')}</Label>
                   <Input
                     id="task-detail-title"
                     value={title}
@@ -221,7 +223,7 @@ export function TaskDetailDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>状态</Label>
+                  <Label>{t('common.status')}</Label>
                   <TaskStatusSelect value={status} onValueChange={setStatus} className="w-full sm:w-auto" />
                 </div>
 
@@ -248,26 +250,26 @@ export function TaskDetailDialog({
                   <span className="space-y-0.5">
                     <span className="flex items-center gap-1.5 text-sm font-medium">
                       <Flag className="size-3.5 text-primary" />
-                      里程碑任务
+                      {t('task.milestoneTask')}
                     </span>
                     <span className="block text-xs text-muted-foreground">
                       {milestoneDisabledReason ??
                         (hasSubtasks
-                          ? '里程碑任务可以包含子任务，时间由子任务汇总'
-                          : '里程碑任务可以包含子任务，无子任务时可直接记时')}
+                          ? t('task.milestoneWithChildren')
+                          : t('task.milestoneNoChildren'))}
                     </span>
                   </span>
                 </label>
 
                 <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  <span>创建于 {formatDateTime(task.createdAt)}</span>
+                  <span>{t('task.createdAt', { datetime: formatDateTime(task.createdAt) })}</span>
                   <span>·</span>
-                  <span>更新于 {formatDateTime(task.updatedAt)}</span>
+                  <span>{t('task.updatedAt', { datetime: formatDateTime(task.updatedAt) })}</span>
                   {task.totalTimeSeconds != null && (
                     <>
                       <span>·</span>
                       <span>
-                        {isMilestoneContainer ? '子任务合计 ' : '累计 '}
+                        {isMilestoneContainer ? t('task.subtaskTotal') : t('task.accumulated')}
                         {formatDuration(task.totalTimeSeconds)}
                       </span>
                     </>
@@ -290,9 +292,9 @@ export function TaskDetailDialog({
                     ) : (
                       <ChevronRight className="size-4 text-muted-foreground" />
                     )}
-                    时间记录
+                    {t('task.timeRecords')}
                   </span>
-                  <Badge variant="secondary">{totalRecords} 条</Badge>
+                  <Badge variant="secondary">{t('common.recordsCount', { count: totalRecords })}</Badge>
                 </button>
 
                 {recordsOpen && (
@@ -301,10 +303,12 @@ export function TaskDetailDialog({
                       <Skeleton className="h-24 w-full" />
                     ) : isMilestoneContainer ? (
                       <div className="rounded-lg border bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
-                        里程碑时间由子任务汇总，不支持直接记时。请在子任务上记录时间。
+                        {t('task.milestoneNoDirectTime')}
                         {task.totalTimeSeconds != null && task.totalTimeSeconds > 0 && (
                           <p className="mt-2 font-medium text-foreground">
-                            当前合计 {formatDuration(task.totalTimeSeconds)}
+                            {t('task.currentTotal', {
+                              duration: formatDuration(task.totalTimeSeconds),
+                            })}
                           </p>
                         )}
                       </div>
@@ -320,7 +324,7 @@ export function TaskDetailDialog({
                     {!isMilestoneContainer && entries.length > TIME_ENTRIES_PAGE_SIZE && (
                       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                         <span>
-                          第 {safePage + 1} / {totalPages} 页
+                          {t('common.pageOf', { current: safePage + 1, total: totalPages })}
                         </span>
                         <div className="flex gap-1">
                           <Button
@@ -330,7 +334,7 @@ export function TaskDetailDialog({
                             className="h-7 px-2"
                             disabled={safePage <= 0}
                             onClick={() => setRecordsPage((p) => Math.max(0, p - 1))}
-                            aria-label="上一页"
+                            aria-label={t('common.prevPage')}
                           >
                             <ChevronLeft className="size-3.5" />
                           </Button>
@@ -343,7 +347,7 @@ export function TaskDetailDialog({
                             onClick={() =>
                               setRecordsPage((p) => Math.min(totalPages - 1, p + 1))
                             }
-                            aria-label="下一页"
+                            aria-label={t('common.nextPage')}
                           >
                             <ChevronRightIcon className="size-3.5" />
                           </Button>
@@ -357,7 +361,7 @@ export function TaskDetailDialog({
 
             <CardFooter className="pb-6">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                取消
+                {t('common.cancel')}
               </Button>
               <Button
                 type="button"
@@ -367,10 +371,10 @@ export function TaskDetailDialog({
                 {saveMutation.isPending ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
-                    保存中…
+                    {t('common.saving')}
                   </>
                 ) : (
-                  '保存'
+                  t('common.save')
                 )}
               </Button>
             </CardFooter>

@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { datetimeLocalToMs, formatDuration, msToDatetimeLocal } from '@/lib/format';
+import { useT } from '@/lib/i18n/useT';
 import { createTimeEntry } from '@/lib/tauri/time_entry';
 import { invalidateTimeEntryQueries } from '@/queries/invalidate';
 
@@ -40,6 +41,7 @@ export function TimeEntryForm({
   dateKey,
   onCreated,
 }: TimeEntryFormProps) {
+  const t = useT();
   const queryClient = useQueryClient();
   const initial = useMemo(() => defaultRange(), []);
   const [mode, setMode] = useState<HabitEntryMode>('range');
@@ -70,7 +72,7 @@ export function TimeEntryForm({
       if (mode === 'duration') {
         const seconds = Number(durationMinutes) * 60;
         if (!Number.isFinite(seconds) || seconds <= 0) {
-          throw new Error('请填写有效时长');
+          throw new Error(t('timer.invalidDuration'));
         }
         return createTimeEntry({
           projectId,
@@ -83,7 +85,7 @@ export function TimeEntryForm({
         const startAt = datetimeLocalToMs(startLocal);
         const seconds = Number(durationMinutes) * 60;
         if (!Number.isFinite(startAt) || !Number.isFinite(seconds) || seconds <= 0) {
-          throw new Error('请填写开始时间与时长');
+          throw new Error(t('timer.invalidStartAndDuration'));
         }
         return createTimeEntry({
           projectId,
@@ -96,10 +98,10 @@ export function TimeEntryForm({
       const startAt = datetimeLocalToMs(startLocal);
       const endAt = datetimeLocalToMs(endLocal);
       if (!Number.isFinite(startAt) || !Number.isFinite(endAt)) {
-        throw new Error('请填写有效的开始和结束时间');
+        throw new Error(t('timer.invalidStartEnd'));
       }
       if (endAt <= startAt) {
-        throw new Error('结束时间必须晚于开始时间');
+        throw new Error(t('timer.endBeforeStart'));
       }
       return createTimeEntry({
         projectId,
@@ -110,7 +112,7 @@ export function TimeEntryForm({
         note: note.trim() || undefined,
       });
     },
-    meta: { errorSource: '补录时间' },
+    meta: { errorSource: t('errors.manualTimeEntry') },
     onSuccess: () => {
       invalidate();
       const next = defaultRange();
@@ -121,9 +123,15 @@ export function TimeEntryForm({
       onCreated?.();
     },
     onError: (err) => {
-      setError(err instanceof Error ? err.message : '保存失败');
+      setError(err instanceof Error ? err.message : t('timer.saveFailed'));
     },
   });
+
+  const modeOptions: { id: HabitEntryMode; label: string }[] = [
+    { id: 'range', label: t('timer.modeRange') },
+    { id: 'duration', label: t('timer.modeDuration') },
+    { id: 'marker', label: t('timer.modeMarker') },
+  ];
 
   return (
     <form
@@ -136,13 +144,7 @@ export function TimeEntryForm({
     >
       {habitModes && (
         <div className="flex flex-wrap gap-2">
-          {(
-            [
-              ['range', '起止时间'],
-              ['duration', '仅时长'],
-              ['marker', '开始+时长'],
-            ] as const
-          ).map(([id, label]) => (
+          {modeOptions.map(({ id, label }) => (
             <Button
               key={id}
               type="button"
@@ -158,7 +160,7 @@ export function TimeEntryForm({
 
       {mode === 'duration' ? (
         <div className="space-y-1">
-          <Label htmlFor="time-duration">时长（分钟）</Label>
+          <Label htmlFor="time-duration">{t('timer.durationMinutes')}</Label>
           <Input
             id="time-duration"
             type="number"
@@ -170,7 +172,7 @@ export function TimeEntryForm({
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
-            <Label htmlFor="time-start">开始时间</Label>
+            <Label htmlFor="time-start">{t('timer.startTime')}</Label>
             <Input
               id="time-start"
               type="datetime-local"
@@ -181,7 +183,7 @@ export function TimeEntryForm({
           </div>
           {mode === 'range' && (
             <div className="space-y-1">
-              <Label htmlFor="time-end">结束时间</Label>
+              <Label htmlFor="time-end">{t('timer.endTime')}</Label>
               <Input
                 id="time-end"
                 type="datetime-local"
@@ -193,7 +195,7 @@ export function TimeEntryForm({
           )}
           {mode === 'marker' && (
             <div className="space-y-1">
-              <Label htmlFor="time-marker-duration">时长（分钟）</Label>
+              <Label htmlFor="time-marker-duration">{t('timer.durationMinutes')}</Label>
               <Input
                 id="time-marker-duration"
                 type="number"
@@ -207,21 +209,23 @@ export function TimeEntryForm({
       )}
 
       {durationPreview != null && (
-        <p className="text-xs text-muted-foreground">时长 {formatDuration(durationPreview)}</p>
+        <p className="text-xs text-muted-foreground">
+          {t('timer.durationPreview', { duration: formatDuration(durationPreview) })}
+        </p>
       )}
       <div className="space-y-1">
-        <Label htmlFor="time-note">备注（可选）</Label>
+        <Label htmlFor="time-note">{t('common.noteOptional')}</Label>
         <Textarea
           id="time-note"
           rows={1}
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="做了什么"
+          placeholder={t('timer.notePlaceholder')}
         />
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}
       <Button type="submit" disabled={mutation.isPending}>
-        {mutation.isPending ? '保存中…' : '补录时间'}
+        {mutation.isPending ? t('common.saving') : t('timer.submitManualEntry')}
       </Button>
     </form>
   );

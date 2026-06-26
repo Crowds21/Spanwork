@@ -6,6 +6,7 @@ import type { TaskDto } from '@spanwork/shared-types';
 import { TaskScheduleDatesInput } from '@/components/task/TaskScheduleDatesInput';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
 export interface TaskBehaviorDesignFormState {
@@ -71,6 +72,8 @@ interface TaskBehaviorDesignFieldsProps {
 }
 
 export function TaskBehaviorDesignFields({ state, onChange }: TaskBehaviorDesignFieldsProps) {
+  const t = useT();
+
   return (
     <section className="space-y-3 rounded-lg border bg-muted/15 p-4">
       <label
@@ -96,8 +99,8 @@ export function TaskBehaviorDesignFields({ state, onChange }: TaskBehaviorDesign
           }
         />
         <span className="space-y-0.5">
-          <span className="block text-sm font-semibold">行为设计</span>
-          <span className="block text-xs text-muted-foreground">开始/截止、完成鼓励与备注（可选）</span>
+          <span className="block text-sm font-semibold">{t('task.behaviorDesign')}</span>
+          <span className="block text-xs text-muted-foreground">{t('task.behaviorDesignDesc')}</span>
         </span>
       </label>
 
@@ -123,21 +126,21 @@ export function TaskBehaviorDesignFields({ state, onChange }: TaskBehaviorDesign
               onChange={(e) => onChange({ celebrationOnComplete: e.target.checked })}
             />
             <span className="space-y-0.5">
-              <span className="block text-sm font-medium">完成时鼓励提醒</span>
+              <span className="block text-sm font-medium">{t('task.celebrationOnComplete')}</span>
               <span className="block text-xs text-muted-foreground">
-                勾选后，任务完成将从 App 内置 300 条鼓励语中随机展示
+                {t('task.celebrationOnCompleteDesc')}
               </span>
             </span>
           </label>
 
           <div className="space-y-2">
-            <Label htmlFor="task-behavior-notes">备注（可选）</Label>
+            <Label htmlFor="task-behavior-notes">{t('common.noteOptional')}</Label>
             <Textarea
               id="task-behavior-notes"
               rows={3}
               value={state.notes}
               onChange={(e) => onChange({ notes: e.target.value })}
-              placeholder="任务背景、执行要点或提醒…"
+              placeholder={t('task.behaviorNotesPlaceholder')}
               maxLength={512}
             />
           </div>

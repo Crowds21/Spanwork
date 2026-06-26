@@ -4,6 +4,7 @@
 import { Dialog } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TimeEntryForm } from '@/components/timer/TimeEntryForm';
+import { useT } from '@/lib/i18n/useT';
 
 interface HabitTimeEntryDialogProps {
   open: boolean;
@@ -20,11 +21,13 @@ export function HabitTimeEntryDialog({
   occurrenceId,
   dateKey,
 }: HabitTimeEntryDialogProps) {
+  const t = useT();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>补录时间</CardTitle>
+          <CardTitle>{t('habit.manualTimeEntryTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           <TimeEntryForm

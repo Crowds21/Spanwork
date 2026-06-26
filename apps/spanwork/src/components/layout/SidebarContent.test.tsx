@@ -3,6 +3,9 @@ import { createRootRoute, createRouter, RouterProvider } from '@tanstack/react-r
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { I18nProvider } from '@/lib/i18n/I18nProvider';
+import { getTranslator } from '@/lib/i18n/translate';
+
 import { SidebarContent } from './SidebarContent';
 
 vi.mock('@/lib/tauri/env', () => ({
@@ -40,7 +43,9 @@ async function renderSidebar() {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <I18nProvider>
+        <RouterProvider router={router} />
+      </I18nProvider>
     </QueryClientProvider>,
   );
 }
@@ -51,11 +56,12 @@ describe('SidebarContent', () => {
   });
 
   it('renders main nav links without Tauri', async () => {
+    const t = getTranslator();
     await renderSidebar();
 
-    expect(await screen.findByText('今日')).toBeInTheDocument();
-    expect(screen.getByText('项目')).toBeInTheDocument();
-    expect(screen.getByText('全局日历')).toBeInTheDocument();
-    expect(screen.getByText('设置')).toBeInTheDocument();
+    expect(await screen.findByText(t('nav.today'))).toBeInTheDocument();
+    expect(screen.getByText(t('nav.projects'))).toBeInTheDocument();
+    expect(screen.getByText(t('nav.globalCalendar'))).toBeInTheDocument();
+    expect(screen.getByText(t('nav.settings'))).toBeInTheDocument();
   });
 });

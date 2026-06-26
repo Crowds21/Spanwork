@@ -7,9 +7,11 @@ import { useTimerBar } from '@/components/timer/TimerBarContext';
 import { TimerBarCancelButton } from '@/components/timer/TimerBarCancelButton';
 import { Button } from '@/components/ui/button';
 import { formatDurationLive } from '@/lib/format';
+import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
 export function TimerBarExpanded() {
+  const t = useT();
   const {
     inTauri,
     active,
@@ -49,7 +51,7 @@ export function TimerBarExpanded() {
               )}
             >
               <Timer className={cn('size-4', !isPaused && 'animate-pulse')} aria-hidden />
-              <span>{isPaused ? '已暂停' : '计时中'}</span>
+              <span>{isPaused ? t('timer.paused') : t('timer.timing')}</span>
             </div>
             <p className="font-mono text-3xl font-bold tabular-nums tracking-tight text-foreground sm:text-4xl">
               {formatDurationLive(elapsed)}
@@ -65,7 +67,7 @@ export function TimerBarExpanded() {
               onClick={handleViewProject}
               disabled={!active}
             >
-              查看任务
+              {t('timer.viewTask')}
             </button>
           </div>
           <div className="absolute right-0 top-2 z-[3] flex shrink-0 items-center gap-0.5 overflow-visible">
@@ -87,7 +89,7 @@ export function TimerBarExpanded() {
                   : 'text-primary/80 hover:text-primary',
               )}
               onClick={() => setMinimized(true)}
-              aria-label="收起计时栏"
+              aria-label={t('timer.collapseTimerBar')}
             >
               <ChevronUp className="size-4" />
             </Button>

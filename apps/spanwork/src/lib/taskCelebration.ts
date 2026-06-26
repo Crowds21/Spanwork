@@ -4,13 +4,9 @@
 import type { TaskDto } from '@spanwork/shared-types';
 
 import { showCompletionToast } from '@/lib/habitCelebration';
-import { getLocale, type Locale } from '@/lib/i18n';
+import { getLocale } from '@/lib/i18n';
 import { pickRandomEncouragement } from '@/lib/i18n/encouragement';
-
-const TASK_COMPLETION_TITLES: Record<Locale, string> = {
-  'zh-CN': '任务完成',
-  'en-US': 'Task completed',
-};
+import { getTranslator } from '@/lib/i18n/translate';
 
 export function celebrateTaskCompletion(
   task: Pick<TaskDto, 'behaviorDesignEnabled' | 'celebrationOnComplete'>,
@@ -19,6 +15,6 @@ export function celebrateTaskCompletion(
     return;
   }
   const locale = getLocale();
-  const title = TASK_COMPLETION_TITLES[locale] ?? TASK_COMPLETION_TITLES['zh-CN'];
-  showCompletionToast(title, pickRandomEncouragement(locale));
+  const t = getTranslator(locale);
+  showCompletionToast(t('task.taskCompleted'), pickRandomEncouragement(locale));
 }

@@ -16,6 +16,8 @@ import { computeProjectPeriodRate, computeTodaySummary, getWeekRange } from '@/l
 import { listHabitOccurrences, listHabitRules } from '@/lib/tauri/habit';
 import { isTauri } from '@/lib/tauri/env';
 import { formatDuration } from '@/lib/format';
+import { projectTypeLabelI18n } from '@/lib/i18n/projectType';
+import { useT } from '@/lib/i18n/useT';
 import { queryKeys } from '@/queries/keys';
 
 interface HabitProjectDetailProps {
@@ -33,6 +35,7 @@ export function HabitProjectDetail({
   isArchiving,
   isDeleting,
 }: HabitProjectDetailProps) {
+  const t = useT();
   const inTauri = isTauri();
   const today = todayDateKey();
   const week = getWeekRange(today);
@@ -78,7 +81,7 @@ export function HabitProjectDetail({
           <Button variant="ghost" size="sm" asChild>
             <Link to="/projects">
               <ArrowLeft className="size-4" />
-              返回
+              {t('common.back')}
             </Link>
           </Button>
           <div>
@@ -89,8 +92,8 @@ export function HabitProjectDetail({
               {project.name}
             </h1>
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <Badge variant="habit">习惯式</Badge>
-              {readOnly && <Badge variant="outline">已归档</Badge>}
+              <Badge variant="habit">{projectTypeLabelI18n('habit', t)}</Badge>
+              {readOnly && <Badge variant="outline">{t('projectStatus.archived')}</Badge>}
               {project.categoryName && (
                 <Badge variant="outline" className="max-w-[8rem] shrink-0 gap-1.5 truncate">
                   {project.categoryColor && (
@@ -109,12 +112,14 @@ export function HabitProjectDetail({
           )}
           {inTauri && !rulesQuery.isLoading && ruleCount > 0 && (
             <p className="text-sm text-muted-foreground">
-              {ruleCount} 个习惯
+              {t('projects.rulesCount', { count: ruleCount })}
               {todaySummary.total > 0 && (
                 <>
-                  {' '}
-                  · 今日 {todaySummary.done}/{todaySummary.total} 已完成
-                  {weekRate != null && ` · 本周完成率 ${weekRate}%`}
+                  {t('projects.todayProgressInline', {
+                    done: todaySummary.done,
+                    total: todaySummary.total,
+                  })}
+                  {weekRate != null && t('projects.weekRateInline', { rate: weekRate })}
                 </>
               )}
             </p>
@@ -124,13 +129,13 @@ export function HabitProjectDetail({
           <Button variant="outline" asChild>
             <Link to="/calendar" search={{ projectId: project.id, view: 'day' }}>
               <CalendarDays className="size-4" />
-              在日历中查看
+              {t('common.viewInCalendar')}
             </Link>
           </Button>
           {!readOnly && (
             <Button variant="outline" onClick={onArchive} disabled={isArchiving}>
               <Archive className="size-4" />
-              存档
+              {t('common.archive')}
             </Button>
           )}
           <Button
@@ -140,7 +145,7 @@ export function HabitProjectDetail({
             disabled={isDeleting}
           >
             <Trash2 className="size-4" />
-            删除
+            {t('common.delete')}
           </Button>
         </div>
       </div>
@@ -148,13 +153,13 @@ export function HabitProjectDetail({
       <ProjectOverviewStats
         items={[
           {
-            label: '习惯任务',
-            shortLabel: '习惯',
+            label: t('projects.habitTasks'),
+            shortLabel: t('projects.habitTasksShort'),
             value: rulesQuery.isLoading ? '—' : ruleCount,
           },
           {
-            label: '今日进度',
-            shortLabel: '今日',
+            label: t('projects.todayProgress'),
+            shortLabel: t('projects.todayProgressShort'),
             value: todayOccQuery.isLoading
               ? '—'
               : todaySummary.total > 0
@@ -162,8 +167,8 @@ export function HabitProjectDetail({
                 : '—',
           },
           {
-            label: '累计时间',
-            shortLabel: '累计',
+            label: t('projects.totalTime'),
+            shortLabel: t('projects.totalTimeShort'),
             value: project.totalTimeSeconds
               ? formatDuration(project.totalTimeSeconds)
               : '0s',
@@ -173,10 +178,10 @@ export function HabitProjectDetail({
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">习惯任务</h2>
+          <h2 className="text-lg font-semibold">{t('projects.habitTasks')}</h2>
         </div>
         {!inTauri ? (
-          <p className="text-sm text-muted-foreground">习惯任务数据需要在 Tauri 环境中加载。</p>
+          <p className="text-sm text-muted-foreground">{t('projects.habitTauriRequired')}</p>
         ) : rulesQuery.isLoading ? (
           <Skeleton className="h-36 rounded-xl" />
         ) : (

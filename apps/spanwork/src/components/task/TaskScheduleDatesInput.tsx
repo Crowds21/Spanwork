@@ -3,6 +3,7 @@
  */
 import { Input } from '@/components/ui/input';
 import { todayDateKey } from '@/lib/calendarUtils';
+import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
 interface TaskScheduleDatesInputProps {
@@ -26,6 +27,8 @@ export function TaskScheduleDatesInput({
   onDueEnabledChange,
   onDueDateChange,
 }: TaskScheduleDatesInputProps) {
+  const t = useT();
+
   return (
     <div className="space-y-2">
       <label
@@ -52,9 +55,9 @@ export function TaskScheduleDatesInput({
         />
         <span className="min-w-0 flex-1 space-y-2">
           <span className="space-y-0.5">
-            <span className="block text-sm font-medium">开始日期</span>
+            <span className="block text-sm font-medium">{t('task.startDate')}</span>
             <span className="block text-xs text-muted-foreground">
-              {startEnabled ? '已启用，将作为任务计划起点' : '未设置开始日期'}
+              {startEnabled ? t('task.startDateEnabled') : t('task.startDateDisabled')}
             </span>
           </span>
           {startEnabled && (
@@ -92,9 +95,9 @@ export function TaskScheduleDatesInput({
         />
         <span className="min-w-0 flex-1 space-y-2">
           <span className="space-y-0.5">
-            <span className="block text-sm font-medium">截止日期</span>
+            <span className="block text-sm font-medium">{t('task.dueDate')}</span>
             <span className="block text-xs text-muted-foreground">
-              {dueEnabled ? '已启用，将作为任务完成期限' : '未设置截止日期'}
+              {dueEnabled ? t('task.dueDateEnabled') : t('task.dueDateDisabled')}
             </span>
           </span>
           {dueEnabled && (

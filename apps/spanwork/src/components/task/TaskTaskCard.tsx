@@ -26,6 +26,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Tooltip } from '@/components/ui/tooltip';
 import { formatDuration } from '@/lib/format';
+import { useT } from '@/lib/i18n/useT';
 import { isTauri } from '@/lib/tauri/env';
 import { getActiveTimer, startTimer } from '@/lib/tauri/timer';
 import { queryKeys } from '@/queries/keys';
@@ -72,6 +73,7 @@ export function TaskTaskCard({
   canManualEntry,
   canTimer,
 }: TaskTaskCardProps) {
+  const t = useT();
   const queryClient = useQueryClient();
   const inTauri = isTauri();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -94,7 +96,7 @@ export function TaskTaskCard({
 
   const startMutation = useMutation({
     mutationFn: () => startTimer({ projectId, targetType: 'task', targetId: task.id }),
-    meta: { errorSource: '开始计时' },
+    meta: { errorSource: t('errors.startTimer') },
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.activeTimer, data);
       queryClient.invalidateQueries({ queryKey: queryKeys.todayDashboard });
@@ -135,7 +137,7 @@ export function TaskTaskCard({
                     className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
                     onClick={onToggleExpand}
                     aria-expanded={expanded}
-                    aria-label={expanded ? '折叠子任务' : '展开子任务'}
+                    aria-label={expanded ? t('task.collapseSubtasks') : t('task.expandSubtasks')}
                   >
                     {expanded ? (
                       <ChevronDown className="size-4" />
@@ -164,13 +166,13 @@ export function TaskTaskCard({
                 {task.isMilestone && (
                   <Badge variant="secondary" className="shrink-0 gap-1">
                     <Flag className="size-3" />
-                    里程碑
+                    {t('task.milestone')}
                   </Badge>
                 )}
               </div>
               {task.totalTimeSeconds != null && task.totalTimeSeconds > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {isMilestoneRoot && hasChildren ? '子任务合计 ' : '已记录 '}
+                  {isMilestoneRoot && hasChildren ? t('task.subtaskTotalShort') : t('task.recorded')}
                   {formatDuration(task.totalTimeSeconds)}
                 </p>
               )}
@@ -185,7 +187,7 @@ export function TaskTaskCard({
           <TaskBehaviorHints task={task} />
 
           {isTimingThis && (
-            <p className="text-xs font-medium text-primary">计时中…</p>
+            <p className="text-xs font-medium text-primary">{t('task.timing')}</p>
           )}
 
           <div className={CARD_ACTIONS_ROW_CLASS}>
@@ -199,7 +201,7 @@ export function TaskTaskCard({
               ) : (
                 <>
                   {canTimer && (
-                    <Tooltip label="开始计时" side="bottom">
+                    <Tooltip label={t('task.startTimer')} side="bottom">
                       <Button
                         type="button"
                         size="icon"
@@ -207,21 +209,21 @@ export function TaskTaskCard({
                         className={ROW_ICON_BUTTON_CLASS}
                         disabled={startMutation.isPending || isTimingOther}
                         onClick={() => startMutation.mutate()}
-                        aria-label="开始计时"
+                        aria-label={t('task.startTimer')}
                       >
                         <Play className="size-4 fill-current" />
                       </Button>
                     </Tooltip>
                   )}
                   {canManualEntry && (
-                    <Tooltip label="补录时间" side="bottom">
+                    <Tooltip label={t('task.manualTimeEntry')} side="bottom">
                       <Button
                         type="button"
                         size="icon"
                         variant="ghost"
                         className={cn(ROW_ICON_BUTTON_CLASS, showTimeForm && 'ring-2 ring-primary/40')}
                         onClick={onToggleTimeForm}
-                        aria-label="补录时间"
+                        aria-label={t('task.manualTimeEntry')}
                       >
                         <Clock className="size-4" />
                       </Button>
@@ -236,14 +238,14 @@ export function TaskTaskCard({
                       className={ROW_ICON_BUTTON_CLASS}
                     />
                   )}
-                  <Tooltip label="查看详情" side="bottom">
+                  <Tooltip label={t('task.viewDetail')} side="bottom">
                     <Button
                       type="button"
                       size="icon"
                       variant="ghost"
                       className={ROW_ICON_BUTTON_CLASS}
                       onClick={onOpenDetail}
-                      aria-label="查看详情"
+                      aria-label={t('task.viewDetail')}
                     >
                       <PencilLine className="size-4" />
                     </Button>
@@ -252,13 +254,13 @@ export function TaskTaskCard({
               )}
             </div>
             <div ref={menuButtonRef} className="relative">
-              <Tooltip label="更多操作" side="bottom">
+              <Tooltip label={t('common.moreActions')} side="bottom">
                 <Button
                   type="button"
                   size="icon"
                   variant="ghost"
                   className={ROW_ICON_BUTTON_CLASS}
-                  aria-label="更多操作"
+                  aria-label={t('common.moreActions')}
                   aria-expanded={menuOpen}
                   onClick={() => setMenuOpen((v) => !v)}
                 >
@@ -277,7 +279,7 @@ export function TaskTaskCard({
             <button
               type="button"
               className="fixed inset-0 z-40"
-              aria-label="关闭菜单"
+              aria-label={t('common.closeMenuOverlay')}
               onClick={() => setMenuOpen(false)}
             />
             <div
@@ -295,7 +297,7 @@ export function TaskTaskCard({
                 }}
               >
                 <Trash2 className="size-4" />
-                删除当前任务
+                {t('task.deleteCurrentTask')}
               </Button>
             </div>
           </>,
@@ -305,9 +307,9 @@ export function TaskTaskCard({
       <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
-        title="删除任务"
-        description={`确定删除「${task.title}」？相关子任务与时间记录将一并移除，此操作不可撤销。`}
-        confirmLabel="删除"
+        title={t('task.deleteTask')}
+        description={t('task.deleteTaskConfirm', { title: task.title })}
+        confirmLabel={t('common.delete')}
         destructive
         loading={deletePending}
         onConfirm={() => {

@@ -9,6 +9,7 @@ import type { ActiveTimerDto } from '@spanwork/shared-types';
 
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
+import { useT } from '@/lib/i18n/useT';
 import {
   cancelTimer,
   pauseTimer,
@@ -34,12 +35,15 @@ export function TimerSessionControls({
   size = 'sm',
   className,
   onComplete,
-  completeTooltip = '完成并保存本次计时',
-  completeAriaLabel = '完成并保存本次计时',
+  completeTooltip,
+  completeAriaLabel,
 }: TimerSessionControlsProps) {
+  const t = useT();
   const queryClient = useQueryClient();
   const iconClass = size === 'sm' ? 'size-3.5' : 'size-4';
   const buttonClass = size === 'sm' ? 'size-8' : 'size-9';
+  const resolvedCompleteTooltip = completeTooltip ?? t('timer.completeAndSave');
+  const resolvedCompleteAriaLabel = completeAriaLabel ?? t('timer.completeAndSaveAria');
 
   const invalidateAfterComplete = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.activeTimer });
@@ -51,7 +55,7 @@ export function TimerSessionControls({
 
   const pauseMutation = useMutation({
     mutationFn: pauseTimer,
-    meta: { errorSource: '暂停计时' },
+    meta: { errorSource: t('errors.pauseTimer') },
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.activeTimer, data);
     },
@@ -59,7 +63,7 @@ export function TimerSessionControls({
 
   const resumeMutation = useMutation({
     mutationFn: resumeTimer,
-    meta: { errorSource: '继续计时' },
+    meta: { errorSource: t('errors.resumeTimer') },
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.activeTimer, data);
     },
@@ -67,13 +71,13 @@ export function TimerSessionControls({
 
   const completeMutation = useMutation({
     mutationFn: stopTimer,
-    meta: { errorSource: '完成计时' },
+    meta: { errorSource: t('errors.completeTimer') },
     onSuccess: invalidateAfterComplete,
   });
 
   const cancelMutation = useMutation({
     mutationFn: cancelTimer,
-    meta: { errorSource: '取消计时' },
+    meta: { errorSource: t('errors.cancelTimer') },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.activeTimer });
     },
@@ -88,7 +92,7 @@ export function TimerSessionControls({
   return (
     <div className={cn('flex items-center gap-2', className)}>
       {active.isPaused ? (
-        <Tooltip label="继续计时">
+        <Tooltip label={t('timer.resumeTimer')}>
           <Button
             type="button"
             size="icon"
@@ -96,13 +100,13 @@ export function TimerSessionControls({
             className={buttonClass}
             disabled={pending}
             onClick={() => resumeMutation.mutate()}
-            aria-label="继续计时"
+            aria-label={t('timer.resumeTimer')}
           >
             <Play className={cn(iconClass, 'fill-current')} />
           </Button>
         </Tooltip>
       ) : (
-        <Tooltip label="暂停计时">
+        <Tooltip label={t('timer.pauseTimer')}>
           <Button
             type="button"
             size="icon"
@@ -110,14 +114,14 @@ export function TimerSessionControls({
             className={buttonClass}
             disabled={pending}
             onClick={() => pauseMutation.mutate()}
-            aria-label="暂停计时"
+            aria-label={t('timer.pauseTimer')}
           >
             <Pause className={iconClass} />
           </Button>
         </Tooltip>
       )}
 
-      <Tooltip label={completeTooltip}>
+      <Tooltip label={resolvedCompleteTooltip}>
         <Button
           type="button"
           size="icon"
@@ -125,13 +129,13 @@ export function TimerSessionControls({
           className={buttonClass}
           disabled={pending}
           onClick={() => completeMutation.mutate()}
-          aria-label={completeAriaLabel}
+          aria-label={resolvedCompleteAriaLabel}
         >
           <CheckCircle2 className={iconClass} />
         </Button>
       </Tooltip>
 
-      <Tooltip label="取消本次计时（不保存）">
+      <Tooltip label={t('timer.cancelTimerNoSave')}>
         <Button
           type="button"
           size="icon"
@@ -139,7 +143,7 @@ export function TimerSessionControls({
           className={cn(buttonClass, 'text-muted-foreground hover:text-destructive')}
           disabled={pending}
           onClick={() => cancelMutation.mutate()}
-          aria-label="取消本次计时"
+          aria-label={t('timer.cancelTimerNoSaveAria')}
         >
           <XCircle className={iconClass} />
         </Button>

@@ -26,6 +26,7 @@ import {
   taskBehaviorDesignPatchFromForm,
   type TaskBehaviorDesignFormState,
 } from '@/components/task/TaskBehaviorDesignFields';
+import { useT } from '@/lib/i18n/useT';
 import { createTask, updateTask } from '@/lib/tauri/task';
 import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
@@ -47,6 +48,7 @@ export function TaskCreateDialog({
   open,
   onOpenChange,
 }: TaskCreateDialogProps) {
+  const t = useT();
   const queryClient = useQueryClient();
   const isSubtask = Boolean(parentId);
   const [title, setTitle] = useState('');
@@ -75,7 +77,9 @@ export function TaskCreateDialog({
         dueDate: behaviorPatch.dueDate ?? defaultDueDate,
       });
     },
-    meta: { errorSource: isSubtask ? '添加子任务' : '添加任务' },
+    meta: {
+      errorSource: isSubtask ? t('errors.addSubtask') : t('errors.addTask'),
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) });
@@ -90,11 +94,13 @@ export function TaskCreateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>{isSubtask ? '添加子任务' : '添加任务'}</CardTitle>
+          <CardTitle>{isSubtask ? t('task.addSubtask') : t('task.addTask')}</CardTitle>
           <CardDescription>
             {isSubtask
-              ? `在里程碑「${parentTitle ?? '任务'}」下创建子任务`
-              : '创建普通任务或里程碑任务；仅里程碑任务可添加子任务'}
+              ? t('task.createSubtaskUnder', {
+                  parent: parentTitle ?? t('errors.queryTasks'),
+                })
+              : t('task.createTaskDesc')}
           </CardDescription>
         </CardHeader>
         <form
@@ -107,12 +113,12 @@ export function TaskCreateDialog({
         >
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="task-create-title">任务标题</Label>
+              <Label htmlFor="task-create-title">{t('task.taskTitle')}</Label>
               <Input
                 id="task-create-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="输入任务名称"
+                placeholder={t('task.taskTitlePlaceholder')}
                 autoFocus
               />
             </div>
@@ -132,10 +138,10 @@ export function TaskCreateDialog({
                 <span className="space-y-0.5">
                   <span className="flex items-center gap-1.5 text-sm font-medium">
                     <Flag className="size-3.5 text-primary" />
-                    标记为里程碑任务
+                    {t('task.markAsMilestone')}
                   </span>
                   <span className="block text-xs text-muted-foreground">
-                    里程碑任务可以包含子任务，适合阶段性目标
+                    {t('task.milestoneDesc')}
                   </span>
                 </span>
               </label>
@@ -147,10 +153,10 @@ export function TaskCreateDialog({
           </CardContent>
           <CardFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={!canSubmit}>
-              {mutation.isPending ? '创建中…' : '创建'}
+              {mutation.isPending ? t('common.creating') : t('common.create')}
             </Button>
           </CardFooter>
         </form>
@@ -178,8 +184,9 @@ export function TaskCreateTrigger({
   size = 'sm',
   className,
 }: TaskCreateTriggerProps) {
+  const t = useT();
   const [open, setOpen] = useState(false);
-  const buttonLabel = label ?? (parentId ? '添加子任务' : '添加任务');
+  const buttonLabel = label ?? (parentId ? t('task.addSubtask') : t('task.addTask'));
 
   return (
     <>
@@ -220,13 +227,14 @@ export function TaskAddSubtaskTrigger({
   isMilestone,
   className,
 }: TaskAddSubtaskTriggerProps) {
+  const t = useT();
   const queryClient = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
   const convertMutation = useMutation({
     mutationFn: () => updateTask(parentId, { isMilestone: true }),
-    meta: { errorSource: '转换为里程碑任务' },
+    meta: { errorSource: t('errors.convertToMilestone') },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) });
@@ -246,14 +254,14 @@ export function TaskAddSubtaskTrigger({
 
   return (
     <>
-      <Tooltip label="添加子任务">
+      <Tooltip label={t('task.addSubtaskTooltip')}>
         <Button
           type="button"
           size="icon"
           variant="ghost"
           className={cn('size-8 shrink-0', className)}
           onClick={handleClick}
-          aria-label="添加子任务"
+          aria-label={t('task.addSubtaskTooltip')}
         >
           <Plus className="size-3.5" />
         </Button>
@@ -262,21 +270,21 @@ export function TaskAddSubtaskTrigger({
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>转换为里程碑任务</CardTitle>
+            <CardTitle>{t('task.convertToMilestone')}</CardTitle>
             <CardDescription>
-              需要将当前任务「{parentTitle}」转换为里程碑任务，才能添加子任务。
+              {t('task.convertToMilestoneDesc', { title: parentTitle })}
             </CardDescription>
           </CardHeader>
           <CardFooter>
             <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
               disabled={convertMutation.isPending}
               onClick={() => convertMutation.mutate()}
             >
-              {convertMutation.isPending ? '转换中…' : '确定'}
+              {convertMutation.isPending ? t('task.converting') : t('task.confirmConvert')}
             </Button>
           </CardFooter>
         </Card>

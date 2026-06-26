@@ -13,7 +13,8 @@ import { TaskTaskCard } from '@/components/task/TaskTaskCard';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TimeEntryForm } from '@/components/timer/TimeEntryForm';
-import { TASK_STATUSES, taskStatusMeta } from '@/lib/format';
+import { getTaskStatusMeta, TASK_STATUSES } from '@/lib/format';
+import { useT } from '@/lib/i18n/useT';
 import { buildTaskTree } from '@/lib/taskTree';
 import {
   filterTasksForTree,
@@ -119,7 +120,9 @@ function TaskRow({
 }
 
 export function TaskTree({ projectId }: TaskTreeProps) {
+  const t = useT();
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('all');
+  const taskStatusMeta = getTaskStatusMeta();
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.tasks(projectId),
@@ -165,7 +168,7 @@ export function TaskTree({ projectId }: TaskTreeProps) {
           variant={statusFilter === 'all' ? 'default' : 'outline'}
           onClick={() => setStatusFilter('all')}
         >
-          全部
+          {t('common.all')}
         </Button>
         {TASK_STATUSES.map((status) => {
           const meta = taskStatusMeta[status];
@@ -186,14 +189,12 @@ export function TaskTree({ projectId }: TaskTreeProps) {
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          根任务可通过 + 添加子任务；非里程碑任务会先提示转换
-        </p>
+        <p className="text-sm text-muted-foreground">{t('task.rootSubtaskHint')}</p>
         <TaskCreateTrigger projectId={projectId} size="default" />
       </div>
       {roots.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          {statusFilter === 'all' ? '暂无任务，点击「添加任务」创建第一个' : '当前筛选下暂无任务'}
+          {statusFilter === 'all' ? t('task.emptyAll') : t('task.emptyFiltered')}
         </p>
       ) : (
         <ul className="space-y-3">

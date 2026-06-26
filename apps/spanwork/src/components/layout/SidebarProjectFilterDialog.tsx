@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useT } from '@/lib/i18n/useT';
 import type { SidebarProjectFilter } from '@/lib/sidebarPreferences';
 import { listProjectCategories } from '@/lib/tauri/project_category';
 import { queryKeys } from '@/queries/keys';
@@ -38,6 +39,7 @@ export function SidebarProjectFilterDialog({
   filter,
   onSave,
 }: SidebarProjectFilterDialogProps) {
+  const t = useT();
   const [draft, setDraft] = useState(filter);
 
   const { data: categories = [] } = useQuery({
@@ -69,14 +71,14 @@ export function SidebarProjectFilterDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <Card className="border-0 shadow-lg">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">筛选{groupLabel}项目</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            仅影响侧栏显示，不影响项目页全部列表
-          </p>
+          <CardTitle className="text-base">
+            {t('nav.sidebarFilterTitle', { group: groupLabel })}
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">{t('nav.sidebarFilterHint')}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor={`sidebar-filter-category-${projectType}`}>分类</Label>
+            <Label htmlFor={`sidebar-filter-category-${projectType}`}>{t('nav.category')}</Label>
             <Select
               value={draft.categoryId}
               onValueChange={(value) => setDraft((prev) => ({ ...prev, categoryId: value }))}
@@ -85,8 +87,8 @@ export function SidebarProjectFilterDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部分类</SelectItem>
-                <SelectItem value="uncategorized">未分类</SelectItem>
+                <SelectItem value="all">{t('nav.allCategories')}</SelectItem>
+                <SelectItem value="uncategorized">{t('common.uncategorized')}</SelectItem>
                 {categories.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     <span className="inline-flex items-center gap-2">
@@ -104,21 +106,21 @@ export function SidebarProjectFilterDialog({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`sidebar-filter-name-${projectType}`}>名称包含</Label>
+            <Label htmlFor={`sidebar-filter-name-${projectType}`}>{t('nav.nameContains')}</Label>
             <Input
               id={`sidebar-filter-name-${projectType}`}
               value={draft.nameKeyword}
               onChange={(e) => setDraft((prev) => ({ ...prev, nameKeyword: e.target.value }))}
-              placeholder="输入关键词，留空表示不限"
+              placeholder={t('nav.nameKeywordPlaceholder')}
             />
           </div>
         </CardContent>
         <CardFooter className="flex justify-end gap-2 border-t pt-4">
           <Button type="button" variant="ghost" onClick={handleReset}>
-            重置
+            {t('nav.reset')}
           </Button>
           <Button type="button" onClick={handleSave}>
-            应用
+            {t('nav.apply')}
           </Button>
         </CardFooter>
       </Card>

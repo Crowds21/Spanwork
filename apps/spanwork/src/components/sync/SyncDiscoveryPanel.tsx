@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { useT } from '@/lib/i18n/useT';
 
 export function SyncDiscoveryPanel({
   active,
@@ -31,6 +32,7 @@ export function SyncDiscoveryPanel({
   onStart: () => void;
   onStop: () => void;
 }) {
+  const t = useT();
   const localHostLabel =
     localSyncHosts && localSyncHosts.length > 0
       ? localSyncHosts.join(' / ')
@@ -39,40 +41,44 @@ export function SyncDiscoveryPanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">局域网发现</CardTitle>
+        <CardTitle className="text-lg">{t('sync.discoveryTitle')}</CardTitle>
         <CardDescription>
-          启动后本机会在局域网广播，并监听 TCP 端口等待对端连接
-          {port ? `（端口 ${port}）` : ''}
+          {port
+            ? t('sync.discoveryDescWithPort', { port })
+            : t('sync.discoveryDesc')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {active && localHostLabel ? (
           <div className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
             <p className="break-all">
-              本机同步地址：<span className="font-mono text-foreground">{localHostLabel}</span>
+              {t('sync.localSyncAddress')}
+              <span className="font-mono text-foreground">{localHostLabel}</span>
               {port ? (
                 <>
                   {' '}
-                  · 端口 <span className="font-mono text-foreground">{port}</span>
+                  {t('sync.portLabel')}{' '}
+                  <span className="font-mono text-foreground">{port}</span>
                 </>
               ) : null}
             </p>
             {onHotspot ? (
               <p className="mt-1.5">
-                当前为 iPhone 热点网络：mDNS 可能不可用，已启用 TCP 热点探测（172.20.10.x）。
+                {t('sync.hotspotHint')}
                 {suggestedPeerHost ? (
                   <>
                     {' '}
-                    对端一般为{' '}
+                    {t('sync.suggestedPeer')}{' '}
                     <span className="font-mono text-foreground">{suggestedPeerHost}</span>。
                   </>
                 ) : null}
               </p>
             ) : null}
             <p className="mt-1.5">
-              Mac 若开启代理（Clash / Surge 等），请将{' '}
-              <span className="font-mono">172.20.10.0/24</span> 与{' '}
-              <span className="font-mono">127.0.0.1</span> 设为直连/绕过，否则无法连接 iPhone。
+              {t('sync.proxyBypassHint', {
+                subnet1: '172.20.10.0/24',
+                subnet2: '127.0.0.1',
+              })}
             </p>
           </div>
         ) : null}
@@ -81,12 +87,12 @@ export function SyncDiscoveryPanel({
           {!active ? (
             <Button disabled={loading} onClick={onStart}>
               {loading ? <Loader2 className="size-4 animate-spin" /> : <Radio className="size-4" />}
-              开始发现
+              {t('sync.startDiscovery')}
             </Button>
           ) : (
             <Button variant="outline" disabled={loading} onClick={onStop}>
               {loading ? <Loader2 className="size-4 animate-spin" /> : <Square className="size-4" />}
-              停止发现
+              {t('sync.stopDiscovery')}
             </Button>
           )}
         </div>

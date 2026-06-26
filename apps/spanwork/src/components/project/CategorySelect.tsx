@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useT } from '@/lib/i18n/useT';
 import { listProjectCategories } from '@/lib/tauri/project_category';
 import { queryKeys } from '@/queries/keys';
 
@@ -23,6 +24,7 @@ interface CategorySelectProps {
 }
 
 export function CategorySelect({ value, onValueChange, className, id }: CategorySelectProps) {
+  const t = useT();
   const { data: categories = [] } = useQuery({
     queryKey: queryKeys.projectCategories,
     queryFn: listProjectCategories,
@@ -34,10 +36,10 @@ export function CategorySelect({ value, onValueChange, className, id }: Category
       onValueChange={(v) => onValueChange(v === 'none' ? undefined : v)}
     >
       <SelectTrigger id={id} className={className}>
-        <SelectValue placeholder="选择分类" />
+        <SelectValue placeholder={t('projects.selectCategory')} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="none">未分类</SelectItem>
+        <SelectItem value="none">{t('common.uncategorized')}</SelectItem>
         {categories.map((cat) => (
           <SelectItem key={cat.id} value={cat.id}>
             <span className="inline-flex items-center gap-2">

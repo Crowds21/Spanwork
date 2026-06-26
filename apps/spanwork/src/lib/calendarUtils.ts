@@ -2,11 +2,17 @@
  * 日历网格与日期导航工具（全局习惯日历）
  */
 
+import type { Locale } from '@/lib/i18n';
+import { getTranslator } from '@/lib/i18n/translate';
+
 export type CalendarViewMode = 'day' | 'week' | 'month';
 
 export const MAX_TIMELINE_COLUMNS = 3;
 
-const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
+export function getWeekdayLabels(locale?: Locale): string[] {
+  const t = getTranslator(locale);
+  return [1, 2, 3, 4, 5, 6, 7].map((i) => t(`calendar.weekdayShort.${i}`));
+}
 
 export function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -26,11 +32,13 @@ export function todayDateKey(): string {
   return toDateKey(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-export function formatDateLabel(dateKey: string): string {
+export function formatDateLabel(dateKey: string, locale?: Locale): string {
+  const t = getTranslator(locale);
   const { year, month, day } = parseDateKey(dateKey);
   const date = new Date(year, month, day);
-  const weekday = WEEKDAY_LABELS[(date.getDay() + 6) % 7];
-  return `${year}年${month + 1}月${day}日 ${weekday}`;
+  const weekdayIndex = (date.getDay() + 6) % 7;
+  const weekday = t(`calendar.weekdayShort.${weekdayIndex + 1}`);
+  return t('calendar.dateLabel', { year, month: month + 1, day, weekday });
 }
 
 export function addDays(dateKey: string, delta: number): string {
@@ -61,17 +69,36 @@ export function weekRangeKeys(dateKey: string): { from: string; to: string; days
   return { from: days[0], to: days[6], days };
 }
 
-export function formatWeekLabel(dateKey: string): string {
+export function formatWeekLabel(dateKey: string, locale?: Locale): string {
+  const t = getTranslator(locale);
   const { from, to } = weekRangeKeys(dateKey);
   const start = parseDateKey(from);
   const end = parseDateKey(to);
   if (start.year === end.year && start.month === end.month) {
-    return `${start.year}年${start.month + 1}月${start.day}日 – ${end.day}日`;
+    return t('calendar.weekLabelSameMonth', {
+      year: start.year,
+      startMonth: start.month + 1,
+      startDay: start.day,
+      endDay: end.day,
+    });
   }
   if (start.year === end.year) {
-    return `${start.year}年${start.month + 1}月${start.day}日 – ${end.month + 1}月${end.day}日`;
+    return t('calendar.weekLabelSameYear', {
+      year: start.year,
+      startMonth: start.month + 1,
+      startDay: start.day,
+      endMonth: end.month + 1,
+      endDay: end.day,
+    });
   }
-  return `${start.year}年${start.month + 1}月${start.day}日 – ${end.year}年${end.month + 1}月${end.day}日`;
+  return t('calendar.weekLabelCrossYear', {
+    startYear: start.year,
+    startMonth: start.month + 1,
+    startDay: start.day,
+    endYear: end.year,
+    endMonth: end.month + 1,
+    endDay: end.day,
+  });
 }
 
 export function monthAnchorDateKey(dateKey: string): string {
@@ -113,5 +140,3 @@ export function buildMonthGrid(year: number, month: number) {
 
   return cells;
 }
-
-export { WEEKDAY_LABELS };

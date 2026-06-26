@@ -3,19 +3,21 @@
  */
 import { ResponsiveViewSwitcher } from '@/components/common/ResponsiveViewSwitcher';
 import type { CalendarViewMode } from '@/lib/calendarUtils';
+import { useT } from '@/lib/i18n/useT';
 
 interface CalendarViewSwitcherProps {
   value: CalendarViewMode;
   onChange: (mode: CalendarViewMode) => void;
 }
 
-const modes: { id: CalendarViewMode; label: string }[] = [
-  { id: 'day', label: '日' },
-  { id: 'week', label: '周' },
-  { id: 'month', label: '月' },
-];
-
 export function CalendarViewSwitcher({ value, onChange }: CalendarViewSwitcherProps) {
+  const t = useT();
+  const modes: { id: CalendarViewMode; label: string }[] = [
+    { id: 'day', label: t('calendar.viewDay') },
+    { id: 'week', label: t('calendar.viewWeek') },
+    { id: 'month', label: t('calendar.viewMonth') },
+  ];
+
   return (
     <ResponsiveViewSwitcher
       value={value}

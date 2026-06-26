@@ -6,6 +6,7 @@ import { XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
+import { useT } from '@/lib/i18n/useT';
 import { cancelTimer } from '@/lib/tauri/timer';
 import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
@@ -16,18 +17,19 @@ interface TimerBarCancelButtonProps {
 }
 
 export function TimerBarCancelButton({ className, iconClassName }: TimerBarCancelButtonProps) {
+  const t = useT();
   const queryClient = useQueryClient();
 
   const cancelMutation = useMutation({
     mutationFn: cancelTimer,
-    meta: { errorSource: '放弃计时' },
+    meta: { errorSource: t('errors.discardTimer') },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.activeTimer });
     },
   });
 
   return (
-    <Tooltip label="放弃此次记时（不保存）" side="bottom">
+    <Tooltip label={t('timer.discardTimer')} side="bottom">
       <Button
         type="button"
         variant="ghost"
@@ -38,7 +40,7 @@ export function TimerBarCancelButton({ className, iconClassName }: TimerBarCance
         )}
         disabled={cancelMutation.isPending}
         onClick={() => cancelMutation.mutate()}
-        aria-label="放弃此次记时"
+        aria-label={t('timer.discardTimerAria')}
       >
         <XCircle className={cn('size-4 md:size-3.5', iconClassName)} />
       </Button>

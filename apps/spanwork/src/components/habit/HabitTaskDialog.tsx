@@ -79,23 +79,19 @@ import {
 import { invalidateAfterHabitRuleChange } from '@/queries/invalidate';
 import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n/useT';
 
-const frequencyLabels: Record<HabitFrequency, string> = {
-  daily: '每天',
-  weekly: '每周',
-  monthly: '每月',
-  yearly: '每年',
-};
+const FREQUENCIES: HabitFrequency[] = ['daily', 'weekly', 'monthly', 'yearly'];
 
-const WEEKDAY_OPTIONS = [
-  { value: 1, label: '一' },
-  { value: 2, label: '二' },
-  { value: 3, label: '三' },
-  { value: 4, label: '四' },
-  { value: 5, label: '五' },
-  { value: 6, label: '六' },
-  { value: 7, label: '日' },
-];
+const WEEKDAY_KEYS = [
+  { value: 1, key: 'weekday.mon' },
+  { value: 2, key: 'weekday.tue' },
+  { value: 3, key: 'weekday.wed' },
+  { value: 4, key: 'weekday.thu' },
+  { value: 5, key: 'weekday.fri' },
+  { value: 6, key: 'weekday.sat' },
+  { value: 7, key: 'weekday.sun' },
+] as const;
 
 const RECORDS_PAGE_SIZE = 10;
 
@@ -114,6 +110,7 @@ export function HabitTaskDialog({
   rule,
   defaultTitle,
 }: HabitTaskDialogProps) {
+  const t = useT();
   const queryClient = useQueryClient();
   const inTauri = isTauri();
   const isEdit = Boolean(rule);
@@ -184,7 +181,7 @@ export function HabitTaskDialog({
   const occurrenceStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'done' | 'skipped' }) =>
       updateHabitOccurrence({ id, patch: { status } }),
-    meta: { errorSource: '更新打卡' },
+    meta: { errorSource: t('errors.updateCheckIn') },
     onSuccess: () => {
       void historyQuery.refetch();
       void todayQuery.refetch();
@@ -284,7 +281,9 @@ export function HabitTaskDialog({
       if (frequency === 'yearly') input.yearlyDates = yearlyDates;
       return createHabitRule({ projectId, input });
     },
-    meta: { errorSource: isEdit ? '保存习惯任务' : '添加习惯任务' },
+    meta: {
+      errorSource: isEdit ? t('errors.saveHabitTask') : t('errors.addHabitTask'),
+    },
     onSuccess: async () => {
       if (!isEdit) {
         const weekFrom = getWeekRange(today).from;
@@ -308,9 +307,13 @@ export function HabitTaskDialog({
     >
       <Card className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden rounded-t-2xl border-0 py-0 shadow-lg sm:rounded-2xl sm:border">
         <CardHeader className="shrink-0 py-6">
-          <CardTitle>{isEdit ? `编辑「${rule?.title}」` : '添加习惯任务'}</CardTitle>
+          <CardTitle>
+            {isEdit && rule
+              ? t('habit.editHabitTask', { title: rule.title })
+              : t('habit.addHabitTask')}
+          </CardTitle>
           <CardDescription>
-            {isEdit ? '修改习惯设置，并查看打卡记录' : '设置习惯名称与重复频率'}
+            {isEdit ? t('habit.editHabitDesc') : t('habit.addHabitDesc')}
           </CardDescription>
         </CardHeader>
         <form
@@ -336,9 +339,11 @@ export function HabitTaskDialog({
                     total={progress.total}
                   />
                   <p className="text-xs text-muted-foreground">
-                    累计 {formatDuration(totalSeconds)}
+                    {t('habit.accumulated', { duration: formatDuration(totalSeconds) })}
                     {todayOcc?.status === 'done' && todayOcc.completedAt
-                      ? ` · 今日已于 ${formatDateTime(todayOcc.completedAt)} 完成`
+                      ? t('habit.completedTodayAt', {
+                          datetime: formatDateTime(todayOcc.completedAt),
+                        })
                       : ''}
                   </p>
                 </section>
@@ -348,7 +353,7 @@ export function HabitTaskDialog({
 
             <section className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="habit-task-title">习惯任务名称</Label>
+                <Label htmlFor="habit-task-title">{t('habit.habitTaskName')}</Label>
                 <Input
                   id="habit-task-title"
                   value={title}
@@ -356,7 +361,7 @@ export function HabitTaskDialog({
                     setTitle(e.target.value);
                     setFormErrors((err) => ({ ...err, title: undefined }));
                   }}
-                  placeholder="例如：晨跑"
+                  placeholder={t('habit.habitTaskNamePlaceholder')}
                   maxLength={128}
                   autoFocus={!isEdit}
                   aria-invalid={Boolean(formErrors.title)}
@@ -370,7 +375,7 @@ export function HabitTaskDialog({
               </div>
 
               <div className="space-y-2">
-                <Label>重复频率</Label>
+                <Label>{t('habit.frequency')}</Label>
                 <Select
                   value={frequency}
                   onValueChange={(v) => {
@@ -382,9 +387,9 @@ export function HabitTaskDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(Object.keys(frequencyLabels) as HabitFrequency[]).map((f) => (
+                    {FREQUENCIES.map((f) => (
                       <SelectItem key={f} value={f}>
-                        {frequencyLabels[f]}
+                        {t(`habit.${f}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -393,14 +398,14 @@ export function HabitTaskDialog({
 
               {frequency === 'weekly' && (
                 <div className="space-y-2">
-                  <Label>周几</Label>
+                  <Label>{t('habit.daysOfWeek')}</Label>
                   <div
                     className={cn(
                       'flex flex-wrap gap-1.5 rounded-lg border p-2',
                       formErrors.daysOfWeek && 'border-destructive',
                     )}
                   >
-                    {WEEKDAY_OPTIONS.map(({ value, label }) => {
+                    {WEEKDAY_KEYS.map(({ value, key }) => {
                       const selected = daysOfWeek.includes(value);
                       return (
                         <Button
@@ -412,7 +417,7 @@ export function HabitTaskDialog({
                           onClick={() => toggleWeekday(value)}
                           aria-pressed={selected}
                         >
-                          {label}
+                          {t(key)}
                         </Button>
                       );
                     })}
@@ -423,7 +428,9 @@ export function HabitTaskDialog({
                     </p>
                   ) : (
                     <p className="text-xs text-muted-foreground">
-                      {daysOfWeek.length > 0 ? `已选 ${daysOfWeek.length} 天` : '未选择日期'}
+                      {daysOfWeek.length > 0
+                        ? t('habit.daysSelected', { count: daysOfWeek.length })
+                        : t('habit.noDaysSelected')}
                     </p>
                   )}
                 </div>
@@ -470,9 +477,11 @@ export function HabitTaskDialog({
                       ) : (
                         <ChevronRight className="size-4 text-muted-foreground" />
                       )}
-                      打卡记录
+                      {t('habit.checkInRecords')}
                     </span>
-                    <Badge variant="secondary">{sortedOccurrences.length} 条</Badge>
+                    <Badge variant="secondary">
+                      {t('common.recordsCount', { count: sortedOccurrences.length })}
+                    </Badge>
                   </button>
 
                   {recordsOpen && (
@@ -481,18 +490,18 @@ export function HabitTaskDialog({
                         <Skeleton className="h-48 w-full" />
                       ) : sortedOccurrences.length === 0 ? (
                         <p className="rounded-lg border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
-                          暂无打卡记录
+                          {t('habit.noCheckInRecords')}
                         </p>
                       ) : (
                         <div className="rounded-lg border">
                           <table className="w-full table-fixed text-left text-sm">
                             <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
                               <tr>
-                                <th className="w-[18%] px-3 py-2.5 font-medium">日期</th>
-                                <th className="w-[16%] px-3 py-2.5 font-medium">状态</th>
-                                <th className="w-[16%] px-3 py-2.5 font-medium">时长</th>
-                                <th className="px-3 py-2.5 font-medium">备注</th>
-                                <th className="w-[20%] px-3 py-2.5 font-medium">操作</th>
+                                <th className="w-[18%] px-3 py-2.5 font-medium">{t('common.date')}</th>
+                                <th className="w-[16%] px-3 py-2.5 font-medium">{t('common.status')}</th>
+                                <th className="w-[16%] px-3 py-2.5 font-medium">{t('common.duration')}</th>
+                                <th className="px-3 py-2.5 font-medium">{t('common.note')}</th>
+                                <th className="w-[20%] px-3 py-2.5 font-medium">{t('common.actions')}</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -509,10 +518,10 @@ export function HabitTaskDialog({
                                   <td className="px-3 py-2.5 font-mono tabular-nums">
                                     {occ.totalTimeSeconds
                                       ? formatDuration(occ.totalTimeSeconds)
-                                      : '—'}
+                                      : t('common.emDash')}
                                   </td>
                                   <td className="truncate px-3 py-2.5 text-muted-foreground">
-                                    {occ.note ?? '—'}
+                                    {occ.note ?? t('common.emDash')}
                                   </td>
                                   <td className="px-3 py-2.5">
                                     {canBackfill ? (
@@ -531,7 +540,7 @@ export function HabitTaskDialog({
                                           }
                                         >
                                           <Check className="size-3" />
-                                          补打卡
+                                          {t('habit.backfillCheckIn')}
                                         </Button>
                                         <Button
                                           type="button"
@@ -541,11 +550,11 @@ export function HabitTaskDialog({
                                           onClick={() => setRescheduleOcc(occ)}
                                         >
                                           <CalendarClock className="size-3" />
-                                          改期
+                                          {t('habit.reschedule')}
                                         </Button>
                                       </div>
                                     ) : (
-                                      <span className="text-muted-foreground">—</span>
+                                      <span className="text-muted-foreground">{t('common.emDash')}</span>
                                     )}
                                   </td>
                                 </tr>
@@ -559,7 +568,10 @@ export function HabitTaskDialog({
                       {sortedOccurrences.length > RECORDS_PAGE_SIZE && (
                         <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                           <span>
-                            第 {safePage + 1} / {totalRecordPages} 页
+                            {t('common.pageOf', {
+                              current: safePage + 1,
+                              total: totalRecordPages,
+                            })}
                           </span>
                           <div className="flex gap-1">
                             <Button
@@ -570,7 +582,7 @@ export function HabitTaskDialog({
                               disabled={safePage <= 0}
                               onClick={() => setRecordsPage((p) => Math.max(0, p - 1))}
                             >
-                              上一页
+                              {t('common.prevPage')}
                             </Button>
                             <Button
                               type="button"
@@ -582,7 +594,7 @@ export function HabitTaskDialog({
                                 setRecordsPage((p) => Math.min(totalRecordPages - 1, p + 1))
                               }
                             >
-                              下一页
+                              {t('common.nextPage')}
                             </Button>
                           </div>
                         </div>
@@ -595,10 +607,14 @@ export function HabitTaskDialog({
           </CardContent>
           <CardFooter className="shrink-0 justify-end gap-2 border-t pt-4 pb-6">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? '保存中…' : isEdit ? '保存' : '添加'}
+              {mutation.isPending
+                ? t('common.saving')
+                : isEdit
+                  ? t('common.save')
+                  : t('common.add')}
             </Button>
           </CardFooter>
         </form>

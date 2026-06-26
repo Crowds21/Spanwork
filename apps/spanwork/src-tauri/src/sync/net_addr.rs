@@ -103,6 +103,29 @@ pub fn hotspot_probe_targets(local_addrs: &[Ipv4Addr]) -> Vec<Ipv4Addr> {
         .collect()
 }
 
+/// 本机所在 /24 子网内待 TCP 探测的对端 IP（排除本机；不含热点网段，由 hotspot_probe_targets 负责）。
+pub fn lan_subnet_probe_targets(local_addrs: &[Ipv4Addr]) -> Vec<Ipv4Addr> {
+    let mut seen = HashSet::new();
+    let mut targets = Vec::new();
+
+    for local in local_addrs {
+        if is_hotspot_ipv4(local) {
+            continue;
+        }
+        let o = local.octets();
+        let prefix = [o[0], o[1], o[2]];
+        for last in 1..=254u8 {
+            let ip = Ipv4Addr::new(prefix[0], prefix[1], prefix[2], last);
+            if local_addrs.contains(&ip) || !seen.insert(ip) {
+                continue;
+            }
+            targets.push(ip);
+        }
+    }
+
+    targets
+}
+
 /// 手动连接时建议的对端 IP（Mac 连热点 → 172.20.10.1，iPhone 开热点 → 172.20.10.2）。
 pub fn preferred_manual_peer_host() -> Option<Ipv4Addr> {
     let local = local_sync_ipv4_addrs();
@@ -194,5 +217,14 @@ mod tests {
         let mut addrs = HashSet::new();
         addrs.insert(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8)));
         assert!(pick_sync_peer_address(&addrs, None).is_none());
+    }
+
+    #[test]
+    fn lan_subnet_probe_targets_excludes_self() {
+        let local = Ipv4Addr::new(192, 168, 1, 5);
+        let targets = lan_subnet_probe_targets(&[local]);
+        assert!(!targets.contains(&local));
+        assert!(targets.contains(&Ipv4Addr::new(192, 168, 1, 12)));
+        assert_eq!(targets.len(), 253);
     }
 }

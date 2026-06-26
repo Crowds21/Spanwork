@@ -17,6 +17,7 @@ import {
   weekRangeKeys,
   type CalendarViewMode,
 } from '@/lib/calendarUtils';
+import { useT } from '@/lib/i18n/useT';
 import { MOBILE_DUPLICATE_TITLE_CLASS, PAGE_SECTION_CLASS } from '@/lib/touchTargets';
 import { isTauri } from '@/lib/tauri/env';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ interface CalendarPageProps {
 }
 
 export function CalendarPage({ date, view, projectId }: CalendarPageProps) {
+  const t = useT();
   const navigate = useNavigate();
 
   function go(next: { date?: string; view?: CalendarViewMode; projectId?: string | undefined }) {
@@ -68,18 +70,19 @@ export function CalendarPage({ date, view, projectId }: CalendarPageProps) {
     <div className={PAGE_SECTION_CLASS}>
       <div>
         <h1 className={cn('text-xl font-bold tracking-tight sm:text-2xl md:text-3xl', MOBILE_DUPLICATE_TITLE_CLASS)}>
-          日历
+          {t('calendar.title')}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground max-md:mt-0 sm:text-base">
-          跨项目习惯计划与实际执行
+          {t('calendar.subtitle')}
         </p>
       </div>
 
       {!isTauri() && (
         <Alert>
-          <AlertTitle>浏览器预览模式</AlertTitle>
+          <AlertTitle>{t('common.browserPreview')}</AlertTitle>
           <AlertDescription>
-            日历数据需要 Tauri 环境。运行 <code className="rounded bg-muted px-1.5 py-0.5">pnpm tauri:dev</code>
+            {t('common.tauriRequiredCalendar')}{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5">pnpm tauri:dev</code>
           </AlertDescription>
         </Alert>
       )}

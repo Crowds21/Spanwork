@@ -3,6 +3,7 @@
 //! 业务同步约定与开发指南见本目录 [`README.md`](README.md)。
 //! 团队术语（FLM、FK、骨架等）见 [`../../GLOSSARY.md`](../../GLOSSARY.md)。
 
+pub mod backfill;
 pub mod discovery;
 pub mod log;
 pub mod net_addr;

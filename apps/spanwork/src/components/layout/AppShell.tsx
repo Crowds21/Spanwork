@@ -18,18 +18,12 @@ import {
   TimerBarStatusStrip,
   useTimerBar,
 } from '@/components/timer/TimerBar';
+import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
 interface AppShellProps {
   children: ReactNode;
 }
-
-const mobileNav = [
-  { to: '/', label: '今日', icon: Home },
-  { to: '/projects', label: '项目', icon: FolderKanban },
-  { to: '/calendar', label: '日历', icon: CalendarClock },
-  { to: '/settings', label: '设置', icon: Settings, settingsRoot: true },
-] as const;
 
 function MobileBottomNavLink({
   to,
@@ -90,11 +84,19 @@ export function AppShell({ children }: AppShellProps) {
 }
 
 function AppShellLayout({ children }: AppShellProps) {
+  const t = useT();
   const { rendered, minimized, isVisible } = useTimerBar();
   const showCollapsedTimerStrip = rendered && minimized && isVisible;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const mainRef = useRef<HTMLElement>(null);
+
+  const mobileNav = [
+    { to: '/', label: t('nav.today'), icon: Home },
+    { to: '/projects', label: t('nav.projects'), icon: FolderKanban },
+    { to: '/calendar', label: t('nav.calendar'), icon: CalendarClock },
+    { to: '/settings', label: t('nav.settings'), icon: Settings, settingsRoot: true },
+  ] as const;
 
   useEffect(() => {
     setDrawerOpen(false);

@@ -4,6 +4,7 @@
 import { TimePicker, normalizeTimeValue } from '@/components/ui/time-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
 interface HabitDurationGoalsInputProps {
@@ -39,6 +40,7 @@ export function HabitDurationGoalsInput({
   onMinimumDurationChange,
   onTargetDurationChange,
 }: HabitDurationGoalsInputProps) {
+  const t = useT();
   const displayMinTime = normalizeTimeValue(minimumDurationTime) || '00:05';
 
   return (
@@ -67,11 +69,9 @@ export function HabitDurationGoalsInput({
           }}
         />
         <span className="space-y-0.5">
-          <span className="block text-sm font-medium">时长设定（可选）</span>
+          <span className="block text-sm font-medium">{t('habit.durationSettings')}</span>
           <span className="block text-xs text-muted-foreground">
-            {enabled
-              ? '设置微习惯最低完成时长与理想目标时长'
-              : '未设置时长参考'}
+            {enabled ? t('habit.durationSettingsEnabled') : t('habit.durationSettingsDisabled')}
           </span>
         </span>
       </label>
@@ -79,19 +79,19 @@ export function HabitDurationGoalsInput({
         <div className="mt-3 grid gap-4 sm:grid-cols-2 pl-7">
           <div className="space-y-2">
             <Label htmlFor={`${id}-min`} className="text-xs font-normal text-muted-foreground">
-              微习惯最低时长
+              {t('habit.microHabitMin')}
             </Label>
             <TimePicker
               id={`${id}-min`}
               value={displayMinTime}
               onChange={onMinimumDurationChange}
-              aria-label="微习惯最低时长"
+              aria-label={t('habit.microHabitMinAria')}
             />
-            <p className="text-xs text-muted-foreground">达到所选时长即算完成（打卡时参考）</p>
+            <p className="text-xs text-muted-foreground">{t('habit.microHabitMinHint')}</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor={`${id}-target`} className="text-xs font-normal text-muted-foreground">
-              目标时长（分钟）
+              {t('habit.targetDurationMinutes')}
             </Label>
             <Input
               id={`${id}-target`}
@@ -100,7 +100,7 @@ export function HabitDurationGoalsInput({
               max={1440}
               value={targetDurationMinutes}
               onChange={(e) => onTargetDurationChange(e.target.value)}
-              placeholder="例如：30"
+              placeholder={t('habit.targetDurationPlaceholder')}
             />
           </div>
         </div>

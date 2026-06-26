@@ -5,6 +5,7 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 
+import { getTranslator } from '@/lib/i18n/translate';
 import { cn } from '@/lib/utils';
 
 interface DialogProps {
@@ -31,7 +32,7 @@ export function Dialog({ open, onOpenChange, children, contentClassName }: Dialo
       <button
         type="button"
         className="absolute inset-0 bg-black/50"
-        aria-label="关闭对话框"
+        aria-label={getTranslator()('common.closeDialog')}
         onClick={() => onOpenChange(false)}
       />
       <div

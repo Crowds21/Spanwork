@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useT } from '@/lib/i18n/useT';
 
 export function SyncManualConnectForm({
   defaultPort,
@@ -25,6 +26,7 @@ export function SyncManualConnectForm({
   loading: boolean;
   onConnect: (host: string, port: number, peerDeviceId: string, pairingCode: string) => void;
 }) {
+  const t = useT();
   const [host, setHost] = useState(suggestedHost ?? '');
   const [port, setPort] = useState(String(defaultPort ?? 38472));
   const [peerDeviceId, setPeerDeviceId] = useState('');
@@ -51,24 +53,22 @@ export function SyncManualConnectForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">手动连接</CardTitle>
-        <CardDescription>
-          iOS 首次需允许本地网络权限；手机开热点时 Mac 连 iPhone，对端 IP 一般为 172.20.10.1
-        </CardDescription>
+        <CardTitle className="text-lg">{t('sync.manualConnect')}</CardTitle>
+        <CardDescription>{t('sync.manualConnectDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="sync-host">主机 IP</Label>
+            <Label htmlFor="sync-host">{t('sync.hostIp')}</Label>
             <Input
               id="sync-host"
-              placeholder="172.20.10.1 或 192.168.x.x"
+              placeholder={t('sync.hostIpPlaceholder')}
               value={host}
               onChange={(e) => setHost(e.target.value)}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="sync-port">端口</Label>
+            <Label htmlFor="sync-port">{t('sync.port')}</Label>
             <Input
               id="sync-port"
               inputMode="numeric"
@@ -78,16 +78,16 @@ export function SyncManualConnectForm({
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="sync-peer-id">对端设备 ID（可选）</Label>
+          <Label htmlFor="sync-peer-id">{t('sync.peerDeviceIdOptional')}</Label>
           <Input
             id="sync-peer-id"
-            placeholder="留空则使用 manual"
+            placeholder={t('sync.peerDeviceIdPlaceholder')}
             value={peerDeviceId}
             onChange={(e) => setPeerDeviceId(e.target.value)}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="sync-code">配对码</Label>
+          <Label htmlFor="sync-code">{t('sync.pairingCode')}</Label>
           <Input
             id="sync-code"
             inputMode="numeric"
@@ -108,7 +108,7 @@ export function SyncManualConnectForm({
             )
           }
         >
-          双向同步
+          {t('sync.bidirectionalSync')}
         </Button>
       </CardContent>
     </Card>

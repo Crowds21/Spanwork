@@ -6,6 +6,7 @@ import type { CSSProperties } from 'react';
 import type { TimelineOverflowSegment } from '@/lib/calendarLayout';
 import { segmentPositionStyle } from '@/lib/calendarLayout';
 import { msToTopPx } from '@/lib/calendarTimelineMetrics';
+import { useT } from '@/lib/i18n/useT';
 
 interface CalendarTimelineOverflowChipProps {
   segment: TimelineOverflowSegment;
@@ -16,6 +17,7 @@ export function CalendarTimelineOverflowChip({
   segment,
   hourHeight,
 }: CalendarTimelineOverflowChipProps) {
+  const t = useT();
   const top = msToTopPx(segment.startMs, hourHeight);
   const position = segmentPositionStyle({
     startMs: segment.startMs,
@@ -32,7 +34,7 @@ export function CalendarTimelineOverflowChip({
         height: 22,
         ...positionStyleToCss(position),
       }}
-      title={`另有 ${segment.hiddenCount} 条重叠记录`}
+      title={t('calendar.overlapHidden', { count: segment.hiddenCount })}
     >
       +{segment.hiddenCount}
     </div>

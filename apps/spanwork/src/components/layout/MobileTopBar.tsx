@@ -5,6 +5,7 @@ import { Menu } from 'lucide-react';
 import { useRouterState } from '@tanstack/react-router';
 
 import { Button } from '@/components/ui/button';
+import { useT } from '@/lib/i18n/useT';
 import { getMobileHeaderTitle } from '@/lib/routeTitles';
 import { cn } from '@/lib/utils';
 
@@ -14,8 +15,9 @@ interface MobileTopBarProps {
 }
 
 export function MobileTopBar({ onMenuClick, className }: MobileTopBarProps) {
+  const t = useT();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const title = getMobileHeaderTitle(pathname);
+  const title = getMobileHeaderTitle(pathname, t);
 
   return (
     <header
@@ -29,7 +31,7 @@ export function MobileTopBar({ onMenuClick, className }: MobileTopBarProps) {
         variant="ghost"
         size="icon"
         className="size-11 shrink-0"
-        aria-label="打开导航菜单"
+        aria-label={t('nav.openNavMenu')}
         onClick={onMenuClick}
       >
         <Menu className="size-5" />

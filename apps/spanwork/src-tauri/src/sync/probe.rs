@@ -1,11 +1,12 @@
 //! 热点场景 TCP 探测：mDNS 不可用时通过 hello 握手发现对端。
 
 use std::net::{Ipv4Addr, TcpStream, ToSocketAddrs};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use crate::error::new_id;
 use crate::sync::discovery::DiscoveredPeer;
-use crate::sync::net_addr::{hotspot_probe_targets, local_sync_ipv4_addrs};
+use crate::sync::net_addr::{hotspot_probe_targets, lan_subnet_probe_targets, local_sync_ipv4_addrs};
 use crate::sync::protocol::{
     envelope, parse_payload, read_envelope, write_envelope, HelloAckPayload, HelloPayload,
     PROTOCOL_VERSION,
@@ -14,6 +15,7 @@ use crate::sync::session::configure_sync_stream;
 
 const PROBE_CONNECT_MS: u64 = 350;
 const PROBE_IO_MS: u64 = 800;
+const LAN_PROBE_BATCH: usize = 48;
 
 /// 向指定 IP 发送 hello，读取 hello_ack 以识别 Spanwork 对端（不完成配对）。
 pub fn probe_spanwork_at(
@@ -58,23 +60,55 @@ pub fn probe_spanwork_at(
     })
 }
 
+fn parallel_probe_targets(
+    targets: &[Ipv4Addr],
+    port: u16,
+    local_device_id: &str,
+) -> Vec<DiscoveredPeer> {
+    if targets.is_empty() {
+        return Vec::new();
+    }
+
+    let found = Arc::new(Mutex::new(Vec::<DiscoveredPeer>::new()));
+    for chunk in targets.chunks(LAN_PROBE_BATCH) {
+        let mut handles = Vec::with_capacity(chunk.len());
+        for target in chunk {
+            let found = Arc::clone(&found);
+            let target = *target;
+            let local_device_id = local_device_id.to_string();
+            handles.push(std::thread::spawn(move || {
+                if let Some(peer) = probe_spanwork_at(&target, port, &local_device_id) {
+                    if let Ok(mut peers) = found.lock() {
+                        peers.push(peer);
+                    }
+                }
+            }));
+        }
+        for handle in handles {
+            let _ = handle.join();
+        }
+    }
+
+    let mut deduped = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for peer in found.lock().unwrap().drain(..) {
+        if seen.insert(peer.device_id.clone()) {
+            deduped.push(peer);
+        }
+    }
+    deduped
+}
+
 /// 扫描 iPhone 热点网段（172.20.10.x）上的 Spanwork 监听端口。
 pub fn scan_hotspot_peers(port: u16, local_device_id: &str) -> Vec<DiscoveredPeer> {
     let local = local_sync_ipv4_addrs();
-    let mut found = Vec::new();
-    for target in hotspot_probe_targets(&local) {
-        let Some(peer) = probe_spanwork_at(&target, port, local_device_id) else {
-            continue;
-        };
-        if found
-            .iter()
-            .any(|existing: &DiscoveredPeer| existing.device_id == peer.device_id)
-        {
-            continue;
-        }
-        found.push(peer);
-    }
-    found
+    parallel_probe_targets(&hotspot_probe_targets(&local), port, local_device_id)
+}
+
+/// 扫描本机 /24 子网上的 Spanwork 监听端口（mDNS 失败时的局域网兜底）。
+pub fn scan_lan_peers(port: u16, local_device_id: &str) -> Vec<DiscoveredPeer> {
+    let local = local_sync_ipv4_addrs();
+    parallel_probe_targets(&lan_subnet_probe_targets(&local), port, local_device_id)
 }
 
 #[cfg(test)]

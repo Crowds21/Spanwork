@@ -8,13 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
+import { getWeekdayLabels } from '@/lib/calendarUtils';
+import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
 interface TaskCalendarViewProps {
   projectId: string;
 }
-
-const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -68,6 +68,8 @@ function CalendarTaskChip({
 }
 
 export function TaskCalendarView({ projectId }: TaskCalendarViewProps) {
+  const t = useT();
+  const weekdayLabels = getWeekdayLabels();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -109,17 +111,17 @@ export function TaskCalendarView({ projectId }: TaskCalendarViewProps) {
               <ChevronLeft className="size-4" />
             </Button>
             <h3 className="min-w-32 text-center text-lg font-semibold">
-              {year} 年 {month + 1} 月
+              {t('calendar.yearMonth', { year, month: month + 1 })}
             </h3>
             <Button type="button" size="icon" variant="outline" onClick={nextMonth}>
               <ChevronRight className="size-4" />
             </Button>
           </div>
-          <Badge variant="outline">点击空白日期快速创建任务</Badge>
+          <Badge variant="outline">{t('calendar.quickCreateHint')}</Badge>
         </div>
 
         <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground">
-          {WEEKDAY_LABELS.map((label) => (
+          {weekdayLabels.map((label) => (
             <div key={label} className="py-1">
               {label}
             </div>
@@ -163,7 +165,7 @@ export function TaskCalendarView({ projectId }: TaskCalendarViewProps) {
                   ))}
                   {dayTasks.length > 3 && (
                     <p className="px-1 text-[10px] text-muted-foreground">
-                      +{dayTasks.length - 3} 更多
+                      {t('calendar.moreTasks', { count: dayTasks.length - 3 })}
                     </p>
                   )}
                 </div>

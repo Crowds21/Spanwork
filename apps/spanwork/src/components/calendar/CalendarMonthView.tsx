@@ -8,7 +8,7 @@ import {
   monthRangeKeys,
   parseDateKey,
   todayDateKey,
-  WEEKDAY_LABELS,
+  getWeekdayLabels,
 } from '@/lib/calendarUtils';
 import { cn } from '@/lib/utils';
 import { useCalendarRange } from '@/hooks/useCalendarRange';
@@ -34,6 +34,7 @@ export function CalendarMonthView({
   );
   const cells = buildMonthGrid(year, month);
   const today = todayDateKey();
+  const weekdayLabels = getWeekdayLabels();
 
   if (rangeQuery.isLoading) {
     return <Skeleton className="h-[420px] rounded-xl" />;
@@ -42,7 +43,7 @@ export function CalendarMonthView({
   return (
     <div className="rounded-xl border bg-card p-3">
       <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground md:text-xs">
-        {WEEKDAY_LABELS.map((label) => (
+        {weekdayLabels.map((label) => (
           <div key={label} className="truncate">
             {label}
           </div>

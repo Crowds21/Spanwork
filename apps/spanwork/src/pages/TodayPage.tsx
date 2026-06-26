@@ -23,6 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TaskStatusBadge } from '@/components/task/TaskStatusSelect';
 import { formatDuration } from '@/lib/format';
 import { showDiagnostics } from '@/lib/buildProfile';
+import { useT } from '@/lib/i18n/useT';
 import { useActiveTimerElapsed } from '@/lib/timer/useActiveTimerElapsed';
 import { isTauri } from '@/lib/tauri/env';
 import { getLogInfo } from '@/lib/tauri/log';
@@ -40,6 +41,7 @@ function ActiveTimerDuration({ active }: { active: ActiveTimerDto }) {
 }
 
 export function TodayPage() {
+  const t = useT();
   const inTauri = isTauri();
 
   const dashboardQuery = useQuery({
@@ -61,18 +63,19 @@ export function TodayPage() {
     <div className={PAGE_SECTION_CLASS}>
       <div>
         <h1 className={cn('text-xl font-bold tracking-tight sm:text-2xl md:text-3xl', MOBILE_DUPLICATE_TITLE_CLASS)}>
-          今日
+          {t('today.title')}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground max-md:mt-0 sm:text-base">
-          活跃计时、今日习惯、最近任务与时间汇总
+          {t('today.subtitle')}
         </p>
       </div>
 
       {!inTauri && (
         <Alert>
-          <AlertTitle>浏览器预览模式</AlertTitle>
+          <AlertTitle>{t('common.browserPreview')}</AlertTitle>
           <AlertDescription>
-            今日页数据需要 Tauri 环境。运行 <code className="rounded bg-muted px-1.5 py-0.5">pnpm tauri:dev</code>
+            {t('common.tauriRequiredToday')}{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5">pnpm tauri:dev</code>
           </AlertDescription>
         </Alert>
       )}
@@ -92,7 +95,7 @@ export function TodayPage() {
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2 text-primary">
                   <Clock className="size-4" />
-                  <CardDescription>今日累计</CardDescription>
+                  <CardDescription>{t('today.totalToday')}</CardDescription>
                 </div>
                 <CardTitle className="text-2xl">
                   {formatDuration(dashboard.totalTimeTodaySeconds)}
@@ -104,14 +107,14 @@ export function TodayPage() {
                 <div className="flex items-center gap-2 text-primary">
                   <Timer className="size-4" />
                   <CardDescription>
-                    {dashboard.activeTimer?.isPaused ? '已暂停' : '活跃计时'}
+                    {dashboard.activeTimer?.isPaused ? t('today.paused') : t('today.activeTimer')}
                   </CardDescription>
                 </div>
                 <CardTitle className="text-2xl">
                   {dashboard.activeTimer ? (
                     <ActiveTimerDuration active={dashboard.activeTimer} />
                   ) : (
-                    '无'
+                    t('common.none')
                   )}
                 </CardTitle>
               </CardHeader>
@@ -122,7 +125,7 @@ export function TodayPage() {
                       to="/projects/$projectId"
                       params={{ projectId: dashboard.activeTimer.projectId }}
                     >
-                      查看项目
+                      {t('today.viewProject')}
                     </Link>
                   </Button>
                 </CardContent>
@@ -132,7 +135,7 @@ export function TodayPage() {
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2 text-primary">
                   <ListTodo className="size-4" />
-                  <CardDescription>最近任务</CardDescription>
+                  <CardDescription>{t('today.recentTasks')}</CardDescription>
                 </div>
                 <CardTitle className="text-2xl">{dashboard.recentTasks.length}</CardTitle>
               </CardHeader>
@@ -144,23 +147,23 @@ export function TodayPage() {
               <div>
                 <div className="flex items-center gap-2 text-primary">
                   <Repeat2 className="size-4" />
-                  <CardTitle className="text-lg">今日习惯</CardTitle>
+                  <CardTitle className="text-lg">{t('today.habitsToday')}</CardTitle>
                 </div>
-                <CardDescription>跨项目习惯待办</CardDescription>
+                <CardDescription>{t('today.habitsTodayDesc')}</CardDescription>
               </div>
               <Button size="sm" variant="outline" asChild>
                 <Link to="/calendar" search={{ view: 'day', date: todayDateKey() }}>
                   <CalendarDays className="size-4" />
-                  查看日历
+                  {t('today.viewCalendar')}
                 </Link>
               </Button>
             </CardHeader>
             <CardContent className="space-y-2">
               {dashboard.habitOccurrencesToday.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  暂无习惯待办。
+                  {t('today.noHabitsTodo')}
                   <Link to="/projects" className="ml-1 text-primary underline-offset-4 hover:underline">
-                    创建习惯式项目
+                    {t('today.createHabitProject')}
                   </Link>
                 </p>
               ) : (
@@ -178,12 +181,12 @@ export function TodayPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">最近更新的任务</CardTitle>
-              <CardDescription>按更新时间排序，最多 10 条</CardDescription>
+              <CardTitle className="text-lg">{t('today.recentUpdatedTasks')}</CardTitle>
+              <CardDescription>{t('today.recentUpdatedDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               {dashboard.recentTasks.length === 0 ? (
-                <p className="text-sm text-muted-foreground">暂无任务，去项目里创建吧</p>
+                <p className="text-sm text-muted-foreground">{t('today.noTasksHint')}</p>
               ) : (
                 <ul className="divide-y">
                   {dashboard.recentTasks.map((task) => (
@@ -195,7 +198,9 @@ export function TodayPage() {
                           className="text-sm"
                         />
                         <p className="truncate text-xs text-muted-foreground">
-                          更新 {new Date(task.updatedAt).toLocaleString()}
+                          {t('common.updatedAt', {
+                            datetime: new Date(task.updatedAt).toLocaleString(),
+                          })}
                         </p>
                       </div>
                       <span className="shrink-0">
@@ -203,7 +208,7 @@ export function TodayPage() {
                       </span>
                       <Button size="sm" variant="ghost" className="shrink-0" asChild>
                         <Link to="/projects/$projectId" params={{ projectId: task.projectId }}>
-                          打开
+                          {t('common.open')}
                         </Link>
                       </Button>
                     </li>
@@ -220,10 +225,12 @@ export function TodayPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2 text-muted-foreground">
               <FileText className="size-4" />
-              <CardTitle className="text-sm font-medium">运行日志</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('today.runLog')}</CardTitle>
             </div>
             <CardDescription>
-              单文件上限 {(logInfoQuery.data.maxSizeBytes / 1024 / 1024).toFixed(0)} MB，超出后自动轮转备份
+              {t('today.logMaxSize', {
+                sizeMb: (logInfoQuery.data.maxSizeBytes / 1024 / 1024).toFixed(0),
+              })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -231,7 +238,9 @@ export function TodayPage() {
               {logInfoQuery.data.logPath}
             </code>
             <p className="mt-2 text-xs text-muted-foreground">
-              当前 {(logInfoQuery.data.sizeBytes / 1024).toFixed(1)} KB · IPC 与后端错误会自动写入
+              {t('today.logCurrentSize', {
+                sizeKb: (logInfoQuery.data.sizeBytes / 1024).toFixed(1),
+              })}
             </p>
           </CardContent>
         </Card>
