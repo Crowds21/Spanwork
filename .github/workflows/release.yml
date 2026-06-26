@@ -165,10 +165,6 @@ jobs:
         working-directory: apps/spanwork
         run: pnpm tauri ios init --ci
 
-      - name: Install CocoaPods
-        working-directory: apps/spanwork/src-tauri/gen/apple
-        run: pod install
-
       - name: Build iOS (App Store Connect export)
         working-directory: apps/spanwork
         run: >-
