@@ -4,12 +4,13 @@ set -euo pipefail
 preferred="${1:-26}"
 selected=""
 
-for candidate in "/Applications/Xcode_${preferred}"*.app; do
-  if [[ -d "${candidate}" ]]; then
-    selected="${candidate}"
-    break
-  fi
-done
+shopt -s nullglob
+candidates=("/Applications/Xcode_${preferred}"*.app)
+shopt -u nullglob
+
+if [[ "${#candidates[@]}" -gt 0 ]]; then
+  selected="$(printf '%s\n' "${candidates[@]}" | sort -r | head -n 1)"
+fi
 
 if [[ -z "${selected}" && -d "/Applications/Xcode.app" ]]; then
   selected="/Applications/Xcode.app"
