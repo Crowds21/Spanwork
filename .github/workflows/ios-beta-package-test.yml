@@ -26,6 +26,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Select Xcode 26
+        run: bash .github/scripts/select-xcode.sh 26
+
       - name: Resolve iOS beta metadata
         id: meta
         env:
@@ -103,6 +106,9 @@ jobs:
 
       - name: Sync iOS app icons
         run: pnpm icons:sync
+
+      - name: Remove iOS app icon alpha channel
+        run: bash .github/scripts/fix-ios-icon-alpha.sh
 
       - name: Fix generated iOS Podfile
         run: bash .github/scripts/fix-tauri-ios-podfile.sh
