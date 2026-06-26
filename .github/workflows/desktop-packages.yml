@@ -1,23 +1,22 @@
-name: Desktop Release
+# Legacy desktop-only release. Superseded by tag-driven release-beta.yml / release.yml.
+# Kept for manual emergency builds only.
+
+name: Desktop Release (legacy)
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: desktop-release-${{ github.ref }}
+  group: desktop-release-legacy-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   package:
     name: Build ${{ matrix.name }} installer
     runs-on: ${{ matrix.os }}
-    if: github.ref == 'refs/heads/main'
     timeout-minutes: 60
 
     strategy:
@@ -77,7 +76,6 @@ jobs:
     name: Publish GitHub Release
     needs: package
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
 
@@ -124,7 +122,7 @@ jobs:
             exit 1
           fi
 
-          notes="Automated desktop client release from main for commit ${GITHUB_SHA}."
+          notes="Legacy manual desktop release from commit ${GITHUB_SHA}. Prefer tag-driven release-beta.yml / release.yml."
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release edit "$RELEASE_TAG" \

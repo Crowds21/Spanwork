@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Required for manual release (e.g. v1.0.0). Must not contain -beta.'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spanwork-release-prod-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Skip beta tags
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.gate.outputs.should_run }}
+    steps:
+      - id: gate
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref_name }}" == *"-beta."* ]]; then
+            echo "Beta tag detected; use Release Beta workflow instead." >> "${GITHUB_STEP_SUMMARY}"
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    needs: gate
+    if: needs.gate.outputs.should_run == 'true'
+    uses: ./.github/workflows/release-common.yml
+    with:
+      channel: release
+      tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || '' }}
+    secrets: inherit
