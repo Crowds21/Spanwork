@@ -144,10 +144,17 @@ jobs:
 
       - name: Initialize iOS project
         working-directory: apps/spanwork
+        env:
+          IOS_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          IOS_MOBILE_PROVISION: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
         run: pnpm tauri ios init --ci
 
       - name: Fix generated iOS Podfile
         run: bash .github/scripts/fix-tauri-ios-podfile.sh
+
+      - name: Fix generated iOS signing settings
+        run: bash .github/scripts/fix-tauri-ios-signing.sh
 
       - name: Install CocoaPods
         working-directory: apps/spanwork/src-tauri/gen/apple
@@ -155,6 +162,12 @@ jobs:
 
       - name: Build iOS (App Store Connect export)
         working-directory: apps/spanwork
+        env:
+          CI: true
+          IOS_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          IOS_MOBILE_PROVISION: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+          PNPM_CONFIG_CONFIRM_MODULES_PURGE: false
         run: >-
           pnpm tauri ios build
           --export-method app-store-connect
