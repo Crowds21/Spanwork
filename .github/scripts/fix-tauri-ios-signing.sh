@@ -19,9 +19,11 @@ const fs = require('fs');
 
 const [projectFile, teamId, profileUuid, identity] = process.argv.slice(2);
 const source = fs.readFileSync(projectFile, 'utf8');
-const lines = source.split(/(?<=\n)/);
+let project = source;
+const lines = project.split(/(?<=\n)/);
 const output = [];
 let patchedBlocks = 0;
+let patchedShellScripts = 0;
 
 const settings = [
   ['CODE_SIGN_STYLE', 'Manual'],
@@ -77,6 +79,26 @@ if (patchedBlocks === 0) {
   process.exit(1);
 }
 
-fs.writeFileSync(projectFile, output.join(''));
+project = output.join('');
+
+project = project.replace(
+  /([A-F0-9]+ \/\* Build Rust Code \*\/ = \{[\s\S]*?isa = PBXShellScriptBuildPhase;[\s\S]*?name = "Build Rust Code";[\s\S]*?shellScript = ")([\s\S]*?)(";[\s\S]*?\n\s*\};)/g,
+  (match, prefix, script, suffix) => {
+    if (script.includes('PNPM_CONFIG_CONFIRM_MODULES_PURGE=false')) {
+      return match;
+    }
+
+    patchedShellScripts += 1;
+    return `${prefix}export CI=true\\nexport PNPM_CONFIG_CONFIRM_MODULES_PURGE=false\\n${script}${suffix}`;
+  },
+);
+
+if (patchedShellScripts === 0) {
+  console.error(`No Build Rust Code shell script was patched in ${projectFile}`);
+  process.exit(1);
+}
+
+fs.writeFileSync(projectFile, project);
 console.log(`Patched ${patchedBlocks} iOS app build settings block(s) in ${projectFile}`);
+console.log(`Patched ${patchedShellScripts} Build Rust Code shell script phase(s) in ${projectFile}`);
 NODE
