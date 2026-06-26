@@ -1,0 +1,143 @@
+name: iOS Beta Package Test
+
+on:
+  push:
+    tags:
+      - 'ios-test-v*-beta.*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Optional test tag name, e.g. ios-test-v0.1.0-beta.4.'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spanwork-ios-beta-package-test-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ios-testflight:
+    name: Build iOS and upload TestFlight
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve iOS beta metadata
+        id: meta
+        env:
+          INPUT_TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || '' }}
+        run: |
+          set -euo pipefail
+
+          raw_tag="${INPUT_TAG_NAME:-${GITHUB_REF_NAME}}"
+          release_tag="${raw_tag#ios-test-}"
+
+          if [[ "${release_tag}" != v*-beta.* ]]; then
+            echo "iOS beta test tag must resolve to v*-beta.*: ${raw_tag}" >&2
+            exit 1
+          fi
+
+          marketing="${release_tag#v}"
+          marketing="${marketing%%-beta.*}"
+
+          {
+            echo "test_tag=${raw_tag}"
+            echo "release_tag=${release_tag}"
+            echo "marketing_version=${marketing}"
+            echo "build_number=${GITHUB_RUN_NUMBER}"
+          } >> "${GITHUB_OUTPUT}"
+
+          echo "iOS beta test tag: ${raw_tag}"
+          echo "Release tag equivalent: ${release_tag}"
+          echo "Marketing version: ${marketing}"
+          echo "Build number: ${GITHUB_RUN_NUMBER}"
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+
+      - name: Patch app version
+        env:
+          MARKETING_VERSION: ${{ steps.meta.outputs.marketing_version }}
+          BUILD_NUMBER: ${{ steps.meta.outputs.build_number }}
+        run: bash .github/scripts/patch-app-version.sh
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Apple signing assets
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_PROVISIONING_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+        run: bash .github/scripts/apple-signing.sh
+
+      - name: Write tauri.ios.conf.json
+        env:
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
+        run: bash .github/scripts/write-tauri-ios-conf.sh
+
+      - name: Initialize iOS project
+        working-directory: apps/spanwork
+        env:
+          IOS_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          IOS_MOBILE_PROVISION: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+        run: pnpm tauri ios init --ci
+
+      - name: Sync iOS app icons
+        run: pnpm icons:sync
+
+      - name: Fix generated iOS Podfile
+        run: bash .github/scripts/fix-tauri-ios-podfile.sh
+
+      - name: Fix generated iOS signing settings
+        run: bash .github/scripts/fix-tauri-ios-signing.sh
+
+      - name: Install CocoaPods
+        working-directory: apps/spanwork/src-tauri/gen/apple
+        run: pod install
+
+      - name: Build iOS (App Store Connect export)
+        working-directory: apps/spanwork
+        env:
+          CI: true
+          IOS_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          IOS_MOBILE_PROVISION: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+          PNPM_CONFIG_CONFIRM_MODULES_PURGE: false
+        run: >-
+          pnpm tauri ios build
+          --export-method app-store-connect
+          --ci
+          --build-number ${{ steps.meta.outputs.build_number }}
+
+      - name: Upload to App Store Connect
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: bash .github/scripts/upload-ipa-appstore-connect.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spanwork-ios-test-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 30
+          path: apps/spanwork/src-tauri/gen/apple/build/**/*.ipa

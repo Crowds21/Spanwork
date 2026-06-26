@@ -27,6 +27,26 @@ echo "${APPLE_PROVISIONING_PROFILE}" | base64 --decode > "${PROFILE_PATH}"
 PROFILE_PLIST="${RUNNER_TEMP}/profile.plist"
 security cms -D -i "${PROFILE_PATH}" > "${PROFILE_PLIST}"
 PROFILE_UUID="$(/usr/libexec/PlistBuddy -c 'Print UUID' "${PROFILE_PLIST}")"
+PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print Name' "${PROFILE_PLIST}")"
+PROFILE_TEAM_IDENTIFIER="$(/usr/libexec/PlistBuddy -c 'Print TeamIdentifier:0' "${PROFILE_PLIST}")"
 cp "${PROFILE_PATH}" "${PROFILE_DIR}/${PROFILE_UUID}.mobileprovision"
 
 echo "Installed provisioning profile ${PROFILE_UUID}"
+
+CODE_SIGN_IDENTITY="$(
+  security find-identity -v -p codesigning "${KEYCHAIN}" \
+    | awk -F '"' '/Apple (Distribution|Development)/ { print $2; exit }'
+)"
+
+if [[ -z "${CODE_SIGN_IDENTITY}" ]]; then
+  CODE_SIGN_IDENTITY="Apple Distribution"
+fi
+
+if [[ -n "${GITHUB_ENV:-}" ]]; then
+  {
+    echo "IOS_CODE_SIGN_IDENTITY=${CODE_SIGN_IDENTITY}"
+    echo "IOS_DEVELOPMENT_TEAM=${PROFILE_TEAM_IDENTIFIER}"
+    echo "IOS_PROVISIONING_PROFILE_NAME=${PROFILE_NAME}"
+    echo "IOS_PROVISIONING_PROFILE_UUID=${PROFILE_UUID}"
+  } >> "${GITHUB_ENV}"
+fi
