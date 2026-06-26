@@ -169,6 +169,9 @@ jobs:
           IOS_MOBILE_PROVISION: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
         run: pnpm tauri ios init --ci
 
+      - name: Sync iOS app icons
+        run: pnpm icons:sync
+
       - name: Fix generated iOS Podfile
         run: bash .github/scripts/fix-tauri-ios-podfile.sh
 
