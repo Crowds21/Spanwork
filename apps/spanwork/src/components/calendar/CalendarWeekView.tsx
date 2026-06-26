@@ -49,32 +49,32 @@ export function CalendarWeekView({
               key={dateKey}
               type="button"
               className={cn(
-                'flex min-h-24 flex-col rounded-lg border p-2 text-left transition-colors hover:bg-muted/60',
+                'flex min-h-16 max-md:min-h-16 md:min-h-24 flex-col rounded-lg border p-1.5 max-md:p-1 text-left transition-colors hover:bg-muted/60 md:p-2',
                 isToday && 'ring-2 ring-inset ring-red-500',
               )}
               onClick={() => onSelectDate(dateKey)}
             >
-              <span className="text-center text-xs text-muted-foreground">
+              <span className="text-center text-[10px] text-muted-foreground max-md:truncate md:text-xs">
                 {WEEKDAY_LABELS[index]}
               </span>
               <span
                 className={cn(
-                  'mt-1 text-center text-sm font-semibold tabular-nums',
+                  'mt-0.5 text-center text-xs font-semibold tabular-nums md:mt-1 md:text-sm',
                   isToday && 'text-red-600',
                 )}
               >
                 {day}
               </span>
-              <span className="mt-2 flex flex-1 flex-col items-center justify-center gap-1 text-xs text-muted-foreground">
+              <span className="mt-1 flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] text-muted-foreground md:mt-2 md:gap-1 md:text-xs">
                 {summary == null || summary.totalCount === 0 ? (
                   <span>—</span>
                 ) : allDone ? (
-                  <span className="text-green-600">✓ 完成</span>
+                  <span className="text-green-600">✓</span>
                 ) : (
                   <>
-                    <span className="text-foreground">{summary.pendingCount} 待办</span>
+                    <span className="truncate text-foreground">{summary.pendingCount}</span>
                     {summary.doneCount > 0 && (
-                      <span className="text-green-600">{summary.doneCount} 完成</span>
+                      <span className="text-green-600">{summary.doneCount}✓</span>
                     )}
                   </>
                 )}

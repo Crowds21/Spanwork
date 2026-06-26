@@ -39,6 +39,12 @@ import {
   canUpdateHabitCheckIn,
 } from '@/lib/habitOccurrenceUtils';
 import {
+  ACTION_GROUP_CLASS,
+  CARD_ACTIONS_ROW_CLASS,
+  CARD_CONTENT_CLASS,
+  ROW_ICON_BUTTON_CLASS,
+} from '@/lib/touchTargets';
+import {
   computePeriodProgress,
   findTodayOccurrence,
   formatShortDate,
@@ -159,7 +165,6 @@ export function HabitTaskCard({
   const canManualEntry = !readOnly && todayOcc && canManualHabitTimeEntry(todayOcc);
 
   const titleId = `habit-task-${rule.id}`;
-  const iconBtnClass = 'size-8 max-md:size-11 shrink-0';
 
   return (
     <>
@@ -167,7 +172,7 @@ export function HabitTaskCard({
         id={todayOcc ? `habit-occurrence-${todayOcc.id}` : habitRuleElementId(rule.id)}
         className="scroll-mt-24 py-0"
       >
-        <CardContent className="space-y-3 p-4" aria-labelledby={titleId}>
+        <CardContent className={CARD_CONTENT_CLASS} aria-labelledby={titleId}>
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1 space-y-1">
               <div className="flex min-w-0 items-center gap-2">
@@ -213,8 +218,8 @@ export function HabitTaskCard({
           )}
 
           {!readOnly && (
-            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-              <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border/60 bg-muted/20 p-1">
+            <div className={CARD_ACTIONS_ROW_CLASS}>
+              <div className={ACTION_GROUP_CLASS}>
                 {isTimingThis && activeTimer ? (
                   <TimerSessionControls
                     active={activeTimer}
@@ -231,7 +236,7 @@ export function HabitTaskCard({
                           type="button"
                           size="icon"
                           variant="default"
-                          className={iconBtnClass}
+                          className={ROW_ICON_BUTTON_CLASS}
                           disabled={startMutation.isPending || isTimingOther}
                           onClick={() => startMutation.mutate()}
                           aria-label="开始计时"
@@ -247,7 +252,7 @@ export function HabitTaskCard({
                             type="button"
                             size="icon"
                             variant="ghost"
-                            className={iconBtnClass}
+                            className={ROW_ICON_BUTTON_CLASS}
                             onClick={() => statusMutation.mutate('done')}
                             disabled={statusMutation.isPending}
                             aria-label="打卡完成"
@@ -260,7 +265,7 @@ export function HabitTaskCard({
                             type="button"
                             size="icon"
                             variant="ghost"
-                            className={iconBtnClass}
+                            className={ROW_ICON_BUTTON_CLASS}
                             onClick={() => setSkipConfirmOpen(true)}
                             disabled={statusMutation.isPending}
                             aria-label="跳过今日"
@@ -276,7 +281,7 @@ export function HabitTaskCard({
                           type="button"
                           size="icon"
                           variant="ghost"
-                          className={cn(iconBtnClass, entryOpen && 'ring-2 ring-primary/40')}
+                          className={cn(ROW_ICON_BUTTON_CLASS, entryOpen && 'ring-2 ring-primary/40')}
                           onClick={() => setEntryOpen(true)}
                           aria-label="补录时间"
                         >
@@ -289,7 +294,7 @@ export function HabitTaskCard({
                         type="button"
                         size="icon"
                         variant="ghost"
-                        className={iconBtnClass}
+                        className={ROW_ICON_BUTTON_CLASS}
                         onClick={onEdit}
                         aria-label="查看详情"
                       >
@@ -305,7 +310,7 @@ export function HabitTaskCard({
                     type="button"
                     size="icon"
                     variant="ghost"
-                    className={iconBtnClass}
+                    className={ROW_ICON_BUTTON_CLASS}
                     aria-label="更多操作"
                     aria-expanded={menuOpen}
                     onClick={() => setMenuOpen((v) => !v)}

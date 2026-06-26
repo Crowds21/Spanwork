@@ -61,14 +61,15 @@ export function SyncPeerList({
                 <div className="min-w-0">
                   <p className="truncate font-medium">{peer.deviceName}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {peer.platform} · {peer.host}:{peer.port}
+                    <span className="break-all">{peer.platform} · {peer.host}:{peer.port}</span>
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:justify-start">
                 <Badge variant="secondary">{peer.platform}</Badge>
                 <Button
                   size="sm"
+                  className="max-md:w-full"
                   disabled={syncingDeviceId === peer.deviceId || isSyncing}
                   onClick={() => onSync(peer)}
                 >

@@ -7,4 +7,5 @@ import { SettingsPage } from '@/pages/SettingsPage';
 
 export const Route = createFileRoute('/settings/')({
   component: SettingsPage,
+  preload: true,
 });

@@ -22,11 +22,14 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { TaskStatusBadge } from '@/components/task/TaskStatusSelect';
 import { formatDuration } from '@/lib/format';
+import { showDiagnostics } from '@/lib/buildProfile';
 import { useActiveTimerElapsed } from '@/lib/timer/useActiveTimerElapsed';
 import { isTauri } from '@/lib/tauri/env';
 import { getLogInfo } from '@/lib/tauri/log';
 import { getTodayDashboard } from '@/lib/tauri/today';
 import { todayDateKey } from '@/lib/calendarUtils';
+import { MOBILE_DUPLICATE_TITLE_CLASS, PAGE_SECTION_CLASS } from '@/lib/touchTargets';
+import { cn } from '@/lib/utils';
 import { queryKeys } from '@/queries/keys';
 
 import type { ActiveTimerDto } from '@spanwork/shared-types';
@@ -49,16 +52,18 @@ export function TodayPage() {
   const logInfoQuery = useQuery({
     queryKey: queryKeys.logInfo,
     queryFn: getLogInfo,
-    enabled: inTauri,
+    enabled: inTauri && showDiagnostics(),
   });
 
   const dashboard = dashboardQuery.data;
 
   return (
-    <div className="space-y-6">
+    <div className={PAGE_SECTION_CLASS}>
       <div>
-        <h1 className="text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">今日</h1>
-        <p className="mt-1 text-sm text-muted-foreground sm:text-base">
+        <h1 className={cn('text-xl font-bold tracking-tight sm:text-2xl md:text-3xl', MOBILE_DUPLICATE_TITLE_CLASS)}>
+          今日
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground max-md:mt-0 sm:text-base">
           活跃计时、今日习惯、最近任务与时间汇总
         </p>
       </div>
@@ -210,7 +215,7 @@ export function TodayPage() {
         </>
       )}
 
-      {inTauri && logInfoQuery.data && (
+      {inTauri && showDiagnostics() && logInfoQuery.data && (
         <Card className="border-dashed bg-muted/20">
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2 text-muted-foreground">

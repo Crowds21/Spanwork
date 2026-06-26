@@ -8,6 +8,7 @@ import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { getAppVersionLabel } from '@/lib/appVersion';
+import { showDiagnostics } from '@/lib/buildProfile';
 import { dismissAppStatus, useAppStatus } from '@/lib/status/appStatus';
 import { cn } from '@/lib/utils';
 
@@ -19,17 +20,10 @@ interface AppStatusLineProps {
 
 export function AppStatusLine({ placement = 'desktop' }: AppStatusLineProps) {
   const { hasError, entry } = useAppStatus();
+  const diagnostics = showDiagnostics();
 
   if (placement === 'mobile-chrome' && !hasError) {
-    return (
-      <footer
-        className="flex h-5 shrink-0 items-center border-b border-border/50 bg-muted/20 px-4 md:hidden"
-        role="status"
-        aria-label="客户端版本"
-      >
-        <AppVersionLabel className="ml-auto" />
-      </footer>
-    );
+    return null;
   }
 
   if (placement === 'desktop' && !hasError) {
@@ -43,7 +37,7 @@ export function AppStatusLine({ placement = 'desktop' }: AppStatusLineProps) {
       >
         <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" aria-hidden />
         <span className="text-muted-foreground">就绪</span>
-        <AppVersionLabel className="ml-auto" />
+        {diagnostics && <AppVersionLabel className="ml-auto" />}
       </footer>
     );
   }
@@ -57,8 +51,8 @@ export function AppStatusLine({ placement = 'desktop' }: AppStatusLineProps) {
         role="status"
         aria-live="polite"
       >
-        <StatusErrorContent entry={entry} />
-        <AppVersionLabel className="ml-2 shrink-0" />
+        <StatusErrorContent entry={entry} showLogHint={diagnostics} />
+        {diagnostics && <AppVersionLabel className="ml-2 shrink-0" />}
       </footer>
     );
   }
@@ -70,8 +64,8 @@ export function AppStatusLine({ placement = 'desktop' }: AppStatusLineProps) {
         role="status"
         aria-live="polite"
       >
-        <StatusErrorContent entry={entry} />
-        <AppVersionLabel className="ml-2 shrink-0" />
+        <StatusErrorContent entry={entry} showLogHint={diagnostics} />
+        {diagnostics && <AppVersionLabel className="ml-2 shrink-0" />}
       </footer>
     );
   }
@@ -95,8 +89,10 @@ function AppVersionLabel({ className }: { className?: string }) {
 
 function StatusErrorContent({
   entry,
+  showLogHint = false,
 }: {
   entry: ReturnType<typeof useAppStatus>['entry'];
+  showLogHint?: boolean;
 }) {
   if (!entry) return null;
 
@@ -105,7 +101,9 @@ function StatusErrorContent({
       <AlertCircle className="size-3.5 shrink-0 text-destructive" aria-hidden />
       <span className="shrink-0 text-muted-foreground">{entry.source}：</span>
       <span className="min-w-0 truncate text-destructive">{entry.message}</span>
-      <span className="hidden shrink-0 text-muted-foreground sm:inline">· 已写入日志</span>
+      {showLogHint && (
+        <span className="hidden shrink-0 text-muted-foreground sm:inline">· 已写入日志</span>
+      )}
       <Button
         type="button"
         variant="ghost"

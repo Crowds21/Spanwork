@@ -20,7 +20,7 @@ const host = process.env.TAURI_DEV_HOST;
 const appBuildTime = formatBuildTime();
 
 export default defineConfig(async () => ({
-  plugins: [tailwindcss(), TanStackRouterVite({ target: 'react', autoCodeSplitting: true }), react()],
+  plugins: [tailwindcss(), TanStackRouterVite({ target: 'react', autoCodeSplitting: false }), react()],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __APP_BUILD_TIME__: JSON.stringify(appBuildTime),

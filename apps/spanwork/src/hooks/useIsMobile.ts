@@ -3,18 +3,18 @@
  */
 import { useEffect, useState } from 'react';
 
-const MOBILE_QUERY = '(max-width: 767px)';
+import { MOBILE_MEDIA_QUERY } from '@/lib/breakpoints';
 
 function getIsMobile(): boolean {
   if (typeof window === 'undefined') return false;
-  return window.matchMedia(MOBILE_QUERY).matches;
+  return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
 }
 
 export function useIsMobile(): boolean {
   const [isMobile, setIsMobile] = useState(getIsMobile);
 
   useEffect(() => {
-    const media = window.matchMedia(MOBILE_QUERY);
+    const media = window.matchMedia(MOBILE_MEDIA_QUERY);
     const onChange = () => setIsMobile(media.matches);
     onChange();
     media.addEventListener('change', onChange);

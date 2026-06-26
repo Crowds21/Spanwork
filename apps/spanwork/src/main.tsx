@@ -11,6 +11,7 @@ import { createRoot } from 'react-dom/client';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 
+import { RoutePending } from '@/components/layout/RoutePending';
 import { queryKeyLabel, reportAppError } from '@/lib/status/appStatus';
 import { initSafeAreaInsets } from '@/lib/safeArea';
 import { routeTree } from './routeTree.gen';
@@ -41,7 +42,11 @@ const queryClient = new QueryClient({
   },
 });
 
-const router = createRouter({ routeTree });
+const router = createRouter({
+  routeTree,
+  defaultPendingComponent: RoutePending,
+  defaultPreload: 'intent',
+});
 
 declare module '@tanstack/react-router' {
   interface Register {

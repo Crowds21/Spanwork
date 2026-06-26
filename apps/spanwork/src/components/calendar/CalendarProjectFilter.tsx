@@ -36,12 +36,12 @@ export function CalendarProjectFilter({ projectId, onChange }: CalendarProjectFi
   if (habitProjects.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2">
       <Select
         value={projectId ?? '__all__'}
         onValueChange={(value) => onChange(value === '__all__' ? undefined : value)}
       >
-        <SelectTrigger className="h-8 w-[min(100%,12rem)] text-xs">
+        <SelectTrigger className="h-8 w-[min(100%,12rem)] max-w-full text-xs">
           <SelectValue placeholder="全部习惯项目" />
         </SelectTrigger>
         <SelectContent>
@@ -58,7 +58,7 @@ export function CalendarProjectFilter({ projectId, onChange }: CalendarProjectFi
           type="button"
           variant="ghost"
           size="icon"
-          className="size-8 shrink-0"
+          className="size-8 max-md:size-9 shrink-0"
           aria-label="清除项目筛选"
           onClick={() => onChange(undefined)}
         >

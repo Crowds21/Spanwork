@@ -22,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TaskStatusSelect } from '@/components/task/TaskStatusSelect';
+import { TimeEntryList } from '@/components/task/TimeEntryList';
 import {
   TaskBehaviorDesignFields,
   taskBehaviorDesignFromTask,
@@ -34,8 +35,6 @@ import { Tooltip } from '@/components/ui/tooltip';
 import {
   formatDateTime,
   formatDuration,
-  formatDurationLive,
-  timeEntrySourceLabels,
 } from '@/lib/format';
 import { isTauri } from '@/lib/tauri/client';
 import { getActiveTimer } from '@/lib/tauri/timer';
@@ -310,79 +309,12 @@ export function TaskDetailDialog({
                         )}
                       </div>
                     ) : (
-                      <div className="overflow-x-auto rounded-lg border">
-                        <table className="w-full min-w-[36rem] text-left text-sm">
-                          <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
-                            <tr>
-                              <th className="px-3 py-2 font-medium">开始时间</th>
-                              <th className="px-3 py-2 font-medium">结束时间</th>
-                              <th className="px-3 py-2 font-medium">时长</th>
-                              <th className="px-3 py-2 font-medium">来源</th>
-                              <th className="px-3 py-2 font-medium">备注</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {showActiveOnPage && activeTimer && (
-                              <tr className="border-b bg-primary/5">
-                                <td className="px-3 py-2 tabular-nums">
-                                  {formatDateTime(activeTimer.sessionStartedAt)}
-                                </td>
-                                <td className="px-3 py-2 text-primary">
-                                  {activeTimer?.isPaused ? '已暂停' : '计时中…'}
-                                </td>
-                                <td className="px-3 py-2 font-mono tabular-nums">
-                                  {formatDurationLive(activeElapsed)}
-                                </td>
-                                <td className="px-3 py-2">
-                                  <Badge variant="outline">计时</Badge>
-                                </td>
-                                <td className="px-3 py-2 text-muted-foreground">—</td>
-                              </tr>
-                            )}
-                            {pagedEntries.map((entry) => (
-                              <tr key={entry.id} className="border-b last:border-b-0">
-                                <td className="px-3 py-2 tabular-nums">
-                                  {formatDateTime(entry.startAt)}
-                                </td>
-                                <td className="px-3 py-2 tabular-nums">
-                                  {entry.endAt != null ? formatDateTime(entry.endAt) : '—'}
-                                </td>
-                                <td className="px-3 py-2 font-mono tabular-nums">
-                                  {formatDuration(entry.durationSeconds)}
-                                </td>
-                                <td className="px-3 py-2">
-                                  <Badge variant="outline">
-                                    {timeEntrySourceLabels[entry.source] ?? entry.source}
-                                  </Badge>
-                                </td>
-                                <td className="max-w-[12rem] truncate px-3 py-2 text-muted-foreground">
-                                  {entry.note ?? '—'}
-                                </td>
-                              </tr>
-                            ))}
-                            {!showActiveOnPage && pagedEntries.length === 0 && (
-                              <tr>
-                                <td
-                                  colSpan={5}
-                                  className="px-3 py-6 text-center text-sm text-muted-foreground"
-                                >
-                                  本页暂无记录
-                                </td>
-                              </tr>
-                            )}
-                            {!activeTimer && entries.length === 0 && (
-                              <tr>
-                                <td
-                                  colSpan={5}
-                                  className="px-3 py-6 text-center text-sm text-muted-foreground"
-                                >
-                                  暂无时间记录。点击「计时」或「补录」开始记录。
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
+                      <TimeEntryList
+                        entries={pagedEntries}
+                        activeTimer={activeTimer}
+                        activeElapsed={activeElapsed}
+                        showActiveOnPage={showActiveOnPage}
+                      />
                     )}
 
                     {!isMilestoneContainer && entries.length > TIME_ENTRIES_PAGE_SIZE && (

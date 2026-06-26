@@ -7,9 +7,9 @@ import { ArrowLeft, Archive, CalendarDays, Trash2 } from 'lucide-react';
 import type { ProjectDetailDto } from '@spanwork/shared-types';
 
 import { HabitTaskList } from '@/components/habit/HabitTaskList';
+import { ProjectOverviewStats } from '@/components/project/ProjectOverviewStats';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { todayDateKey } from '@/lib/calendarUtils';
 import { computeProjectPeriodRate, computeTodaySummary, getWeekRange } from '@/lib/habitUtils';
@@ -72,7 +72,7 @@ export function HabitProjectDetail({
   const weekRate = computeProjectPeriodRate(weekOccQuery.data ?? [], rules, week);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 space-y-2">
           <Button variant="ghost" size="sm" asChild>
@@ -145,38 +145,31 @@ export function HabitProjectDetail({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>习惯任务</CardDescription>
-            <CardTitle className="text-2xl">
-              {rulesQuery.isLoading ? '—' : ruleCount}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>今日进度</CardDescription>
-            <CardTitle className="text-2xl">
-              {todayOccQuery.isLoading
-                ? '—'
-                : todaySummary.total > 0
-                  ? `${todaySummary.done}/${todaySummary.total}`
-                  : '—'}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>累计时间</CardDescription>
-            <CardTitle className="text-2xl">
-              {project.totalTimeSeconds
-                ? formatDuration(project.totalTimeSeconds)
-                : '0s'}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      <ProjectOverviewStats
+        items={[
+          {
+            label: '习惯任务',
+            shortLabel: '习惯',
+            value: rulesQuery.isLoading ? '—' : ruleCount,
+          },
+          {
+            label: '今日进度',
+            shortLabel: '今日',
+            value: todayOccQuery.isLoading
+              ? '—'
+              : todaySummary.total > 0
+                ? `${todaySummary.done}/${todaySummary.total}`
+                : '—',
+          },
+          {
+            label: '累计时间',
+            shortLabel: '累计',
+            value: project.totalTimeSeconds
+              ? formatDuration(project.totalTimeSeconds)
+              : '0s',
+          },
+        ]}
+      />
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">

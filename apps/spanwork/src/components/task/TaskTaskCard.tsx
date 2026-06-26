@@ -29,9 +29,13 @@ import { formatDuration } from '@/lib/format';
 import { isTauri } from '@/lib/tauri/env';
 import { getActiveTimer, startTimer } from '@/lib/tauri/timer';
 import { queryKeys } from '@/queries/keys';
+import {
+  ACTION_GROUP_CLASS,
+  CARD_ACTIONS_ROW_CLASS,
+  CARD_CONTENT_CLASS,
+  ROW_ICON_BUTTON_CLASS,
+} from '@/lib/touchTargets';
 import { cn } from '@/lib/utils';
-
-const iconBtnClass = 'size-8 max-md:size-11 shrink-0';
 
 interface TaskTaskCardProps {
   task: TaskDto;
@@ -121,7 +125,7 @@ export function TaskTaskCard({
         id={`task-${task.id}`}
         className={cn('scroll-mt-24 py-0', depth > 0 && 'ml-3 border-dashed sm:ml-6')}
       >
-        <CardContent className="space-y-3 p-4" aria-labelledby={titleId}>
+        <CardContent className={CARD_CONTENT_CLASS} aria-labelledby={titleId}>
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1 space-y-1">
               <div className="flex min-w-0 items-center gap-1.5">
@@ -184,8 +188,8 @@ export function TaskTaskCard({
             <p className="text-xs font-medium text-primary">计时中…</p>
           )}
 
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border/60 bg-muted/20 p-1">
+          <div className={CARD_ACTIONS_ROW_CLASS}>
+            <div className={ACTION_GROUP_CLASS}>
               {isTimingThis && activeTimer ? (
                 <TimerSessionControls
                   active={activeTimer}
@@ -200,7 +204,7 @@ export function TaskTaskCard({
                         type="button"
                         size="icon"
                         variant="default"
-                        className={iconBtnClass}
+                        className={ROW_ICON_BUTTON_CLASS}
                         disabled={startMutation.isPending || isTimingOther}
                         onClick={() => startMutation.mutate()}
                         aria-label="开始计时"
@@ -215,7 +219,7 @@ export function TaskTaskCard({
                         type="button"
                         size="icon"
                         variant="ghost"
-                        className={cn(iconBtnClass, showTimeForm && 'ring-2 ring-primary/40')}
+                        className={cn(ROW_ICON_BUTTON_CLASS, showTimeForm && 'ring-2 ring-primary/40')}
                         onClick={onToggleTimeForm}
                         aria-label="补录时间"
                       >
@@ -229,7 +233,7 @@ export function TaskTaskCard({
                       parentId={task.id}
                       parentTitle={task.title}
                       isMilestone={task.isMilestone}
-                      className={iconBtnClass}
+                      className={ROW_ICON_BUTTON_CLASS}
                     />
                   )}
                   <Tooltip label="查看详情" side="bottom">
@@ -237,7 +241,7 @@ export function TaskTaskCard({
                       type="button"
                       size="icon"
                       variant="ghost"
-                      className={iconBtnClass}
+                      className={ROW_ICON_BUTTON_CLASS}
                       onClick={onOpenDetail}
                       aria-label="查看详情"
                     >
@@ -253,7 +257,7 @@ export function TaskTaskCard({
                   type="button"
                   size="icon"
                   variant="ghost"
-                  className={iconBtnClass}
+                  className={ROW_ICON_BUTTON_CLASS}
                   aria-label="更多操作"
                   aria-expanded={menuOpen}
                   onClick={() => setMenuOpen((v) => !v)}
@@ -313,5 +317,3 @@ export function TaskTaskCard({
     </>
   );
 }
-
-export { iconBtnClass };

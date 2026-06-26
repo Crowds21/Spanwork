@@ -17,7 +17,9 @@ import {
   weekRangeKeys,
   type CalendarViewMode,
 } from '@/lib/calendarUtils';
+import { MOBILE_DUPLICATE_TITLE_CLASS, PAGE_SECTION_CLASS } from '@/lib/touchTargets';
 import { isTauri } from '@/lib/tauri/env';
+import { cn } from '@/lib/utils';
 
 interface CalendarPageProps {
   date: string;
@@ -63,10 +65,12 @@ export function CalendarPage({ date, view, projectId }: CalendarPageProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={PAGE_SECTION_CLASS}>
       <div>
-        <h1 className="text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">日历</h1>
-        <p className="mt-1 text-sm text-muted-foreground sm:text-base">
+        <h1 className={cn('text-xl font-bold tracking-tight sm:text-2xl md:text-3xl', MOBILE_DUPLICATE_TITLE_CLASS)}>
+          日历
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground max-md:mt-0 sm:text-base">
           跨项目习惯计划与实际执行
         </p>
       </div>

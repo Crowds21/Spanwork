@@ -57,7 +57,9 @@ export function CalendarDateHeader({
         </div>
         <CalendarViewSwitcher value={view} onChange={onViewChange} />
       </div>
-      <CalendarProjectFilter projectId={projectId} onChange={onProjectFilterChange} />
+      <div className="-mx-1 overflow-x-auto px-1 pb-0.5">
+        <CalendarProjectFilter projectId={projectId} onChange={onProjectFilterChange} />
+      </div>
     </div>
   );
 }

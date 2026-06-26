@@ -48,7 +48,7 @@ export function SyncDiscoveryPanel({
       <CardContent className="space-y-3">
         {active && localHostLabel ? (
           <div className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-            <p>
+            <p className="break-all">
               本机同步地址：<span className="font-mono text-foreground">{localHostLabel}</span>
               {port ? (
                 <>

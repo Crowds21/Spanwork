@@ -7,4 +7,5 @@ import { SyncPage } from '@/pages/SyncPage';
 
 export const Route = createFileRoute('/settings/sync')({
   component: SyncPage,
+  preload: true,
 });

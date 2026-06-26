@@ -41,9 +41,11 @@ export function CalendarMonthView({
 
   return (
     <div className="rounded-xl border bg-card p-3">
-      <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
+      <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground md:text-xs">
         {WEEKDAY_LABELS.map((label) => (
-          <div key={label}>{label}</div>
+          <div key={label} className="truncate">
+            {label}
+          </div>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-1">
@@ -59,7 +61,7 @@ export function CalendarMonthView({
               key={cell.dateKey}
               type="button"
               className={cn(
-                'flex min-h-14 flex-col items-center rounded-lg p-1 text-sm transition-colors hover:bg-muted/60',
+                'flex min-h-10 flex-col items-center rounded-lg p-0.5 text-xs transition-colors hover:bg-muted/60 md:min-h-14 md:p-1 md:text-sm',
                 !cell.inMonth && 'text-muted-foreground/50',
                 isToday && 'ring-2 ring-inset ring-red-500',
               )}

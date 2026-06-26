@@ -7,13 +7,13 @@ import { ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { HabitProjectDetail } from '@/components/habit/HabitProjectDetail';
+import { ProjectOverviewStats } from '@/components/project/ProjectOverviewStats';
 import { TaskCalendarView } from '@/components/task/views/TaskCalendarView';
 import { TaskKanbanView } from '@/components/task/views/TaskKanbanView';
 import { TaskViewSwitcher } from '@/components/task/views/TaskViewSwitcher';
 import { TaskTree } from '@/components/task/TaskTree';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { deleteProject, getProject, updateProject } from '@/lib/tauri/project';
 import { projectTypeLabel } from '@spanwork/shared-types';
@@ -120,7 +120,7 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 space-y-2">
           <Button variant="ghost" size="sm" asChild>
@@ -177,30 +177,23 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>任务数</CardDescription>
-            <CardTitle className="text-2xl">{project.taskCount ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>累计时间</CardDescription>
-            <CardTitle className="text-2xl">
-              {project.totalTimeSeconds
-                ? `${Math.round(project.totalTimeSeconds / 60)} 分钟`
-                : '0 分钟'}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>未完成里程碑任务</CardDescription>
-            <CardTitle className="text-2xl">{project.openMilestoneCount ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      <ProjectOverviewStats
+        items={[
+          { label: '任务数', value: project.taskCount ?? 0 },
+          {
+            label: '累计时间',
+            shortLabel: '累计',
+            value: project.totalTimeSeconds
+              ? `${Math.round(project.totalTimeSeconds / 60)} 分钟`
+              : '0 分钟',
+          },
+          {
+            label: '未完成里程碑任务',
+            shortLabel: '里程碑',
+            value: project.openMilestoneCount ?? 0,
+          },
+        ]}
+      />
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">

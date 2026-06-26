@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteRouteImport } from './routes/settings/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
@@ -17,15 +18,20 @@ import { Route as CalendarIndexRouteImport } from './routes/calendar/index'
 import { Route as SettingsSyncRouteImport } from './routes/settings/sync'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId'
 
+const SettingsRouteRoute = SettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
-  id: '/settings/',
-  path: '/settings/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRouteRoute,
 } as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/projects/',
@@ -43,9 +49,9 @@ const CalendarIndexRoute = CalendarIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsSyncRoute = SettingsSyncRouteImport.update({
-  id: '/settings/sync',
-  path: '/settings/sync',
-  getParentRoute: () => rootRouteImport,
+  id: '/sync',
+  path: '/sync',
+  getParentRoute: () => SettingsRouteRoute,
 } as any)
 const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
   id: '/projects/$projectId',
@@ -55,6 +61,7 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRouteRouteWithChildren
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/sync': typeof SettingsSyncRoute
   '/calendar/': typeof CalendarIndexRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRouteRouteWithChildren
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/sync': typeof SettingsSyncRoute
   '/calendar/': typeof CalendarIndexRoute
@@ -85,6 +93,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/settings'
     | '/projects/$projectId'
     | '/settings/sync'
     | '/calendar/'
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/settings'
     | '/projects/$projectId'
     | '/settings/sync'
     | '/calendar/'
@@ -113,16 +123,22 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
-  SettingsSyncRoute: typeof SettingsSyncRoute
   CalendarIndexRoute: typeof CalendarIndexRoute
   ProjectCategoriesIndexRoute: typeof ProjectCategoriesIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
-  SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -132,10 +148,10 @@ declare module '@tanstack/react-router' {
     }
     '/settings/': {
       id: '/settings/'
-      path: '/settings'
+      path: '/'
       fullPath: '/settings/'
       preLoaderRoute: typeof SettingsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRouteRoute
     }
     '/projects/': {
       id: '/projects/'
@@ -160,10 +176,10 @@ declare module '@tanstack/react-router' {
     }
     '/settings/sync': {
       id: '/settings/sync'
-      path: '/settings/sync'
+      path: '/sync'
       fullPath: '/settings/sync'
       preLoaderRoute: typeof SettingsSyncRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRouteRoute
     }
     '/projects/$projectId': {
       id: '/projects/$projectId'
@@ -175,14 +191,27 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SettingsRouteRouteChildren {
+  SettingsSyncRoute: typeof SettingsSyncRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
+}
+
+const SettingsRouteRouteChildren: SettingsRouteRouteChildren = {
+  SettingsSyncRoute: SettingsSyncRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
+}
+
+const SettingsRouteRouteWithChildren = SettingsRouteRoute._addFileChildren(
+  SettingsRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SettingsRouteRoute: SettingsRouteRouteWithChildren,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
-  SettingsSyncRoute: SettingsSyncRoute,
   CalendarIndexRoute: CalendarIndexRoute,
   ProjectCategoriesIndexRoute: ProjectCategoriesIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
-  SettingsIndexRoute: SettingsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
