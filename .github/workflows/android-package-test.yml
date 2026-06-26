@@ -17,6 +17,8 @@ jobs:
 
     env:
       ANDROID_NDK_VERSION: 27.0.12077973
+      CARGO_HTTP_MULTIPLEXING: false
+      CARGO_NET_RETRY: 10
 
     steps:
       - uses: actions/checkout@v4
@@ -53,6 +55,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Fetch Rust Android dependencies
+        run: >-
+          cargo fetch
+          --manifest-path apps/spanwork/src-tauri/Cargo.toml
+          --target aarch64-linux-android
 
       - name: Initialize Android project
         working-directory: apps/spanwork
