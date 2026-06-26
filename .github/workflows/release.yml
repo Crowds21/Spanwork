@@ -165,6 +165,9 @@ jobs:
         working-directory: apps/spanwork
         run: pnpm tauri ios init --ci
 
+      - name: Fix generated iOS Podfile
+        run: bash .github/scripts/fix-tauri-ios-podfile.sh
+
       - name: Install CocoaPods
         working-directory: apps/spanwork/src-tauri/gen/apple
         run: pod install
