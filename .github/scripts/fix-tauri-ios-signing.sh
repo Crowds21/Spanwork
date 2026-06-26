@@ -26,10 +26,9 @@ let patchedBlocks = 0;
 const settings = [
   ['CODE_SIGN_STYLE', 'Manual'],
   ['DEVELOPMENT_TEAM', teamId],
-  ['PROVISIONING_PROFILE', profileUuid],
-  ['PROVISIONING_PROFILE_SPECIFIER', profileUuid],
+  ['PROVISIONING_PROFILE', `"${profileUuid}"`],
+  ['PROVISIONING_PROFILE_SPECIFIER', `"${profileUuid}"`],
   ['CODE_SIGN_IDENTITY', `"${identity}"`],
-  ['CODE_SIGN_IDENTITY[sdk=iphoneos*]', `"${identity}"`],
 ];
 
 function upsertSetting(block, key, value) {
