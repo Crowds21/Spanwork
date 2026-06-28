@@ -36,6 +36,7 @@ export const queryKeys = {
       ? (['habit-occurrences', projectId, fromDate, toDate] as const)
       : (['habit-occurrences', projectId] as const),
   logInfo: ['log-info'] as const,
+  logTail: ['log-tail'] as const,
   projectCategories: ['project-categories'] as const,
   projectCategory: (id: string) => ['project-category', id] as const,
 };

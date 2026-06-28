@@ -107,6 +107,8 @@ export function queryKeyLabel(queryKey: readonly unknown[]): string {
       return t('queryKey.timeEntries');
     case 'log-info':
       return t('queryKey.logInfo');
+    case 'log-tail':
+      return t('queryKey.logTail');
     default:
       return t('queryKey.default');
   }

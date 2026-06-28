@@ -1,4 +1,55 @@
-//! 双向 FLM 同步会话（TCP + 列级 merge）。
+//! 局域网双向 FLM（Field-Level Merge）同步会话。
+//!
+//! # 模块职责
+//!
+//! 在已建立的 `TcpStream` 上编排一次**完整同步会话**：握手 → 配对 → 交换元数据 →
+//! 推拉列级变更 → 更新 cursor → 收尾。不负责发现设备或监听端口（见 `listener`、`commands/sync`）。
+//!
+//! # 会话阶段（消息顺序）
+//!
+//! ```text
+//! Client                          Server
+//!   | hello  (device + protocol/schema version)     |
+//!   | ------------------------------>               |
+//!   |               hello_ack (accepted / reject)   |
+//!   | <------------------------------               |
+//!   | pair_request (pairing code)                   |
+//!   | ------------------------------>               |
+//!   |               pair_ok / pair_fail             |
+//!   | <------------------------------               |
+//!   | meta_exchange                                 |  meta_exchange
+//!   | ------------------------------>               |  (client 先发)
+//!   | <------------------------------               |
+//!   | changes_chunk* / changes_done                 |  (双方 push，顺序见下)
+//!   | <------------------------------>              |
+//!   | session_done                                  |  session_done
+//!   | <------------------------------>              |
+//! ```
+//!
+//! **数据交换顺序**（握手成功后）：
+//! - **Client**（`run_client_data_exchange`）：先发 meta → 收 meta → **先 push 本地变更** → **再 pull 对端**
+//! - **Server**（`run_server_data_exchange`）：先收 meta → 发 meta → **先 pull 对端** → **再 push 本地**
+//!
+//! 两端最终各执行一次 push + pull，实现双向合并；顺序不同是为避免读写死锁。
+//!
+//! # 版本与配对
+//!
+//! - `hello` 阶段校验 `protocol_version`（`protocol::PROTOCOL_VERSION`）与 `schema_version`
+//!   （DB `schema_migrations` 最大值）；不匹配则 `VERSION_MISMATCH`，不进行数据交换。
+//! - 配对码由监听方 `PairingManager` 校验；失败返回 `pair_fail` 后断开。
+//!
+//! # 变更传输
+//!
+//! - Outbound 变更来自 `sync_log`（列级 `FieldChangeRecord`）。
+//! - 对端 cursor 落后且需要全量时走 `baseline`；否则按 `change_seq` 增量 `changes_chunk`。
+//! - 入站变更经 `flm::apply_batch` 合并；失败映射为 `SYNC_FK_FAILED` / `SYNC_MERGE_FAILED`。
+//! - 会话成功后在 `sync_peer` 更新 cursor，并 `sync_log::compact` 压缩已确认 outbound。
+//!
+//! # 公开入口
+//!
+//! - `run_client_session` — 主动连接方（`sync_start` IPC）
+//! - `run_server_session` — 被动接受方（`SyncListener` 线程）
+//! - `pre_sync_ensure` / `configure_sync_stream` — 会话前准备，两端共用
 
 use std::net::TcpStream;
 use std::time::Duration;
@@ -20,6 +71,7 @@ use crate::sync::protocol::{
     CHUNK_ROW_LIMIT, PROTOCOL_VERSION,
 };
 
+/// 一次同步会话的成功结果（供 IPC / 日志统计）。
 #[derive(Debug, Clone)]
 pub struct SessionResult {
     pub records_sent: i32,
@@ -30,6 +82,7 @@ pub struct SessionResult {
 }
 
 #[derive(Debug)]
+/// 入站 pull 的汇总：合并行数 + 应对端 outbound 确认的 seq（写入 `sync_peer` cursor）。
 struct PullResult {
     rows: i32,
     /// 对端 outbound 变更日志中已确认的 change_seq（来自 changes_done 或 baseline meta）。
@@ -37,12 +90,15 @@ struct PullResult {
 }
 
 #[derive(Debug)]
+/// Server 端会话失败；与 `AppResult` 不同，可携带已对端 hello 解析出的 peer 信息。
 pub struct SessionFailure {
+    /// 握手成功后才有值；hello 解析前失败则为 `None`。
     pub peer_device_id: Option<String>,
     pub peer_device_name: Option<String>,
     pub error: AppError,
 }
 
+/// 同步前确保 habit occurrence 日期范围已物化（过去 7 天 ~ 未来 90 天），避免合并后日历缺实例。
 pub fn pre_sync_ensure(conn: &Connection) -> AppResult<()> {
     let to_date = {
         let d = today_local_date() + chrono::Duration::days(90);
@@ -56,13 +112,23 @@ pub fn pre_sync_ensure(conn: &Connection) -> AppResult<()> {
     Ok(())
 }
 
+/// 设置 TCP 读写超时与 `TCP_NODELAY`，减少小包延迟。
 pub fn configure_sync_stream(stream: &mut TcpStream) {
     stream.set_read_timeout(Some(Duration::from_secs(120))).ok();
     stream.set_write_timeout(Some(Duration::from_secs(120))).ok();
     stream.set_nodelay(true).ok();
 }
 
-/// Client：发起连接并完成双向同步。
+/// **Client 端完整会话**（主动连接方，`sync_start` 调用）。
+///
+/// # 流程
+///
+/// 1. `pre_sync_ensure` — 物化 habit occurrence 范围
+/// 2. 发送 `hello`（本机 device、protocol/schema/app 版本）
+/// 3. 读取 `hello_ack`；`accepted == false` → `VERSION_MISMATCH`
+/// 4. 发送 `pair_request`；对端 `pair_fail` → 透传错误码
+/// 5. `run_client_data_exchange` — meta → push → pull → finish
+/// 6. 数据阶段错误经 `map_sync_session_error` 转为用户可读 `AppError::Sync`
 pub fn run_client_session(
     conn: &Connection,
     stream: &mut TcpStream,
@@ -118,7 +184,21 @@ pub fn run_client_session(
     }
 }
 
-/// Server：接受连接并完成双向同步。
+/// **Server 端完整会话**（被动接受方，`SyncListener` 线程调用）。
+///
+/// # 流程
+///
+/// 1. `pre_sync_ensure`
+/// 2. 读取对端 `hello`，校验 `protocol_version` 与 `schema_version`
+/// 3. 发送 `hello_ack`；不匹配则返回 `SessionFailure`（`VERSION_MISMATCH`）
+/// 4. 读取 `pair_request`，`PairingManager` 校验配对码 → `pair_ok` / `pair_fail`
+/// 5. `run_server_data_exchange` — 收 meta → 发 meta → pull → push → finish
+/// 6. 数据阶段失败时向对端写 `session_error`，再返回 `SessionFailure`
+///
+/// # 错误包装
+///
+/// hello 之前失败 → `SessionFailure::before_hello`（无 peer 信息）；
+/// hello 之后失败 → `after_hello`（带对端 device id/name，便于 listener 写日志）。
 pub fn run_server_session(
     conn: &Connection,
     stream: &mut TcpStream,
@@ -151,12 +231,19 @@ pub fn run_server_session(
     write_envelope(stream, &ack_env)
         .map_err(|e| SessionFailure::after_hello(&peer_id, &peer_name, e))?;
     if !accepted {
+        let message = format!(
+            "协议或 schema 版本不匹配 |server local protocol={} schema={} | client peer protocol={} schema={}",
+            PROTOCOL_VERSION,
+            local_schema,
+            hello.protocol_version,
+            hello.schema_version,
+        );
         return Err(SessionFailure::after_hello(
             &peer_id,
             &peer_name,
             AppError::Sync {
                 code: "VERSION_MISMATCH".into(),
-                message: "协议或 schema 版本不匹配".into(),
+                message,
             },
         ));
     }
@@ -207,6 +294,7 @@ pub fn run_server_session(
     }
 }
 
+/// 区分 hello 前/后会话失败，便于 listener 日志是否附带 peer 标识。
 impl SessionFailure {
     fn before_hello(error: AppError) -> Self {
         Self {
@@ -225,6 +313,10 @@ impl SessionFailure {
     }
 }
 
+/// Client 数据交换：先发 meta，再 push 本地 outbound，再 pull 对端 inbound。
+///
+/// 使用 `sync_peer` 中记录的对端 cursor 决定 push 起点；pull 完成后由 `finish_session`
+/// 更新 cursor、compact outbound、交换 `session_done`。
 fn run_client_data_exchange(
     conn: &Connection,
     stream: &mut TcpStream,
@@ -250,6 +342,7 @@ fn run_client_data_exchange(
     )
 }
 
+/// Server 数据交换：先收对端 meta，再发本机 meta，再 pull，再 push（与 client 顺序对偶）。
 fn run_server_data_exchange(
     conn: &Connection,
     stream: &mut TcpStream,
@@ -274,6 +367,7 @@ fn run_server_data_exchange(
     )
 }
 
+/// 发送 `meta_exchange`：本机 outbound 最大 seq、对该 peer 已确认的 cursor、schema 版本。
 fn write_meta(
     conn: &Connection,
     stream: &mut TcpStream,
@@ -290,11 +384,13 @@ fn write_meta(
     write_envelope(stream, &envelope("meta_exchange", &new_id(), &meta)?)
 }
 
+/// 读取对端 `meta_exchange`；若收到 `session_error` 则转为 `Err`。
 fn read_meta(stream: &mut TcpStream) -> AppResult<MetaExchangePayload> {
     let env = read_session_envelope(stream)?;
     parse_payload(&env)
 }
 
+/// 向对端发送 `session_error`（server 数据阶段失败时的善后通知）。
 fn write_session_error(stream: &mut TcpStream, err: &AppError) -> AppResult<()> {
     let body = err.to_body();
     write_envelope(
@@ -310,6 +406,7 @@ fn write_session_error(stream: &mut TcpStream, err: &AppError) -> AppResult<()> 
     )
 }
 
+/// 读取一帧 envelope；若为 `session_error` 则解析并返回 `Err`，否则返回 envelope 供后续处理。
 fn read_session_envelope(stream: &mut TcpStream) -> AppResult<SyncEnvelope> {
     let env = read_envelope(stream)?;
     if env.msg_type == "session_error" {
@@ -322,6 +419,7 @@ fn read_session_envelope(stream: &mut TcpStream) -> AppResult<SyncEnvelope> {
     Ok(env)
 }
 
+/// 将 DB/FLM 底层错误映射为带 `SYNC_*` code 的同步错误，便于 UI 与日志展示。
 fn map_sync_session_error(err: AppError) -> AppError {
     match err {
         AppError::Db(ref db) if db.to_string().contains("FOREIGN KEY") => AppError::Sync {
@@ -344,6 +442,14 @@ fn map_sync_session_error(err: AppError) -> AppError {
     }
 }
 
+/// 会话收尾：更新 peer cursor、压缩 outbound 日志、双向交换 `session_done`。
+///
+/// # 流程
+///
+/// 1. `sync_peer::upsert_cursor` — 记录对端已 ack 到的 change_seq
+/// 2. `sync_log::compact` — 删除本机已被所有逻辑确认的 outbound（以当前 max seq 为界）
+/// 3. 发送本机 `session_done`（含 sent/received/acked 统计）
+/// 4. 读取对端 `session_done` 确认对端也成功结束
 fn finish_session(
     conn: &Connection,
     stream: &mut TcpStream,
@@ -376,6 +482,9 @@ fn finish_session(
     })
 }
 
+/// 拉取对端 push 的第一帧；若对端无变更则首帧即为 `changes_done`。
+///
+/// 否则将首帧交给 `pull_changes` 继续读 chunk 直至 `changes_done`。
 fn pull_until_done(
     conn: &Connection,
     stream: &mut TcpStream,
@@ -392,6 +501,14 @@ fn pull_until_done(
     pull_changes(conn, stream, &env, peer_local_max)
 }
 
+/// 向对端 push 本机 outbound 变更（baseline 或增量），以 `changes_done` 结束。
+///
+/// # 流程
+///
+/// 1. 根据 `since_seq`（对端 cursor）确定起点；若 cursor 异常大于本地 max 则重置为 0
+/// 2. `since == 0` 且 `baseline_needed` → 生成全量 baseline chunk（`is_baseline = true`）
+/// 3. 否则循环 `sync_log::read_incremental`，按 `CHUNK_ROW_LIMIT` 分批 `changes_chunk`
+/// 4. 发送 `changes_done`（`last_change_seq` = 本机当前 outbound max）
 fn push_changes(
     conn: &Connection,
     stream: &mut TcpStream,
@@ -437,6 +554,7 @@ fn push_changes(
     Ok(total)
 }
 
+/// 将若干行变更按 `CHUNK_ROW_LIMIT` 切分并写入多个 `changes_chunk` envelope。
 fn send_change_rows(
     stream: &mut TcpStream,
     request_id: &str,
@@ -460,6 +578,18 @@ fn send_change_rows(
     Ok(rows.len())
 }
 
+/// 持续读取 `changes_chunk` 并 `flm::apply_batch` 合并，直到收到 `changes_done`。
+///
+/// # 流程
+///
+/// 1. 从 `first_env`（`pull_until_done` 已读的第一帧）开始循环
+/// 2. `changes_chunk` → 解析 rows → `flm::apply_batch` → 累计 received 行数
+/// 3. `changes_done` → 计算 `peer_ack_seq` 并返回
+///
+/// # `peer_ack_seq` 特殊规则
+///
+/// 若本次 pull 含 baseline 且对端 `last_change_seq == 0`，则用 `peer_local_max`（meta 阶段
+/// 对端上报的 outbound max）作为 ack，避免 baseline 场景 cursor 回退。
 fn pull_changes(
     conn: &Connection,
     stream: &mut TcpStream,

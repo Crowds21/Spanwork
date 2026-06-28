@@ -4,6 +4,7 @@
 import { Link } from '@tanstack/react-router';
 import { Tags } from 'lucide-react';
 
+import { DevLogPanel } from '@/components/dev/DevLogPanel';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -50,6 +51,8 @@ export function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <DevLogPanel />
 
       <Card className="border-dashed">
         <CardHeader>

@@ -32,6 +32,12 @@ export function todayDateKey(): string {
   return toDateKey(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
+/**
+ * 日历视图 获取"天"级别的对应 title
+ * @param dateKey 日期键值，格式为 'YYYY-MM-DD'
+ * @param locale  i18n/messages 下对应的语言类型
+ * @returns 
+ */
 export function formatDateLabel(dateKey: string, locale?: Locale): string {
   const t = getTranslator(locale);
   const { year, month, day } = parseDateKey(dateKey);

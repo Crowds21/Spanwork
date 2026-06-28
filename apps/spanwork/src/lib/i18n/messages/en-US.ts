@@ -1,4 +1,14 @@
 export const enUS = {
+  routeTitles: {
+    today: 'Today',
+    projects: 'Projects',
+    projectDetail: 'Project details',
+    calendar: 'Calendar',
+    globalCalendar: 'Calendar',
+    settings: 'Settings',
+    sync: 'LAN sync',
+    projectCategories: 'Project categories',
+  },
   nav: {
     today: 'Today',
     projects: 'Projects',
@@ -179,6 +189,10 @@ export const enUS = {
   },
 
   calendar: {
+    dateLabel: '{weekday}, {month}/{day}/{year}',
+    weekLabelSameMonth: '{startMonth}/{startDay} – {endDay}, {year}',
+    weekLabelSameYear: '{startMonth}/{startDay} – {endMonth}/{endDay}, {year}',
+    weekLabelCrossYear: '{startMonth}/{startDay}/{startYear} – {endMonth}/{endDay}/{endYear}',
     title: 'Calendar',
     subtitle: 'Habit plans and actuals across projects',
     viewDay: 'Day',
@@ -195,6 +209,15 @@ export const enUS = {
     yearMonth: '{year} / {month}',
     quickCreateHint: 'Tap an empty date to create a task',
     moreTasks: '+{count} more',
+    weekdayShort: {
+      '1': 'Mon',
+      '2': 'Tue',
+      '3': 'Wed',
+      '4': 'Thu',
+      '5': 'Fri',
+      '6': 'Sat',
+      '7': 'Sun',
+    }
   },
 
   settings: {
@@ -206,6 +229,14 @@ export const enUS = {
     syncTitle: 'LAN sync',
     syncDesc: 'Two-way sync of projects and habits with Mac / iPhone on the same Wi‑Fi',
     openSync: 'Open sync settings',
+    devLogTitle: 'Runtime log',
+    devLogDesc: 'View the tail of spanwork.log in dev builds for desktop / iOS debugging',
+    devLogRefresh: 'Refresh',
+    devLogAutoRefresh: 'Auto refresh (3s)',
+    devLogEmpty: 'No log entries yet',
+    devLogLoadFailed: 'Failed to read log file',
+    devLogLines: 'Last {count} lines',
+    devLogMeta: '{sizeKb} KB · max {maxMb} MB per file',
     moreTitle: 'More settings',
     moreDesc: 'Device name and data export will ship in a later version',
   },
@@ -522,6 +553,12 @@ export const enUS = {
     sun: 'Sun',
   },
 
+  taskStatus: {
+    todo: 'TODO',
+    in_progress: 'DOING',
+    done: 'DONE',
+    cancelled: 'CANCELLED'
+  },
   format: {
     taskStatusTodo: 'To do',
     taskStatusInProgress: 'In progress',

@@ -1,4 +1,14 @@
 export const zhCN = {
+  routeTitles: {
+    today: '今日',
+    projects: '项目',
+    projectDetail: '项目详情',
+    calendar: '日历',
+    globalCalendar: '全局日历',
+    settings: '设置',
+    sync: '局域网同步',
+    projectCategories: '项目分类',
+  },
   nav: {
     today: '今日',
     projects: '项目',
@@ -179,6 +189,10 @@ export const zhCN = {
   },
 
   calendar: {
+    dateLabel: '{year}年{month}月{day}日 {weekday}',
+    weekLabelSameMonth: '{year}年{startMonth}月 {startDay}日 – {endDay}日',
+    weekLabelSameYear: '{year}年{startMonth} 月{startDay}日 – {endMonth}月{endDay}日',
+    weekLabelCrossYear: '{startYear}年{startMonth}月{startDay}日 – {endYear}年{endMonth}月{endDay}日',
     title: '日历',
     subtitle: '跨项目习惯计划与实际执行',
     viewDay: '日',
@@ -195,6 +209,15 @@ export const zhCN = {
     yearMonth: '{year} 年 {month} 月',
     quickCreateHint: '点击空白日期快速创建任务',
     moreTasks: '+{count} 更多',
+    weekdayShort: {
+      '1': '周一',
+      '2': '周二',
+      '3': '周三',
+      '4': '周四',
+      '5': '周五',
+      '6': '周六',
+      '7': '周日',
+    },
   },
 
   settings: {
@@ -206,6 +229,14 @@ export const zhCN = {
     syncTitle: '局域网同步',
     syncDesc: '同一 Wi‑Fi 下与 Mac / iPhone 双向同步项目与习惯数据',
     openSync: '打开同步设置',
+    devLogTitle: '运行日志',
+    devLogDesc: '开发模式下查看 spanwork.log 尾部，便于 iOS / 桌面联调排查',
+    devLogRefresh: '刷新',
+    devLogAutoRefresh: '自动刷新（3 秒）',
+    devLogEmpty: '暂无日志内容',
+    devLogLoadFailed: '读取日志失败，请确认应用数据目录可访问',
+    devLogLines: '最近 {count} 行',
+    devLogMeta: '当前 {sizeKb} KB · 单文件上限 {maxMb} MB',
     moreTitle: '更多设置',
     moreDesc: '设备名称、数据导出将在后续版本交付',
   },
@@ -522,11 +553,14 @@ export const zhCN = {
     sun: '日',
   },
 
+
+  taskStatus: {
+    todo: '待办',
+    in_progress: '进行中',
+    done: '已完成',
+    cancelled: '取消'
+  },
   format: {
-    taskStatusTodo: '待办',
-    taskStatusInProgress: '进行中',
-    taskStatusDone: '已完成',
-    taskStatusCancelled: '已取消',
     milestoneNotStarted: '未开始',
     milestoneInProgress: '进行中',
     milestoneDone: '已完成',
