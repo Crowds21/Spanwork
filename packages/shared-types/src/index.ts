@@ -488,6 +488,8 @@ export interface SyncDiscoveryStatusDto {
   /** 热点场景建议手动填写的对端 IP */
   suggestedPeerHost?: string;
   onHotspot?: boolean;
+  /** 发现开启时本机当前有效配对码 */
+  pairing?: SyncPairingDto;
 }
 
 export interface SyncPairingDto {

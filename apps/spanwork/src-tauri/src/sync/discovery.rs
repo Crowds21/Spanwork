@@ -1,6 +1,7 @@
 //! mDNS 服务发现（`_spanwork._tcp.local`）。
 
 use std::collections::HashMap;
+use std::net::IpAddr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -9,8 +10,10 @@ use std::time::Duration;
 use mdns_sd::{ServiceDaemon, ServiceEvent, ServiceInfo};
 
 use crate::error::{AppError, AppResult};
+use crate::logging::{FileLogger, LogLevel};
 use crate::sync::net_addr::{pick_sync_peer_address, primary_sync_ipv4, registration_ipv4_csv};
 use crate::sync::probe::{scan_hotspot_peers, scan_lan_peers};
+use crate::sync::versions::{SyncVersionCache, SyncVersions};
 
 const SERVICE_TYPE: &str = "_spanwork._tcp.local.";
 const HOTSPOT_PROBE_INTERVAL: Duration = Duration::from_secs(3);
@@ -46,6 +49,14 @@ impl SyncDiscovery {
         }
     }
 
+    pub fn get_peer(&self, device_id: &str) -> Option<DiscoveredPeer> {
+        self.peers
+            .lock()
+            .ok()?
+            .get(device_id)
+            .cloned()
+    }
+
     pub fn start(
         &mut self,
         device_id: &str,
@@ -53,6 +64,8 @@ impl SyncDiscovery {
         platform: &str,
         port: u16,
         on_peers_updated: Option<PeerNotifyFn>,
+        logger: Option<Arc<FileLogger>>,
+        sync_versions: Arc<SyncVersionCache>,
     ) -> AppResult<()> {
         let mdns = ServiceDaemon::new().map_err(|e| AppError::Internal(e.to_string()))?;
 
@@ -93,28 +106,37 @@ impl SyncDiscovery {
         let peers_for_probe = Arc::clone(&peers);
         let local_device_id_for_probe = local_device_id.clone();
         let on_peers_for_probe = on_peers_updated.clone();
+        let logger_for_probe = logger.clone();
+        let sync_versions_for_probe = Arc::clone(&sync_versions);
 
         thread::spawn(move || {
             let mut last_lan_probe = std::time::Instant::now()
                 - LAN_PROBE_INTERVAL
                 - Duration::from_secs(1);
             while !probe_stop_flag.load(Ordering::Relaxed) {
-                for peer in scan_hotspot_peers(port, &local_device_id_for_probe) {
+                let versions = sync_versions_for_probe
+                    .get()
+                    .unwrap_or(SyncVersions::new(0));
+                for peer in scan_hotspot_peers(port, &local_device_id_for_probe, versions) {
                     merge_discovered_peer(
                         &peers_for_probe,
                         on_peers_for_probe.as_ref(),
                         &local_device_id_for_probe,
                         peer,
+                        "probe_hotspot",
+                        logger_for_probe.as_ref(),
                     );
                 }
                 if last_lan_probe.elapsed() >= LAN_PROBE_INTERVAL {
                     last_lan_probe = std::time::Instant::now();
-                    for peer in scan_lan_peers(port, &local_device_id_for_probe) {
+                    for peer in scan_lan_peers(port, &local_device_id_for_probe, versions) {
                         merge_discovered_peer(
                             &peers_for_probe,
                             on_peers_for_probe.as_ref(),
                             &local_device_id_for_probe,
                             peer,
+                            "probe_lan",
+                            logger_for_probe.as_ref(),
                         );
                     }
                 }
@@ -122,6 +144,7 @@ impl SyncDiscovery {
             }
         });
 
+        let logger_for_mdns = logger.clone();
         thread::spawn(move || {
             while let Ok(event) = receiver.recv() {
                 match event {
@@ -136,11 +159,15 @@ impl SyncDiscovery {
                         let sync_ip_hint = info
                             .get_property("sync_ip")
                             .map(|v| v.val_str().to_string());
-                        let host = pick_sync_peer_address(
-                            info.get_addresses(),
-                            sync_ip_hint.as_deref(),
-                        )
-                        .unwrap_or_default();
+                        let mdns_addrs: String = info
+                            .get_addresses()
+                            .iter()
+                            .map(IpAddr::to_string)
+                            .collect::<Vec<_>>()
+                            .join(";");
+                        let (host, pick_reason) =
+                            pick_sync_peer_address_with_reason(info.get_addresses(), sync_ip_hint.as_deref());
+                        let host = host.unwrap_or_default();
 
                         let peer = DiscoveredPeer {
                             device_name: info
@@ -157,13 +184,42 @@ impl SyncDiscovery {
                             last_seen_at: crate::error::now_ms(),
                         };
                         if peer.host.is_empty() {
+                            if let Some(logger) = logger_for_mdns.as_ref() {
+                                let _ = logger.write(
+                                    LogLevel::Warn,
+                                    "sync_discovery",
+                                    "mdns peer skipped: no reachable host",
+                                    Some(&format!(
+                                        "device_id={device_id} fullname={} mdns_addrs={mdns_addrs} sync_ip_txt={}",
+                                        info.get_fullname(),
+                                        sync_ip_hint.as_deref().unwrap_or("-")
+                                    )),
+                                );
+                            }
                             continue;
+                        }
+                        if let Some(logger) = logger_for_mdns.as_ref() {
+                            let _ = logger.write(
+                                LogLevel::Info,
+                                "sync_discovery",
+                                "mdns peer resolved",
+                                Some(&format!(
+                                    "source=mdns device_id={device_id} platform={} name={} host={} port={} pick_reason={pick_reason} mdns_addrs={mdns_addrs} sync_ip_txt={}",
+                                    peer.platform,
+                                    peer.device_name,
+                                    peer.host,
+                                    peer.port,
+                                    sync_ip_hint.as_deref().unwrap_or("-")
+                                )),
+                            );
                         }
                         merge_discovered_peer(
                             &peers,
                             on_peers_updated.as_ref(),
                             &local_device_id,
                             peer,
+                            "mdns",
+                            logger_for_mdns.as_ref(),
                         );
                     }
                     ServiceEvent::ServiceRemoved(_ty, fullname) => {
@@ -212,11 +268,38 @@ fn merge_discovered_peer(
     on_peers_updated: Option<&PeerNotifyFn>,
     local_device_id: &str,
     peer: DiscoveredPeer,
+    source: &str,
+    logger: Option<&Arc<FileLogger>>,
 ) {
     if peer.device_id.is_empty() || peer.device_id == local_device_id || peer.host.is_empty() {
         return;
     }
     if let Ok(mut map) = peers.lock() {
+        if let Some(old) = map.get(&peer.device_id) {
+            if old.host != peer.host || old.port != peer.port {
+                if let Some(logger) = logger {
+                    let _ = logger.write(
+                        LogLevel::Info,
+                        "sync_discovery",
+                        "peer address updated",
+                        Some(&format!(
+                            "source={source} device_id={} old={}:{} new={}:{} platform={}",
+                            peer.device_id, old.host, old.port, peer.host, peer.port, peer.platform
+                        )),
+                    );
+                }
+            }
+        } else if let Some(logger) = logger {
+            let _ = logger.write(
+                LogLevel::Info,
+                "sync_discovery",
+                "peer discovered",
+                Some(&format!(
+                    "source={source} device_id={} host={}:{} platform={} name={}",
+                    peer.device_id, peer.host, peer.port, peer.platform, peer.device_name
+                )),
+            );
+        }
         map.insert(peer.device_id.clone(), peer);
         notify_peers(on_peers_updated, local_device_id, &map);
     }
@@ -234,6 +317,56 @@ fn notify_peers(
             .cloned()
             .collect());
     }
+}
+
+/// mDNS 注册信息摘要，供 `sync_discovery_start` 日志使用。
+pub fn registration_detail(device_id: &str, device_name: &str, port: u16) -> String {
+    let instance = format!("Spanwork-{}", sanitize_instance(device_name));
+    let mdns_host = registration_host_name(device_id);
+    let primary = primary_sync_ipv4()
+        .map(|ip| ip.to_string())
+        .unwrap_or_else(|| "-".into());
+    let ips = registration_ipv4_csv();
+    format!(
+        "mdns_instance={instance} mdns_host={mdns_host} listen_port={port} primary_sync_ip={primary} registration_ips={ips}"
+    )
+}
+
+/// 发现列表快照，便于 grep 对端地址与新鲜度。
+pub fn format_peers_snapshot(peers: &[DiscoveredPeer]) -> String {
+    if peers.is_empty() {
+        return "count=0".into();
+    }
+    let now = crate::error::now_ms();
+    let mut lines = vec![format!("count={}", peers.len())];
+    for peer in peers {
+        let age_sec = ((now - peer.last_seen_at).max(0)) / 1000;
+        lines.push(format!(
+            "  id={} host={}:{} platform={} name={} age_sec={age_sec}",
+            peer.device_id, peer.host, peer.port, peer.platform, peer.device_name
+        ));
+    }
+    lines.join("\n")
+}
+
+fn pick_sync_peer_address_with_reason(
+    addresses: &std::collections::HashSet<IpAddr>,
+    sync_ip_hint: Option<&str>,
+) -> (Option<String>, &'static str) {
+    if let Some(hint) = sync_ip_hint {
+        if let Ok(v4) = hint.parse::<std::net::Ipv4Addr>() {
+            if crate::sync::net_addr::is_sync_reachable_ipv4(&v4) {
+                return (Some(v4.to_string()), "sync_ip_hint");
+            }
+        }
+    }
+    let picked = pick_sync_peer_address(addresses, sync_ip_hint);
+    let reason = if picked.is_some() {
+        "sorted_private_v4"
+    } else {
+        "none"
+    };
+    (picked, reason)
 }
 
 fn sanitize_instance(name: &str) -> String {
@@ -315,11 +448,11 @@ mod tests {
         };
 
         let mut a = SyncDiscovery::new("device-a");
-        a.start("device-a", "Mac-A", "macos", 38472, Some(notify_a))
+        a.start("device-a", "Mac-A", "macos", 38472, Some(notify_a), None, Arc::new(SyncVersionCache::default()))
             .expect("start A");
 
         let mut b = SyncDiscovery::new("device-b");
-        b.start("device-b", "Mac-B", "macos", 38473, Some(notify_b))
+        b.start("device-b", "Mac-B", "macos", 38473, Some(notify_b), None, Arc::new(SyncVersionCache::default()))
             .expect("start B");
 
         let deadline = std::time::Instant::now() + Duration::from_secs(8);
@@ -357,6 +490,8 @@ mod tests {
         use crate::sync::listener::SyncListener;
         use crate::sync::pairing::PairingManager;
 
+        use crate::sync::versions::SyncVersionCache;
+
         let dir_a = std::env::temp_dir().join(format!("spanwork-dual-a-{}", std::process::id()));
         let dir_b = std::env::temp_dir().join(format!("spanwork-dual-b-{}", std::process::id()));
         std::fs::create_dir_all(&dir_a).expect("dir a");
@@ -366,10 +501,13 @@ mod tests {
 
         let pairing_a = Arc::new(PairingManager::new());
         let pairing_b = Arc::new(PairingManager::new());
+        let sync_versions = Arc::new(SyncVersionCache::default());
         let mut listener_a =
-            SyncListener::start(db_a.clone(), pairing_a, 38472, None, None).expect("listener a");
+            SyncListener::start(db_a.clone(), pairing_a, 38472, Arc::clone(&sync_versions), None, None)
+                .expect("listener a");
         let mut listener_b =
-            SyncListener::start(db_b.clone(), pairing_b, 38473, None, None).expect("listener b");
+            SyncListener::start(db_b.clone(), pairing_b, 38473, Arc::clone(&sync_versions), None, None)
+                .expect("listener b");
 
         let found_a = Arc::new(AtomicBool::new(false));
         let found_b = Arc::new(AtomicBool::new(false));
@@ -393,11 +531,11 @@ mod tests {
 
         let mut disc_a = SyncDiscovery::new("device-a");
         disc_a
-            .start("device-a", "Spanwork-A", "macos", 38472, Some(notify_a))
+            .start("device-a", "Spanwork-A", "macos", 38472, Some(notify_a), None, Arc::clone(&sync_versions))
             .expect("discovery a");
         let mut disc_b = SyncDiscovery::new("device-b");
         disc_b
-            .start("device-b", "Spanwork-B", "macos", 38473, Some(notify_b))
+            .start("device-b", "Spanwork-B", "macos", 38473, Some(notify_b), None, sync_versions)
             .expect("discovery b");
 
         let deadline = Instant::now() + Duration::from_secs(10);

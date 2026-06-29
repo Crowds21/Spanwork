@@ -18,7 +18,7 @@ import type { TaskDto, TaskStatus } from '@spanwork/shared-types';
 
 import { TaskAddSubtaskTrigger } from '@/components/task/TaskCreateDialog';
 import { TaskBehaviorHints } from '@/components/task/TaskBehaviorHints';
-import { TaskStatusSelect } from '@/components/task/TaskStatusSelect';
+import { TaskStatusBadge, TaskStatusSelect } from '@/components/task/TaskStatusSelect';
 import { TimerSessionControls } from '@/components/timer/TimerSessionControls';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,7 @@ interface TaskTaskCardProps {
   canAddChild: boolean;
   canManualEntry: boolean;
   canTimer: boolean;
+  readOnly?: boolean;
 }
 
 export function TaskTaskCard({
@@ -72,6 +73,7 @@ export function TaskTaskCard({
   canAddChild,
   canManualEntry,
   canTimer,
+  readOnly,
 }: TaskTaskCardProps) {
   const t = useT();
   const queryClient = useQueryClient();
@@ -177,11 +179,15 @@ export function TaskTaskCard({
                 </p>
               )}
             </div>
-            <TaskStatusSelect
-              value={task.status}
-              onValueChange={onStatusChange}
-              className="shrink-0"
-            />
+            {readOnly ? (
+              <TaskStatusBadge status={task.status} />
+            ) : (
+              <TaskStatusSelect
+                value={task.status}
+                onValueChange={onStatusChange}
+                className="shrink-0"
+              />
+            )}
           </div>
 
           <TaskBehaviorHints task={task} />
@@ -254,19 +260,21 @@ export function TaskTaskCard({
               )}
             </div>
             <div ref={menuButtonRef} className="relative">
-              <Tooltip label={t('common.moreActions')} side="bottom">
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className={ROW_ICON_BUTTON_CLASS}
-                  aria-label={t('common.moreActions')}
-                  aria-expanded={menuOpen}
-                  onClick={() => setMenuOpen((v) => !v)}
-                >
-                  <MoreHorizontal className="size-4" />
-                </Button>
-              </Tooltip>
+              {!readOnly && (
+                <Tooltip label={t('common.moreActions')} side="bottom">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className={ROW_ICON_BUTTON_CLASS}
+                    aria-label={t('common.moreActions')}
+                    aria-expanded={menuOpen}
+                    onClick={() => setMenuOpen((v) => !v)}
+                  >
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </Tooltip>
+              )}
             </div>
           </div>
         </CardContent>

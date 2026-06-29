@@ -4,11 +4,12 @@
  * placement 区分 desktop 底栏与 mobile-chrome（嵌在 Tab 栏上方，仅错误时显示）；
  * 订阅 lib/status/appStatus，配合 AppShell 的 pb-safe 布局。
  */
-import { AlertCircle, CheckCircle2, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Radio, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { getAppVersionLabel } from '@/lib/appVersion';
 import { showDiagnostics } from '@/lib/buildProfile';
+import { useSyncDiscoveryRuntime } from '@/hooks/useSyncDiscoveryRuntime';
 import { useT } from '@/lib/i18n/useT';
 import { dismissAppStatus, useAppStatus } from '@/lib/status/appStatus';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,7 @@ interface AppStatusLineProps {
 export function AppStatusLine({ placement = 'desktop' }: AppStatusLineProps) {
   const t = useT();
   const { hasError, entry } = useAppStatus();
+  const discoveryActive = useSyncDiscoveryRuntime();
   const diagnostics = showDiagnostics();
 
   if (placement === 'mobile-chrome' && !hasError) {
@@ -37,8 +39,17 @@ export function AppStatusLine({ placement = 'desktop' }: AppStatusLineProps) {
         role="status"
         aria-live="polite"
       >
-        <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" aria-hidden />
-        <span className="text-muted-foreground">{t('common.ready')}</span>
+        {discoveryActive ? (
+          <>
+            <Radio className="size-3.5 shrink-0 animate-pulse text-sky-600" aria-hidden />
+            <span className="text-muted-foreground">{t('sync.discoveryActiveInStatusBar')}</span>
+          </>
+        ) : (
+          <>
+            <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" aria-hidden />
+            <span className="text-muted-foreground">{t('common.ready')}</span>
+          </>
+        )}
         {diagnostics && <AppVersionLabel className="ml-auto" />}
       </footer>
     );

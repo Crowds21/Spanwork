@@ -17,6 +17,7 @@ use state::AppState;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 use crate::sync::pairing::PairingManager;
+use crate::sync::versions::{SyncVersionCache, SyncVersions};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -42,6 +43,24 @@ pub fn run() {
             let (db, db_path) = db::init_db(app.handle())?;
             let _ = logger.write(LogLevel::Info, "db", "database initialized", None);
 
+            let sync_versions = Arc::new(SyncVersionCache::default());
+            {
+                let conn = db.lock().map_err(|_| "database lock poisoned")?;
+                let schema = db::migrate::schema_version(&conn)
+                    .map_err(|e| format!("read schema version failed: {e}"))?;
+                let versions = SyncVersions::new(schema);
+                sync_versions.set(versions);
+                let _ = logger.write(
+                    LogLevel::Info,
+                    "sync",
+                    "sync versions cached",
+                    Some(&format!(
+                        "protocol={} schema={}",
+                        versions.protocol_version, versions.schema_version
+                    )),
+                );
+            }
+
             app.manage(AppState {
                 db,
                 logger,
@@ -52,6 +71,7 @@ pub fn run() {
                 sync_stream: Mutex::new(None),
                 discovery: Mutex::new(None),
                 listener: Mutex::new(None),
+                sync_versions,
             });
 
             Ok(())
@@ -110,6 +130,7 @@ pub fn run() {
             commands::calendar::calendar_get_range,
             commands::sync::sync_discovery_start,
             commands::sync::sync_discovery_stop,
+            commands::sync::sync_discovery_status,
             commands::sync::sync_discovery_list,
             commands::sync::sync_pairing_request,
             commands::sync::sync_start,
@@ -1074,7 +1095,8 @@ mod tests {
         assert!(after_delete.occurrences.is_empty());
         assert_eq!(time_entry::sum_today(&conn, utc_start, utc_end).unwrap(), 0);
 
-        let summaries = habit_occurrence::summarize_range(&conn, &today, &today, None).unwrap();
+        let summaries =
+            habit_occurrence::summarize_range(&conn, &today, &today, None, &today).unwrap();
         assert!(summaries.is_empty());
 
         let detail = project::get_detail(&conn, &project.id).unwrap();

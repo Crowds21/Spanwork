@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { TaskStatusSelect } from '@/components/task/TaskStatusSelect';
+import { TaskStatusBadge, TaskStatusSelect } from '@/components/task/TaskStatusSelect';
 import { TimeEntryList } from '@/components/task/TimeEntryList';
 import {
   TaskBehaviorDesignFields,
@@ -52,6 +52,7 @@ interface TaskDetailDialogProps {
   projectId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  readOnly?: boolean;
 }
 
 export function TaskDetailDialog({
@@ -59,6 +60,7 @@ export function TaskDetailDialog({
   projectId,
   open,
   onOpenChange,
+  readOnly,
 }: TaskDetailDialogProps) {
   const t = useT();
   const queryClient = useQueryClient();
@@ -162,7 +164,7 @@ export function TaskDetailDialog({
     },
   });
 
-  const canSave = title.trim().length > 0 && !saveMutation.isPending;
+  const canSave = !readOnly && title.trim().length > 0 && !saveMutation.isPending;
 
   return (
     <Dialog
@@ -220,16 +222,23 @@ export function TaskDetailDialog({
                     id="task-detail-title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
+                    readOnly={readOnly}
+                    disabled={readOnly}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>{t('common.status')}</Label>
-                  <TaskStatusSelect value={status} onValueChange={setStatus} className="w-full sm:w-auto" />
+                  {readOnly ? (
+                    <TaskStatusBadge status={status} />
+                  ) : (
+                    <TaskStatusSelect value={status} onValueChange={setStatus} className="w-full sm:w-auto" />
+                  )}
                 </div>
 
                 <TaskBehaviorDesignFields
                   state={behaviorDesign}
                   onChange={(patch) => setBehaviorDesign((prev) => ({ ...prev, ...patch }))}
+                  readOnly={readOnly}
                 />
 
                 <label
@@ -244,7 +253,7 @@ export function TaskDetailDialog({
                     type="checkbox"
                     className="mt-0.5 size-4 accent-primary"
                     checked={isSubtask ? false : isMilestone}
-                    disabled={!canToggleMilestone}
+                    disabled={!canToggleMilestone || readOnly}
                     onChange={(e) => setIsMilestone(e.target.checked)}
                   />
                   <span className="space-y-0.5">
@@ -361,22 +370,24 @@ export function TaskDetailDialog({
 
             <CardFooter className="pb-6">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                {t('common.cancel')}
+                {readOnly ? t('common.closeDialog') : t('common.cancel')}
               </Button>
-              <Button
-                type="button"
-                disabled={!canSave}
-                onClick={() => saveMutation.mutate()}
-              >
-                {saveMutation.isPending ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    {t('common.saving')}
-                  </>
-                ) : (
-                  t('common.save')
-                )}
-              </Button>
+              {!readOnly && (
+                <Button
+                  type="button"
+                  disabled={!canSave}
+                  onClick={() => saveMutation.mutate()}
+                >
+                  {saveMutation.isPending ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      {t('common.saving')}
+                    </>
+                  ) : (
+                    t('common.save')
+                  )}
+                </Button>
+              )}
             </CardFooter>
           </>
         )}

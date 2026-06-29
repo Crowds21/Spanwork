@@ -14,7 +14,9 @@ use crate::error::AppResult;
 use crate::logging::FileLogger;
 use crate::sync::log as sync_log_util;
 use crate::sync::pairing::PairingManager;
+use crate::sync::probe::is_probe_device_id;
 use crate::sync::session::run_server_session;
+use crate::sync::versions::{SyncVersionCache, SyncVersions};
 
 use tauri::{AppHandle, Emitter};
 
@@ -24,6 +26,7 @@ pub struct SyncListener {
     stop: Arc<AtomicBool>,
     handle: Option<JoinHandle<()>>,
     port: u16,
+    logger: Option<Arc<FileLogger>>,
 }
 
 impl SyncListener {
@@ -31,16 +34,29 @@ impl SyncListener {
         db_path: PathBuf,
         pairing: Arc<PairingManager>,
         port: u16,
+        sync_versions: Arc<SyncVersionCache>,
         logger: Option<Arc<FileLogger>>,
         app: Option<AppHandle>,
     ) -> AppResult<Self> {
         let listener = TcpListener::bind(("0.0.0.0", port))?;
         listener.set_nonblocking(true)?;
-        let bound_port = listener.local_addr().map(|a| a.port()).unwrap_or(port);
+        let bound_addr = listener.local_addr().ok();
+        let bound_port = bound_addr.map(|a| a.port()).unwrap_or(port);
+        sync_log_util::listener_info(
+            logger.as_ref(),
+            "listener started",
+            Some(&format!(
+                "bind=0.0.0.0:{bound_port} actual_addr={}",
+                bound_addr
+                    .map(|a| a.to_string())
+                    .unwrap_or_else(|| "?".into())
+            )),
+        );
         let stop = Arc::new(AtomicBool::new(false));
         let stop_flag = Arc::clone(&stop);
         let logger_for_thread = logger.clone();
         let app_for_thread = app.clone();
+        let sync_versions_for_thread = Arc::clone(&sync_versions);
 
         let handle = thread::spawn(move || {
             loop {
@@ -55,10 +71,17 @@ impl SyncListener {
                         let pairing = Arc::clone(&pairing);
                         let logger = logger_for_thread.clone();
                         let app = app_for_thread.clone();
-                        sync_log_util::info(
+                        let sync_versions = Arc::clone(&sync_versions_for_thread);
+                        sync_log_util::listener_info(
                             logger.as_ref(),
                             "server accepted connection",
-                            Some(&format!("peer_addr={peer_addr}")),
+                            Some(&format!(
+                                "peer_addr={peer_addr} local_addr={}",
+                                listener
+                                    .local_addr()
+                                    .map(|a| a.to_string())
+                                    .unwrap_or_else(|_| "?".into())
+                            )),
                         );
                         thread::spawn(move || {
                             let conn = match pool::open_db_at_path(&db_path) {
@@ -72,8 +95,20 @@ impl SyncListener {
                                     return;
                                 }
                             };
-                            match run_server_session(&conn, &mut stream, pairing.as_ref()) {
+                            let versions = sync_versions
+                                .get()
+                                .unwrap_or(SyncVersions::new(0));
+                            match run_server_session(&conn, &mut stream, pairing.as_ref(), versions)
+                            {
                                 Ok(result) => {
+                                    if !result.notify_ui {
+                                        sync_log_util::listener_info(
+                                            logger.as_ref(),
+                                            "probe handshake completed",
+                                            Some(&format!("peer_addr={peer_addr}")),
+                                        );
+                                        return;
+                                    }
                                     sync_log_util::info(
                                         logger.as_ref(),
                                         "server session completed",
@@ -91,6 +126,16 @@ impl SyncListener {
                                     }
                                 }
                                 Err(failure) => {
+                                    let peer_id = failure.peer_device_id.as_deref().unwrap_or("");
+                                    let is_probe = is_probe_device_id(peer_id);
+                                    if is_probe {
+                                        sync_log_util::listener_info(
+                                            logger.as_ref(),
+                                            "probe handshake rejected",
+                                            Some(&sync_log_util::err_body(&failure.error)),
+                                        );
+                                        return;
+                                    }
                                     sync_log_util::error(
                                         logger.as_ref(),
                                         "server session failed",
@@ -138,6 +183,7 @@ impl SyncListener {
             stop,
             handle: Some(handle),
             port: bound_port,
+            logger,
         })
     }
 
@@ -146,7 +192,13 @@ impl SyncListener {
     }
 
     pub fn stop(&mut self) {
-        self.stop.store(true, Ordering::Relaxed);
+        if !self.stop.swap(true, Ordering::Relaxed) {
+            sync_log_util::listener_info(
+                self.logger.as_ref(),
+                "listener stopped",
+                Some(&format!("port={} reason=user_or_discovery_stop", self.port)),
+            );
+        }
         if let Some(h) = self.handle.take() {
             let _ = h.join();
         }
@@ -172,7 +224,8 @@ mod tests {
         ));
         let pairing = Arc::new(PairingManager::new());
         let mut listener =
-            SyncListener::start(db_path.clone(), pairing, 0, None, None).expect("start listener");
+            SyncListener::start(db_path.clone(), pairing, 0, Arc::new(SyncVersionCache::default()), None, None)
+                .expect("start listener");
 
         let started = Instant::now();
         listener.stop();

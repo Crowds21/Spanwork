@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 
 interface TaskKanbanViewProps {
   projectId: string;
+  readOnly?: boolean;
 }
 
 function KanbanCard({
@@ -51,7 +52,7 @@ function KanbanCard({
   );
 }
 
-export function TaskKanbanView({ projectId }: TaskKanbanViewProps) {
+export function TaskKanbanView({ projectId, readOnly }: TaskKanbanViewProps) {
   const t = useT();
   const { tasksByStatus, taskById, isLoading } = useProjectTasks(projectId);
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
@@ -117,6 +118,7 @@ export function TaskKanbanView({ projectId }: TaskKanbanViewProps) {
           onOpenChange={(open) => {
             if (!open) setDetailTaskId(null);
           }}
+          readOnly={readOnly}
         />
       )}
     </>

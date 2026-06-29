@@ -9,6 +9,7 @@ import {
   ChevronRight,
   FolderKanban,
   Home,
+  Archive,
   ListFilter,
   ListTodo,
   Repeat2,
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import type { ProjectDto, ProjectType } from '@spanwork/shared-types';
+import type { ProjectDto } from '@spanwork/shared-types';
 
 import { SidebarProjectFilterDialog } from '@/components/layout/SidebarProjectFilterDialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -32,6 +33,7 @@ import {
   readSidebarProjectFilter,
   storeSidebarGroupCollapsed,
   storeSidebarProjectFilter,
+  type SidebarGroupId,
   type SidebarProjectFilter,
 } from '@/lib/sidebarPreferences';
 import { queryKeys } from '@/queries/keys';
@@ -111,22 +113,22 @@ function ProjectNavItem({
 function ProjectGroup({
   label,
   icon: Icon,
-  projectType,
+  groupId,
   projects,
   emptyHint,
   onNavigate,
 }: {
   label: string;
   icon: LucideIcon;
-  projectType: ProjectType;
+  groupId: SidebarGroupId;
   projects: ProjectDto[];
   emptyHint: string;
   onNavigate?: () => void;
 }) {
   const t = useT();
-  const [collapsed, setCollapsed] = useState(() => readSidebarGroupCollapsed(projectType));
+  const [collapsed, setCollapsed] = useState(() => readSidebarGroupCollapsed(groupId));
   const [filter, setFilter] = useState<SidebarProjectFilter>(() =>
-    readSidebarProjectFilter(projectType),
+    readSidebarProjectFilter(groupId),
   );
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -135,12 +137,12 @@ function ProjectGroup({
 
   function handleCollapsedChange(next: boolean) {
     setCollapsed(next);
-    storeSidebarGroupCollapsed(projectType, next);
+    storeSidebarGroupCollapsed(groupId, next);
   }
 
   function handleFilterSave(next: SidebarProjectFilter) {
     setFilter(next);
-    storeSidebarProjectFilter(projectType, next);
+    storeSidebarProjectFilter(groupId, next);
   }
 
   return (
@@ -195,7 +197,7 @@ function ProjectGroup({
         open={filterOpen}
         onOpenChange={setFilterOpen}
         groupLabel={label}
-        projectType={projectType}
+        groupId={groupId}
         filter={filter}
         onSave={handleFilterSave}
       />
@@ -225,9 +227,19 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
     enabled: inTauri,
   });
 
+  const archivedProjectsQuery = useQuery({
+    queryKey: queryKeys.projects({ status: 'archived', sortBy: 'updated', sortOrder: 'desc' }),
+    queryFn: () =>
+      listProjects({ status: 'archived', sortBy: 'updated', sortOrder: 'desc' }),
+    enabled: inTauri,
+  });
+
   const projects = projectsQuery.data ?? [];
+  const archivedProjects = archivedProjectsQuery.data ?? [];
   const aimProjects = projects.filter((p) => p.projectType === 'aim');
   const habitProjects = projects.filter((p) => p.projectType === 'habit');
+  const projectsLoading =
+    inTauri && (projectsQuery.isLoading || archivedProjectsQuery.isLoading);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3 pt-safe pb-safe">
@@ -238,7 +250,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
       </nav>
 
       <div className="space-y-4">
-        {projectsQuery.isLoading && inTauri ? (
+        {projectsLoading ? (
           <div className="space-y-2 px-2">
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-8 w-full rounded-md" />
@@ -249,7 +261,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             <ProjectGroup
               label={projectTypeLabelI18n('aim', t)}
               icon={ListTodo}
-              projectType="aim"
+              groupId="aim"
               projects={aimProjects}
               emptyHint={t('nav.emptyAimProjects')}
               onNavigate={onNavigate}
@@ -257,9 +269,17 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             <ProjectGroup
               label={projectTypeLabelI18n('habit', t)}
               icon={Repeat2}
-              projectType="habit"
+              groupId="habit"
               projects={habitProjects}
               emptyHint={t('nav.emptyHabitProjects')}
+              onNavigate={onNavigate}
+            />
+            <ProjectGroup
+              label={t('nav.archivedProjects')}
+              icon={Archive}
+              groupId="archived"
+              projects={archivedProjects}
+              emptyHint={t('nav.emptyArchivedProjects')}
               onNavigate={onNavigate}
             />
           </>

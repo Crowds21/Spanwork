@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Mac + iPhone 并行 dev（模板）。复制为个人脚本后修改顶部配置，勿提交 personal 副本。
+#
+# 推荐路径（已在 .gitignore）：
+#   cp apps/spanwork/scripts/dev-mac-ios.sh.example doc/scripts/dev-mac-ios.sh
+#   chmod +x doc/scripts/dev-mac-ios.sh
+#   bash doc/scripts/dev-mac-ios.sh
+#
+# 或：
+#   cp apps/spanwork/scripts/dev-mac-ios.sh.example apps/spanwork/scripts/dev-mac-ios.sh
+#
+set -euo pipefail
+
+# --- 个人配置（每位开发者不同，复制后只改这里）---
+IOS_DEVICE="Your-iPhone-Name"   # xcrun devicectl list devices
+WIFI_INTERFACE="en0"            # Mac Wi‑Fi 网卡；无 IP 时可试 en1
+VITE_PORT=1420
+MAC_DEV_LOG="/tmp/spanwork-mac-dev.log"
+# ---
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+DEV_HOST="$(ipconfig getifaddr "${WIFI_INTERFACE}" 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "0.0.0.0")"
+
+echo "Spanwork Mac + iPhone parallel dev"
+echo "  Device:     ${IOS_DEVICE}"
+echo "  Vite:       http://${DEV_HOST}:${VITE_PORT}/"
+echo "  Mac log:    ~/Library/Application Support/com.spanwork.desktop/logs/spanwork.log"
+echo "  Mac build:  ${MAC_DEV_LOG}"
+echo "  iOS log:    iPhone 设置 → 运行日志"
+echo ""
+echo "Stop: Ctrl+C"
+
+VITE_PID=""
+MAC_PID=""
+
+cleanup() {
+  [[ -n "${MAC_PID}" ]] && kill -0 "${MAC_PID}" 2>/dev/null && kill "${MAC_PID}" 2>/dev/null || true
+  [[ -n "${VITE_PID}" ]] && kill -0 "${VITE_PID}" 2>/dev/null && kill "${VITE_PID}" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+lsof -ti :"${VITE_PORT}" | xargs kill -9 2>/dev/null || true
+lsof -ti :1421 | xargs kill -9 2>/dev/null || true
+
+export TAURI_DEV_HOST="${DEV_HOST}"
+export SPANWORK_VITE_PORT="${VITE_PORT}"
+
+pnpm exec vite --port "${VITE_PORT}" --strictPort &
+VITE_PID=$!
+
+for _ in $(seq 1 30); do
+  curl -sf "http://127.0.0.1:${VITE_PORT}" >/dev/null 2>&1 && break
+  sleep 0.2
+done
+
+TAURI_DEV_CONFIG="src-tauri/tauri.dev-mac-ios.conf.json"
+
+pnpm exec tauri dev --no-dev-server-wait --config "${TAURI_DEV_CONFIG}" >>"${MAC_DEV_LOG}" 2>&1 &
+MAC_PID=$!
+sleep 2
+
+pnpm exec tauri ios dev "${IOS_DEVICE}" --host "${DEV_HOST}" --no-dev-server-wait --config "${TAURI_DEV_CONFIG}"

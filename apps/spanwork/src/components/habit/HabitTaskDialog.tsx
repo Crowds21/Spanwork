@@ -375,7 +375,7 @@ export function HabitTaskDialog({
               </div>
 
               <div className="space-y-2">
-                <Label>{t('habit.frequency')}</Label>
+                <Label>{t('habit.frequencyLabel')}</Label>
                 <Select
                   value={frequency}
                   onValueChange={(v) => {

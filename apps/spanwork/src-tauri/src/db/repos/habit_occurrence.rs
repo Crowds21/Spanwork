@@ -188,12 +188,25 @@ pub fn summarize_range(
     from_date: &str,
     to_date: &str,
     project_id: Option<&str>,
+    today: &str,
 ) -> AppResult<Vec<(String, i64, i64, i64)>> {
     let mut sql = String::from(
         "SELECT ho.scheduled_date,
-                SUM(CASE WHEN ho.status = 'pending' OR ho.status = 'missed' THEN 1 ELSE 0 END),
-                SUM(CASE WHEN ho.status = 'done' THEN 1 ELSE 0 END),
-                COUNT(*)
+                SUM(CASE
+                    WHEN p.status = 'archived' THEN 0
+                    WHEN ho.status = 'pending' OR ho.status = 'missed' THEN 1
+                    ELSE 0
+                END),
+                SUM(CASE
+                    WHEN p.status = 'archived' AND ho.status = 'done' AND ho.scheduled_date < ?3 THEN 1
+                    WHEN p.status != 'archived' AND ho.status = 'done' THEN 1
+                    ELSE 0
+                END),
+                SUM(CASE
+                    WHEN p.status = 'archived' AND ho.status = 'done' AND ho.scheduled_date < ?3 THEN 1
+                    WHEN p.status != 'archived' THEN 1
+                    ELSE 0
+                END)
          FROM habit_occurrences ho
          INNER JOIN projects p ON p.id = ho.project_id AND p.deleted_at IS NULL
          INNER JOIN habit_rules hr ON hr.id = ho.rule_id AND hr.deleted_at IS NULL
@@ -202,6 +215,7 @@ pub fn summarize_range(
     let mut bind_values: Vec<Box<dyn rusqlite::types::ToSql>> = vec![
         Box::new(from_date.to_string()),
         Box::new(to_date.to_string()),
+        Box::new(today.to_string()),
     ];
 
     if let Some(pid) = project_id {

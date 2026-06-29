@@ -23,6 +23,18 @@ pub fn error(logger: Option<&Arc<FileLogger>>, message: &str, detail: Option<&st
     }
 }
 
+pub fn listener_info(logger: Option<&Arc<FileLogger>>, message: &str, detail: Option<&str>) {
+    if let Some(logger) = logger {
+        let _ = logger.write(LogLevel::Info, "sync_listener", message, detail);
+    }
+}
+
+pub fn listener_error(logger: Option<&Arc<FileLogger>>, message: &str, detail: Option<&str>) {
+    if let Some(logger) = logger {
+        let _ = logger.write(LogLevel::Error, "sync_listener", message, detail);
+    }
+}
+
 pub fn err_body(err: &AppError) -> String {
     let body = err.to_body();
     format!("{} | {}", body.code, body.message)

@@ -101,6 +101,7 @@ pnpm dev
 | 命令 | 说明 |
 |------|------|
 | `pnpm tauri:dev` | 启动完整桌面应用（Vite 1420 + Tauri + SQLite） |
+| `pnpm tauri:dev:peer` | 第二桌面实例（Vite 1422，Mac↔Mac 同步） |
 | `pnpm dev` | 启动浏览器预览（无 Tauri IPC） |
 | `pnpm dev:kill-port` | 清理 1420 / 1421 端口 |
 | `pnpm typecheck` / `pnpm check` | TypeScript project references 类型检查 |

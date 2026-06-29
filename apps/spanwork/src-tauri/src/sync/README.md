@@ -4,6 +4,8 @@
 
 详细产品/协议规划见仓库 `doc/design/DESIGN-v1.0-局域网同步-M3规划.md`（本地文档，不提交 git）。
 
+联调排错见 `doc/sync/`（`VERSION_MISMATCH`、`CONNECT_FAILED`、诊断日志）。
+
 团队通用术语（项目类型、FK、骨架、FLM 等）见 [`../../GLOSSARY.md`](../../GLOSSARY.md)。
 
 ---

@@ -69,9 +69,14 @@ export function taskBehaviorDesignPatchFromForm(state: TaskBehaviorDesignFormSta
 interface TaskBehaviorDesignFieldsProps {
   state: TaskBehaviorDesignFormState;
   onChange: (patch: Partial<TaskBehaviorDesignFormState>) => void;
+  readOnly?: boolean;
 }
 
-export function TaskBehaviorDesignFields({ state, onChange }: TaskBehaviorDesignFieldsProps) {
+export function TaskBehaviorDesignFields({
+  state,
+  onChange,
+  readOnly,
+}: TaskBehaviorDesignFieldsProps) {
   const t = useT();
 
   return (
@@ -87,6 +92,7 @@ export function TaskBehaviorDesignFields({ state, onChange }: TaskBehaviorDesign
           type="checkbox"
           className="mt-0.5 size-4 shrink-0 accent-primary"
           checked={state.enabled}
+          disabled={readOnly}
           onChange={(e) =>
             onChange({
               enabled: e.target.checked,
@@ -115,6 +121,7 @@ export function TaskBehaviorDesignFields({ state, onChange }: TaskBehaviorDesign
             onStartDateChange={(startDate) => onChange({ startDate })}
             onDueEnabledChange={(dueDateEnabled) => onChange({ dueDateEnabled })}
             onDueDateChange={(dueDate) => onChange({ dueDate })}
+            readOnly={readOnly}
           />
 
           <label className="flex cursor-pointer items-start gap-3 rounded-lg border bg-background/60 p-3">
@@ -123,6 +130,7 @@ export function TaskBehaviorDesignFields({ state, onChange }: TaskBehaviorDesign
               type="checkbox"
               className="mt-0.5 size-4 shrink-0 accent-primary"
               checked={state.celebrationOnComplete}
+              disabled={readOnly}
               onChange={(e) => onChange({ celebrationOnComplete: e.target.checked })}
             />
             <span className="space-y-0.5">
@@ -142,6 +150,8 @@ export function TaskBehaviorDesignFields({ state, onChange }: TaskBehaviorDesign
               onChange={(e) => onChange({ notes: e.target.value })}
               placeholder={t('task.behaviorNotesPlaceholder')}
               maxLength={512}
+              readOnly={readOnly}
+              disabled={readOnly}
             />
           </div>
         </div>

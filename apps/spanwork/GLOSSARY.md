@@ -236,6 +236,7 @@
 | 实例 | 典型用途 |
 |------|----------|
 | **desktop / A** | `com.spanwork.desktop`，Vite 1420 |
+| **iOS + desktop dev** | 个人脚本 `doc/scripts/dev-mac-ios.sh`（模板见 `scripts/dev-mac-ios.sh.example`） |
 | **dev-peer / B** | `com.spanwork.dev-peer`，Vite 1422 |
 
 口语：**A 端 / B 端**、**发起方 / 接收方**（配对时以输入对方配对码的一方为 initiator）。

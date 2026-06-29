@@ -3,6 +3,9 @@
  */
 import type { ProjectDto, ProjectType } from '@spanwork/shared-types';
 
+/** 侧栏项目分组：按类型或存档状态 */
+export type SidebarGroupId = ProjectType | 'archived';
+
 export type SidebarCategoryFilter = 'all' | 'uncategorized' | string;
 
 export interface SidebarProjectFilter {
@@ -15,12 +18,12 @@ const DEFAULT_FILTER: SidebarProjectFilter = {
   nameKeyword: '',
 };
 
-const filterKey = (type: ProjectType) => `spanwork:sidebar:filter:${type}`;
-const collapsedKey = (type: ProjectType) => `spanwork:sidebar:collapsed:${type}`;
+const filterKey = (group: SidebarGroupId) => `spanwork:sidebar:filter:${group}`;
+const collapsedKey = (group: SidebarGroupId) => `spanwork:sidebar:collapsed:${group}`;
 
 /** 侧栏 localStorage 键曾使用 `task` 表示目标式分组，一次性迁移为 `aim` */
-function migrateLegacySidebarKey(prefix: string, type: ProjectType): string {
-  if (type !== 'aim') return prefix + type;
+function migrateLegacySidebarKey(prefix: string, group: SidebarGroupId): string {
+  if (group !== 'aim') return prefix + group;
   const legacy = prefix + 'task';
   const next = prefix + 'aim';
   if (localStorage.getItem(next) == null && localStorage.getItem(legacy) != null) {
@@ -30,9 +33,9 @@ function migrateLegacySidebarKey(prefix: string, type: ProjectType): string {
   return next;
 }
 
-export function readSidebarProjectFilter(type: ProjectType): SidebarProjectFilter {
+export function readSidebarProjectFilter(group: SidebarGroupId): SidebarProjectFilter {
   try {
-    const raw = localStorage.getItem(migrateLegacySidebarKey('spanwork:sidebar:filter:', type));
+    const raw = localStorage.getItem(migrateLegacySidebarKey('spanwork:sidebar:filter:', group));
     if (!raw) return { ...DEFAULT_FILTER };
     const parsed = JSON.parse(raw) as Partial<SidebarProjectFilter>;
     return {
@@ -44,8 +47,8 @@ export function readSidebarProjectFilter(type: ProjectType): SidebarProjectFilte
   }
 }
 
-export function storeSidebarProjectFilter(type: ProjectType, filter: SidebarProjectFilter): void {
-  localStorage.setItem(filterKey(type), JSON.stringify(filter));
+export function storeSidebarProjectFilter(group: SidebarGroupId, filter: SidebarProjectFilter): void {
+  localStorage.setItem(filterKey(group), JSON.stringify(filter));
 }
 
 export function isSidebarFilterActive(filter: SidebarProjectFilter): boolean {
@@ -73,10 +76,10 @@ export function applySidebarProjectFilter(
   });
 }
 
-export function readSidebarGroupCollapsed(type: ProjectType): boolean {
-  return localStorage.getItem(migrateLegacySidebarKey('spanwork:sidebar:collapsed:', type)) === '1';
+export function readSidebarGroupCollapsed(group: SidebarGroupId): boolean {
+  return localStorage.getItem(migrateLegacySidebarKey('spanwork:sidebar:collapsed:', group)) === '1';
 }
 
-export function storeSidebarGroupCollapsed(type: ProjectType, collapsed: boolean): void {
-  localStorage.setItem(collapsedKey(type), collapsed ? '1' : '0');
+export function storeSidebarGroupCollapsed(group: SidebarGroupId, collapsed: boolean): void {
+  localStorage.setItem(collapsedKey(group), collapsed ? '1' : '0');
 }

@@ -12,6 +12,7 @@ use crate::logging::{FileLogger, LogLevel};
 use crate::sync::discovery::SyncDiscovery;
 use crate::sync::listener::SyncListener;
 use crate::sync::pairing::PairingManager;
+use crate::sync::versions::SyncVersionCache;
 
 pub type DbPool = Mutex<Connection>;
 
@@ -36,6 +37,7 @@ pub struct AppState {
     pub sync_stream: Mutex<Option<TcpStream>>,
     pub discovery: Mutex<Option<SyncDiscovery>>,
     pub listener: Mutex<Option<SyncListener>>,
+    pub sync_versions: Arc<SyncVersionCache>,
 }
 
 impl AppState {

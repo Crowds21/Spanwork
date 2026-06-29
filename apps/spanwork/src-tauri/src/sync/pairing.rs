@@ -59,6 +59,17 @@ impl PairingManager {
         }
     }
 
+    /// 当前有效配对码与过期时间（不生成新码）。
+    pub fn pairing_snapshot(&self) -> Option<(String, i64)> {
+        let g = self.inner.lock().ok()?;
+        let now = now_ms();
+        if now <= g.expires_at {
+            g.display_code.clone().map(|code| (code, g.expires_at))
+        } else {
+            None
+        }
+    }
+
     pub fn verify_and_issue_token(&self, code: &str) -> AppResult<(String, i64)> {
         let mut g = self.inner.lock().map_err(|_| AppError::Internal("pair lock".into()))?;
         let now = now_ms();

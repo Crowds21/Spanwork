@@ -3,7 +3,6 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import type { ProjectType } from '@spanwork/shared-types';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useT } from '@/lib/i18n/useT';
-import type { SidebarProjectFilter } from '@/lib/sidebarPreferences';
+import type { SidebarGroupId, SidebarProjectFilter } from '@/lib/sidebarPreferences';
 import { listProjectCategories } from '@/lib/tauri/project_category';
 import { queryKeys } from '@/queries/keys';
 
@@ -26,7 +25,7 @@ interface SidebarProjectFilterDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   groupLabel: string;
-  projectType: ProjectType;
+  groupId: SidebarGroupId;
   filter: SidebarProjectFilter;
   onSave: (filter: SidebarProjectFilter) => void;
 }
@@ -35,7 +34,7 @@ export function SidebarProjectFilterDialog({
   open,
   onOpenChange,
   groupLabel,
-  projectType,
+  groupId,
   filter,
   onSave,
 }: SidebarProjectFilterDialogProps) {
@@ -78,12 +77,12 @@ export function SidebarProjectFilterDialog({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor={`sidebar-filter-category-${projectType}`}>{t('nav.category')}</Label>
+            <Label htmlFor={`sidebar-filter-category-${groupId}`}>{t('nav.category')}</Label>
             <Select
               value={draft.categoryId}
               onValueChange={(value) => setDraft((prev) => ({ ...prev, categoryId: value }))}
             >
-              <SelectTrigger id={`sidebar-filter-category-${projectType}`}>
+              <SelectTrigger id={`sidebar-filter-category-${groupId}`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -106,9 +105,9 @@ export function SidebarProjectFilterDialog({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`sidebar-filter-name-${projectType}`}>{t('nav.nameContains')}</Label>
+            <Label htmlFor={`sidebar-filter-name-${groupId}`}>{t('nav.nameContains')}</Label>
             <Input
-              id={`sidebar-filter-name-${projectType}`}
+              id={`sidebar-filter-name-${groupId}`}
               value={draft.nameKeyword}
               onChange={(e) => setDraft((prev) => ({ ...prev, nameKeyword: e.target.value }))}
               placeholder={t('nav.nameKeywordPlaceholder')}

@@ -15,3 +15,4 @@ pub mod probe;
 pub mod registry;
 pub mod session;
 pub mod triggers;
+pub mod versions;

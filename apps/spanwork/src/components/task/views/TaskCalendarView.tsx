@@ -8,12 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
-import { getWeekdayLabels } from '@/lib/calendarUtils';
+import { getWeekdayLabels, todayDateKey } from '@/lib/calendarUtils';
 import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/utils';
 
 interface TaskCalendarViewProps {
   projectId: string;
+  readOnly?: boolean;
 }
 
 function pad(n: number): string {
@@ -42,6 +43,17 @@ function buildMonthGrid(year: number, month: number) {
   return cells;
 }
 
+function calendarTasksForDay(
+  tasks: TaskDto[],
+  readOnly: boolean,
+  todayKey: string,
+): TaskDto[] {
+  if (!readOnly) return tasks;
+  return tasks.filter(
+    (task) => task.status === 'done' && task.dueDate != null && task.dueDate < todayKey,
+  );
+}
+
 function CalendarTaskChip({
   task,
   onOpen,
@@ -67,7 +79,7 @@ function CalendarTaskChip({
   );
 }
 
-export function TaskCalendarView({ projectId }: TaskCalendarViewProps) {
+export function TaskCalendarView({ projectId, readOnly }: TaskCalendarViewProps) {
   const t = useT();
   const weekdayLabels = getWeekdayLabels();
   const today = new Date();
@@ -78,7 +90,7 @@ export function TaskCalendarView({ projectId }: TaskCalendarViewProps) {
 
   const { tasksByDueDate, isLoading } = useProjectTasks(projectId);
   const cells = useMemo(() => buildMonthGrid(year, month), [year, month]);
-  const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayKey = todayDateKey();
 
   function prevMonth() {
     if (month === 0) {
@@ -117,7 +129,7 @@ export function TaskCalendarView({ projectId }: TaskCalendarViewProps) {
               <ChevronRight className="size-4" />
             </Button>
           </div>
-          <Badge variant="outline">{t('calendar.quickCreateHint')}</Badge>
+          {!readOnly && <Badge variant="outline">{t('calendar.quickCreateHint')}</Badge>}
         </div>
 
         <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground">
@@ -134,19 +146,15 @@ export function TaskCalendarView({ projectId }: TaskCalendarViewProps) {
               return <div key={`empty-${index}`} className="min-h-24 rounded-lg bg-muted/20" />;
             }
 
-            const dayTasks = tasksByDueDate.get(cell.dateKey) ?? [];
+            const dayTasks = calendarTasksForDay(
+              tasksByDueDate.get(cell.dateKey) ?? [],
+              Boolean(readOnly),
+              todayKey,
+            );
             const isToday = cell.dateKey === todayKey;
 
-            return (
-              <button
-                key={cell.dateKey}
-                type="button"
-                onClick={() => setCreateDueDate(cell.dateKey ?? null)}
-                className={cn(
-                  'min-h-24 rounded-lg border p-1.5 text-left transition-colors hover:bg-muted/40',
-                  isToday && 'border-primary/50 bg-primary/5',
-                )}
-              >
+            const cellContent = (
+              <>
                 <span
                   className={cn(
                     'inline-flex size-6 items-center justify-center rounded-full text-xs font-medium',
@@ -169,6 +177,34 @@ export function TaskCalendarView({ projectId }: TaskCalendarViewProps) {
                     </p>
                   )}
                 </div>
+              </>
+            );
+
+            if (readOnly) {
+              return (
+                <div
+                  key={cell.dateKey}
+                  className={cn(
+                    'min-h-24 rounded-lg border p-1.5 text-left',
+                    isToday && 'border-primary/50 bg-primary/5',
+                  )}
+                >
+                  {cellContent}
+                </div>
+              );
+            }
+
+            return (
+              <button
+                key={cell.dateKey}
+                type="button"
+                onClick={() => setCreateDueDate(cell.dateKey ?? null)}
+                className={cn(
+                  'min-h-24 rounded-lg border p-1.5 text-left transition-colors hover:bg-muted/40',
+                  isToday && 'border-primary/50 bg-primary/5',
+                )}
+              >
+                {cellContent}
               </button>
             );
           })}
@@ -183,6 +219,7 @@ export function TaskCalendarView({ projectId }: TaskCalendarViewProps) {
           onOpenChange={(open) => {
             if (!open) setDetailTaskId(null);
           }}
+          readOnly={readOnly}
         />
       )}
 

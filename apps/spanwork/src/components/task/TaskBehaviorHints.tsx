@@ -15,7 +15,7 @@ interface TaskBehaviorHintsProps {
 function formatDateLabel(value: string, t: ReturnType<typeof useT>): string {
   const [y, m, d] = value.split('-');
   if (!y || !m || !d) return value;
-  return t('format.dateLabel', { year: y, month: Number(m), day: Number(d) });
+  return t('common.dateLabel', { year: y, month: Number(m), day: Number(d) });
 }
 
 export function TaskBehaviorHints({ task, className }: TaskBehaviorHintsProps) {

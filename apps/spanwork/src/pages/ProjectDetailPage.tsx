@@ -206,9 +206,13 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
           <h2 className="text-lg font-semibold">{t('projects.tasksSection')}</h2>
           <TaskViewSwitcher value={viewMode} onChange={handleViewChange} />
         </div>
-        {viewMode === 'list' && <TaskTree projectId={projectId} />}
-        {viewMode === 'kanban' && <TaskKanbanView projectId={projectId} />}
-        {viewMode === 'calendar' && <TaskCalendarView projectId={projectId} />}
+        {viewMode === 'list' && <TaskTree projectId={projectId} readOnly={project.status === 'archived'} />}
+        {viewMode === 'kanban' && (
+          <TaskKanbanView projectId={projectId} readOnly={project.status === 'archived'} />
+        )}
+        {viewMode === 'calendar' && (
+          <TaskCalendarView projectId={projectId} readOnly={project.status === 'archived'} />
+        )}
       </section>
     </div>
   );

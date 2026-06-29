@@ -58,6 +58,7 @@ use rusqlite::Connection;
 
 use crate::db::migrate::schema_version;
 use crate::db::repos::{device, sync_peer};
+use crate::sync::versions::SyncVersions;
 use crate::db::sync_log::{self, FieldChangeRecord};
 use crate::domain::habit_schedule::{format_date, today_local_date};
 use crate::error::{new_id, AppError, AppResult};
@@ -68,7 +69,7 @@ use crate::sync::protocol::{
     envelope, parse_payload, read_envelope, write_envelope, ChangesChunkPayload, ChangesDonePayload,
     HelloAckPayload, HelloPayload, MetaExchangePayload, PairFailPayload, PairOkPayload,
     PairRequestPayload, SessionDonePayload, SessionErrorPayload, SyncEnvelope,
-    CHUNK_ROW_LIMIT, PROTOCOL_VERSION,
+    CHUNK_ROW_LIMIT,
 };
 
 /// 一次同步会话的成功结果（供 IPC / 日志统计）。
@@ -79,6 +80,13 @@ pub struct SessionResult {
     pub acked_change_seq: i64,
     pub peer_device_id: String,
     pub peer_device_name: Option<String>,
+    /// 为 `false` 时不向前端发送 `sync://completed`（如 TCP 探测握手）。
+    pub notify_ui: bool,
+}
+
+/// 是否为热点 / 局域网 TCP 探测连接（仅 hello / hello_ack，不进入配对与数据交换）。
+pub fn is_probe_hello(hello: &HelloPayload) -> bool {
+    hello.platform == "probe" || hello.device_id.starts_with("probe-")
 }
 
 #[derive(Debug)]
@@ -134,6 +142,7 @@ pub fn run_client_session(
     stream: &mut TcpStream,
     peer_device_id: &str,
     pairing_code: &str,
+    versions: SyncVersions,
 ) -> AppResult<SessionResult> {
     pre_sync_ensure(conn)?;
 
@@ -142,8 +151,8 @@ pub fn run_client_session(
         device_id: local_device.device_id.clone(),
         device_name: local_device.device_name.clone(),
         platform: local_device.platform.clone(),
-        protocol_version: PROTOCOL_VERSION,
-        schema_version: schema_version(conn)?,
+        protocol_version: versions.protocol_version,
+        schema_version: versions.schema_version,
         app_version: env!("CARGO_PKG_VERSION").to_string(),
     };
     write_envelope(stream, &envelope("hello", &new_id(), &hello)?)?;
@@ -203,6 +212,7 @@ pub fn run_server_session(
     conn: &Connection,
     stream: &mut TcpStream,
     pairing: &PairingManager,
+    versions: SyncVersions,
 ) -> Result<SessionResult, SessionFailure> {
     pre_sync_ensure(conn).map_err(SessionFailure::before_hello)?;
 
@@ -211,14 +221,16 @@ pub fn run_server_session(
     let hello: HelloPayload = parse_payload(&hello_env).map_err(SessionFailure::before_hello)?;
     let peer_id = hello.device_id.clone();
     let peer_name = hello.device_name.clone();
+    let is_probe = is_probe_hello(&hello);
 
-    let local_schema = schema_version(conn).map_err(|e| SessionFailure::after_hello(&peer_id, &peer_name, e))?;
-    let accepted = hello.protocol_version == PROTOCOL_VERSION && hello.schema_version == local_schema;
+    let local_schema = versions.schema_version;
+    let accepted =
+        hello.protocol_version == versions.protocol_version && hello.schema_version == local_schema;
     let ack = HelloAckPayload {
         device_id: local_device.device_id.clone(),
         device_name: local_device.device_name.clone(),
         platform: local_device.platform.clone(),
-        protocol_version: PROTOCOL_VERSION,
+        protocol_version: versions.protocol_version,
         accepted,
         reject_reason: if accepted {
             None
@@ -233,7 +245,7 @@ pub fn run_server_session(
     if !accepted {
         let message = format!(
             "协议或 schema 版本不匹配 |server local protocol={} schema={} | client peer protocol={} schema={}",
-            PROTOCOL_VERSION,
+            versions.protocol_version,
             local_schema,
             hello.protocol_version,
             hello.schema_version,
@@ -246,6 +258,17 @@ pub fn run_server_session(
                 message,
             },
         ));
+    }
+
+    if is_probe {
+        return Ok(SessionResult {
+            records_sent: 0,
+            records_received: 0,
+            acked_change_seq: 0,
+            peer_device_id: peer_id,
+            peer_device_name: Some(peer_name),
+            notify_ui: false,
+        });
     }
 
     let pair_env = read_envelope(stream).map_err(|e| SessionFailure::after_hello(&peer_id, &peer_name, e))?;
@@ -479,6 +502,7 @@ fn finish_session(
         acked_change_seq: peer_ack_seq,
         peer_device_id: peer_device_id.to_string(),
         peer_device_name: None,
+        notify_ui: true,
     })
 }
 
@@ -641,6 +665,12 @@ mod tests {
     use crate::error::now_ms;
     use crate::sync::pairing::PairingManager;
 
+    use crate::sync::versions::SyncVersions;
+
+    fn test_versions(conn: &Connection) -> SyncVersions {
+        SyncVersions::new(schema_version(conn).unwrap())
+    }
+
     fn test_conn(device_id: &str) -> Connection {
         let conn = Connection::open_in_memory().unwrap();
         conn.execute("PRAGMA foreign_keys = ON;", []).unwrap();
@@ -668,7 +698,7 @@ mod tests {
             stream.set_read_timeout(Some(Duration::from_secs(5))).ok();
             stream.set_write_timeout(Some(Duration::from_secs(5))).ok();
             let conn = test_conn("device-b");
-            run_server_session(&conn, &mut stream, &server_pairing).unwrap()
+            run_server_session(&conn, &mut stream, &server_pairing, test_versions(&conn)).unwrap()
         });
 
         thread::sleep(Duration::from_millis(50));
@@ -687,7 +717,14 @@ mod tests {
         )
         .unwrap();
 
-        let result = run_client_session(&client_conn, &mut client_stream, "device-b", &code).unwrap();
+        let result = run_client_session(
+            &client_conn,
+            &mut client_stream,
+            "device-b",
+            &code,
+            test_versions(&client_conn),
+        )
+        .unwrap();
         let _server_result = server.join().unwrap();
         assert!(result.records_sent >= 0);
     }
@@ -705,7 +742,7 @@ mod tests {
             stream.set_read_timeout(Some(Duration::from_secs(5))).ok();
             stream.set_write_timeout(Some(Duration::from_secs(5))).ok();
             let conn = test_conn("device-b");
-            run_server_session(&conn, &mut stream, &server_pairing).unwrap()
+            run_server_session(&conn, &mut stream, &server_pairing, test_versions(&conn)).unwrap()
         });
 
         thread::sleep(Duration::from_millis(50));
@@ -730,7 +767,14 @@ mod tests {
         assert_eq!(local_before, 3);
 
         let result =
-            run_client_session(&client_conn, &mut client_stream, "device-b", &code).unwrap();
+            run_client_session(
+                &client_conn,
+                &mut client_stream,
+                "device-b",
+                &code,
+                test_versions(&client_conn),
+            )
+            .unwrap();
         let _server_result = server.join().unwrap();
 
         let cursor = sync_peer::get_cursor(&client_conn, "device-b").unwrap();
@@ -762,8 +806,22 @@ mod tests {
 
         let pairing_b = Arc::new(PairingManager::new());
         let code = pairing_b.generate_display_code().unwrap();
-        let mut listener_b =
-            SyncListener::start(db_b.clone(), Arc::clone(&pairing_b), 38573, None, None).unwrap();
+        use crate::sync::versions::{SyncVersionCache, SyncVersions};
+
+        let server_conn = Connection::open(&db_b).unwrap();
+        server_conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
+        let sync_versions = Arc::new(SyncVersionCache::default());
+        sync_versions.set(test_versions(&server_conn));
+
+        let mut listener_b = SyncListener::start(
+            db_b.clone(),
+            Arc::clone(&pairing_b),
+            38573,
+            Arc::clone(&sync_versions),
+            None,
+            None,
+        )
+        .unwrap();
 
         std::thread::sleep(Duration::from_millis(200));
         let mut client_stream = TcpStream::connect("127.0.0.1:38573").unwrap();
@@ -771,8 +829,13 @@ mod tests {
         let client_conn = Connection::open(&db_a).unwrap();
         client_conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
-        let client_result =
-            run_client_session(&client_conn, &mut client_stream, "device-b", &code);
+        let client_result = run_client_session(
+            &client_conn,
+            &mut client_stream,
+            "device-b",
+            &code,
+            test_versions(&client_conn),
+        );
         listener_b.stop();
         let _ = std::fs::remove_dir_all(dir_a);
         let _ = std::fs::remove_dir_all(dir_b);

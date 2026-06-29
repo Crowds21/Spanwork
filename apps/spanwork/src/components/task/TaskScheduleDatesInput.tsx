@@ -15,6 +15,7 @@ interface TaskScheduleDatesInputProps {
   onStartDateChange: (value: string) => void;
   onDueEnabledChange: (enabled: boolean) => void;
   onDueDateChange: (value: string) => void;
+  readOnly?: boolean;
 }
 
 export function TaskScheduleDatesInput({
@@ -26,6 +27,7 @@ export function TaskScheduleDatesInput({
   onStartDateChange,
   onDueEnabledChange,
   onDueDateChange,
+  readOnly,
 }: TaskScheduleDatesInputProps) {
   const t = useT();
 
@@ -42,6 +44,7 @@ export function TaskScheduleDatesInput({
           type="checkbox"
           className="mt-0.5 size-4 shrink-0 accent-primary"
           checked={startEnabled}
+          disabled={readOnly}
           onChange={(e) => {
             const next = e.target.checked;
             onStartEnabledChange(next);
@@ -66,6 +69,8 @@ export function TaskScheduleDatesInput({
               type="date"
               value={startDate}
               onChange={(e) => onStartDateChange(e.target.value)}
+              readOnly={readOnly}
+              disabled={readOnly}
             />
           )}
         </span>
@@ -82,6 +87,7 @@ export function TaskScheduleDatesInput({
           type="checkbox"
           className="mt-0.5 size-4 shrink-0 accent-primary"
           checked={dueEnabled}
+          disabled={readOnly}
           onChange={(e) => {
             const next = e.target.checked;
             onDueEnabledChange(next);
@@ -106,6 +112,8 @@ export function TaskScheduleDatesInput({
               type="date"
               value={dueDate}
               onChange={(e) => onDueDateChange(e.target.value)}
+              readOnly={readOnly}
+              disabled={readOnly}
             />
           )}
         </span>

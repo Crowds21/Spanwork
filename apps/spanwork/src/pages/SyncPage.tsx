@@ -4,8 +4,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ArrowLeft } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import type { ErrorBody, PeerInfoDto, SyncProgressDto } from '@spanwork/shared-types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ErrorBody, PeerInfoDto, SyncDiscoveryStatusDto, SyncProgressDto } from '@spanwork/shared-types';
 import { toast } from 'sonner';
 
 import { SyncDiscoveryPanel } from '@/components/sync/SyncDiscoveryPanel';
@@ -20,13 +20,16 @@ import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useT } from '@/lib/i18n/useT';
+import { applyDiscoveryStatus } from '@/lib/sync/discoveryRuntime';
 import {
   cancelSync,
   connectSyncManual,
+  getSyncDiscoveryStatus,
   listDiscoveredPeers,
   listSyncHistory,
   onSyncCompleted,
   onSyncDiscovered,
+  onSyncDiscoveryState,
   onSyncProgress,
   requestSyncPairingCode,
   startSync,
@@ -51,6 +54,32 @@ export function SyncPage() {
   const [codeDialogPeer, setCodeDialogPeer] = useState<PeerInfoDto | null>(null);
   const [pairingCodeInput, setPairingCodeInput] = useState('');
 
+  const applyDiscoveryStatusToPage = useCallback((status: SyncDiscoveryStatusDto) => {
+    applyDiscoveryStatus(status);
+    if (status.active) {
+      setDiscoveryActive(true);
+      setListenPort(status.port);
+      setLocalSyncHosts(status.localSyncHosts);
+      setSuggestedPeerHost(status.suggestedPeerHost);
+      setOnHotspot(status.onHotspot);
+      setPeers(status.peers);
+      if (status.pairing) {
+        setLocalPairing({
+          code: status.pairing.code,
+          expiresAt: status.pairing.expiresAt,
+        });
+      }
+      return;
+    }
+    setDiscoveryActive(false);
+    setListenPort(undefined);
+    setLocalSyncHosts(undefined);
+    setSuggestedPeerHost(undefined);
+    setOnHotspot(undefined);
+    setPeers([]);
+    setLocalPairing(undefined);
+  }, []);
+
   const historyQuery = useQuery({
     queryKey: ['sync-history'],
     queryFn: () => listSyncHistory(20),
@@ -60,6 +89,13 @@ export function SyncPage() {
     const unsubs: Array<Promise<() => void>> = [
       onSyncDiscovered((next) => setPeers(next)),
       onSyncProgress((p) => setProgress(p)),
+      onSyncDiscoveryState((active) => {
+        if (active) {
+          void getSyncDiscoveryStatus().then(applyDiscoveryStatusToPage);
+        } else {
+          applyDiscoveryStatusToPage({ active: false, port: 0, peers: [] });
+        }
+      }),
       onSyncCompleted(() => {
         // 进度 UI 兜底；Sonner 由 AppShell SyncNotifications 全局处理
         setSyncingDeviceId(undefined);
@@ -85,7 +121,15 @@ export function SyncPage() {
     return () => {
       void Promise.all(unsubs).then((fns) => fns.forEach((fn) => fn()));
     };
-  }, [queryClient, t]);
+  }, [applyDiscoveryStatusToPage, queryClient, t]);
+
+  useEffect(() => {
+    void getSyncDiscoveryStatus()
+      .then(applyDiscoveryStatusToPage)
+      .catch(() => {
+        /* 浏览器预览等非 Tauri 环境 */
+      });
+  }, [applyDiscoveryStatusToPage]);
 
   const refreshPairingCode = async () => {
     const pairing = await requestSyncPairingCode();
@@ -105,20 +149,9 @@ export function SyncPage() {
     meta: { errorSource: t('errors.lanDiscovery') },
     onSuccess: (status, action) => {
       if (action === 'start' && status) {
-        setDiscoveryActive(true);
-        setListenPort(status.port);
-        setLocalSyncHosts(status.localSyncHosts);
-        setSuggestedPeerHost(status.suggestedPeerHost);
-        setOnHotspot(status.onHotspot);
-        setPeers(status.peers);
+        applyDiscoveryStatusToPage(status);
       } else {
-        setDiscoveryActive(false);
-        setListenPort(undefined);
-        setLocalSyncHosts(undefined);
-        setSuggestedPeerHost(undefined);
-        setOnHotspot(undefined);
-        setPeers([]);
-        setLocalPairing(undefined);
+        applyDiscoveryStatusToPage({ active: false, port: 0, peers: [] });
       }
     },
   });

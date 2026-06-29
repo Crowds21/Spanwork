@@ -793,6 +793,8 @@ pub struct SyncDiscoveryStatusDto {
     pub suggested_peer_host: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub on_hotspot: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pairing: Option<SyncPairingDto>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

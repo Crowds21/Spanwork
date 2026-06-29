@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 
 interface TaskTreeProps {
   projectId: string;
+  readOnly?: boolean;
 }
 
 function TaskRow({
@@ -37,11 +38,13 @@ function TaskRow({
   projectId,
   depth,
   byParent,
+  readOnly,
 }: {
   task: TaskDto;
   projectId: string;
   depth: number;
   byParent: Map<string | null, TaskDto[]>;
+  readOnly?: boolean;
 }) {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(true);
@@ -87,17 +90,19 @@ function TaskRow({
         onStatusChange={(status) => updateMutation.mutate(status)}
         onDelete={(options) => deleteMutation.mutate(undefined, options)}
         deletePending={deleteMutation.isPending}
-        canAddChild={canAddChild}
-        canManualEntry={canManualEntry}
-        canTimer={canTimer}
+        canAddChild={canAddChild && !readOnly}
+        canManualEntry={canManualEntry && !readOnly}
+        canTimer={canTimer && !readOnly}
+        readOnly={readOnly}
       />
       <TaskDetailDialog
         taskId={task.id}
         projectId={projectId}
         open={showDetail}
         onOpenChange={setShowDetail}
+        readOnly={readOnly}
       />
-      {canManualEntry && showTimeForm && (
+      {canManualEntry && !readOnly && showTimeForm && (
         <div className={cn('rounded-lg border bg-muted/30 p-3', depth > 0 && 'ml-6')}>
           <TimeEntryForm projectId={projectId} targetType="task" targetId={task.id} />
         </div>
@@ -111,6 +116,7 @@ function TaskRow({
               projectId={projectId}
               depth={depth + 1}
               byParent={byParent}
+              readOnly={readOnly}
             />
           ))}
         </ul>
@@ -119,7 +125,7 @@ function TaskRow({
   );
 }
 
-export function TaskTree({ projectId }: TaskTreeProps) {
+export function TaskTree({ projectId, readOnly }: TaskTreeProps) {
   const t = useT();
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('all');
   const taskStatusMeta = getTaskStatusMeta();
@@ -190,7 +196,7 @@ export function TaskTree({ projectId }: TaskTreeProps) {
 
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{t('task.rootSubtaskHint')}</p>
-        <TaskCreateTrigger projectId={projectId} size="default" />
+        {!readOnly && <TaskCreateTrigger projectId={projectId} size="default" />}
       </div>
       {roots.length === 0 ? (
         <p className="text-sm text-muted-foreground">
@@ -205,6 +211,7 @@ export function TaskTree({ projectId }: TaskTreeProps) {
               projectId={projectId}
               depth={0}
               byParent={byParent}
+              readOnly={readOnly}
             />
           ))}
         </ul>

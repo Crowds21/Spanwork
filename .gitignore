@@ -64,3 +64,6 @@ Desktop.ini
 
 # --- Local documentation (not versioned) ---
 doc/
+
+# --- Personal Mac+iOS dev script (copy from dev-mac-ios.sh.example) ---
+apps/spanwork/scripts/dev-mac-ios.sh

@@ -18,6 +18,10 @@ export function startSyncDiscovery(): Promise<SyncDiscoveryStatusDto> {
   return tauriInvoke<SyncDiscoveryStatusDto>('sync_discovery_start');
 }
 
+export function getSyncDiscoveryStatus(): Promise<SyncDiscoveryStatusDto> {
+  return tauriInvoke<SyncDiscoveryStatusDto>('sync_discovery_status');
+}
+
 export function stopSyncDiscovery(): Promise<void> {
   return tauriInvoke<void>('sync_discovery_stop');
 }
@@ -62,6 +66,14 @@ export function onSyncDiscovered(
 ): Promise<UnlistenFn> {
   return listen<PeerInfoDto[]>('sync://discovered', (event) => {
     handler(event.payload);
+  });
+}
+
+export function onSyncDiscoveryState(
+  handler: (active: boolean) => void,
+): Promise<UnlistenFn> {
+  return listen<{ active: boolean }>('sync://discovery-state', (event) => {
+    handler(Boolean(event.payload.active));
   });
 }
 
