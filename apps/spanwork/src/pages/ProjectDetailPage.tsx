@@ -3,11 +3,11 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Clock, Flag, ListTodo } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { HabitProjectDetail } from '@/components/habit/HabitProjectDetail';
-import { ProjectOverviewStats } from '@/components/project/ProjectOverviewStats';
+import { OverviewStats } from '@/components/common/OverviewStats';
 import { TaskCalendarView } from '@/components/task/views/TaskCalendarView';
 import { TaskKanbanView } from '@/components/task/views/TaskKanbanView';
 import { TaskViewSwitcher } from '@/components/task/views/TaskViewSwitcher';
@@ -181,12 +181,17 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
         </div>
       </div>
 
-      <ProjectOverviewStats
+      <OverviewStats
         items={[
-          { label: t('projects.taskCount'), value: project.taskCount ?? 0 },
+          {
+            label: t('projects.taskCount'),
+            icon: ListTodo,
+            value: project.taskCount ?? 0,
+          },
           {
             label: t('projects.totalTime'),
             shortLabel: t('projects.totalTimeShort'),
+            icon: Clock,
             value: project.totalTimeSeconds
               ? t('projects.totalTimeMinutes', {
                   minutes: Math.round(project.totalTimeSeconds / 60),
@@ -196,6 +201,7 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
           {
             label: t('projects.openMilestones'),
             shortLabel: t('projects.milestonesShort'),
+            icon: Flag,
             value: project.openMilestoneCount ?? 0,
           },
         ]}

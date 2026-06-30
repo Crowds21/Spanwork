@@ -9,6 +9,7 @@ import { CalendarDays, Clock, FileText, ListTodo, Repeat2, Timer } from 'lucide-
 
 import { HabitOccurrenceRow } from '@/components/habit/HabitOccurrenceRow';
 import { TitleWithProject } from '@/components/common/TitleWithProject';
+import { OverviewStats } from '@/components/common/OverviewStats';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -81,45 +82,36 @@ export function TodayPage() {
       )}
 
       {inTauri && dashboardQuery.isLoading && (
-        <div className="grid gap-4 md:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-28 rounded-xl" />
-          ))}
-        </div>
+        <>
+          <Skeleton className="h-[4.5rem] rounded-xl md:hidden" />
+          <div className="hidden gap-4 md:grid md:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-28 rounded-xl" />
+            ))}
+          </div>
+        </>
       )}
 
       {dashboard && (
         <>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2 text-primary">
-                  <Clock className="size-4" />
-                  <CardDescription>{t('today.totalToday')}</CardDescription>
-                </div>
-                <CardTitle className="text-2xl">
-                  {formatDuration(dashboard.totalTimeTodaySeconds)}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2 text-primary">
-                  <Timer className="size-4" />
-                  <CardDescription>
-                    {dashboard.activeTimer?.isPaused ? t('today.paused') : t('today.activeTimer')}
-                  </CardDescription>
-                </div>
-                <CardTitle className="text-2xl">
-                  {dashboard.activeTimer ? (
-                    <ActiveTimerDuration active={dashboard.activeTimer} />
-                  ) : (
-                    t('common.none')
-                  )}
-                </CardTitle>
-              </CardHeader>
-              {dashboard.activeTimer && (
-                <CardContent>
+          <OverviewStats
+            items={[
+              {
+                label: t('today.totalToday'),
+                icon: Clock,
+                value: formatDuration(dashboard.totalTimeTodaySeconds),
+              },
+              {
+                label: dashboard.activeTimer?.isPaused
+                  ? t('today.paused')
+                  : t('today.activeTimer'),
+                icon: Timer,
+                value: dashboard.activeTimer ? (
+                  <ActiveTimerDuration active={dashboard.activeTimer} />
+                ) : (
+                  t('common.none')
+                ),
+                footer: dashboard.activeTimer ? (
                   <Button size="sm" variant="outline" asChild>
                     <Link
                       to="/projects/$projectId"
@@ -128,19 +120,15 @@ export function TodayPage() {
                       {t('today.viewProject')}
                     </Link>
                   </Button>
-                </CardContent>
-              )}
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2 text-primary">
-                  <ListTodo className="size-4" />
-                  <CardDescription>{t('today.recentTasks')}</CardDescription>
-                </div>
-                <CardTitle className="text-2xl">{dashboard.recentTasks.length}</CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
+                ) : undefined,
+              },
+              {
+                label: t('today.recentTasks'),
+                icon: ListTodo,
+                value: dashboard.recentTasks.length,
+              },
+            ]}
+          />
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2">

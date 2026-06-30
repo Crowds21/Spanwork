@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { getTranslator } from '@/lib/i18n/translate';
-import { formatFrequencyLabel, formatFrequencyLabelVerbose } from '@/lib/habitUtils';
+import {
+  formatFrequencyLabel,
+  formatFrequencyLabelVerbose,
+  occurrenceStatusLabel,
+  todayStatusLabel,
+} from '@/lib/habitUtils';
 
 const t = getTranslator('zh-CN');
 
@@ -66,5 +71,24 @@ describe('formatFrequencyLabel', () => {
     expect(formatFrequencyLabelVerbose(rule, 'zh-CN')).toBe(
       t('habit.frequency.monthlyDays', { days: '1、3、5' }),
     );
+  });
+});
+
+describe('todayStatusLabel', () => {
+  it('maps today status values to i18n keys', () => {
+    expect(todayStatusLabel('pending', t)).toBe(t('habit.todayStatus.pending'));
+    expect(todayStatusLabel('done', t)).toBe(t('habit.todayStatus.done'));
+    expect(todayStatusLabel('skipped', t)).toBe(t('habit.todayStatus.skipped'));
+    expect(todayStatusLabel('missed', t)).toBe(t('habit.todayStatus.missed'));
+    expect(todayStatusLabel('none', t)).toBe(t('habit.todayStatus.none'));
+  });
+});
+
+describe('occurrenceStatusLabel', () => {
+  it('maps occurrence status values to i18n keys', () => {
+    expect(occurrenceStatusLabel('pending', t)).toBe(t('habit.occurrenceStatus.pending'));
+    expect(occurrenceStatusLabel('done', t)).toBe(t('habit.occurrenceStatus.done'));
+    expect(occurrenceStatusLabel('skipped', t)).toBe(t('habit.occurrenceStatus.skipped'));
+    expect(occurrenceStatusLabel('missed', t)).toBe(t('habit.occurrenceStatus.missed'));
   });
 });

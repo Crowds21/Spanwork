@@ -5,7 +5,7 @@ import type { HabitFrequency, HabitOccurrenceDto, HabitRuleDto } from '@spanwork
 
 import { addDays, parseDateKey, toDateKey, todayDateKey } from '@/lib/calendarUtils';
 import type { Locale } from '@/lib/i18n';
-import { getTranslator } from '@/lib/i18n/translate';
+import { getTranslator, type Translator } from '@/lib/i18n/translate';
 
 type FrequencyRuleInput = Pick<
   HabitRuleDto,
@@ -297,9 +297,8 @@ export function formatShortDate(dateKey: string): string {
 
 export function todayStatusLabel(
   status: HabitOccurrenceDto['status'] | 'none',
-  locale?: Locale,
+  t: Translator,
 ): string {
-  const t = getTranslator(locale);
   switch (status) {
     case 'pending':
       return t('habit.todayStatus.pending');
@@ -309,6 +308,7 @@ export function todayStatusLabel(
       return t('habit.todayStatus.skipped');
     case 'missed':
       return t('habit.todayStatus.missed');
+    case 'none':
     default:
       return t('habit.todayStatus.none');
   }
@@ -316,9 +316,8 @@ export function todayStatusLabel(
 
 export function occurrenceStatusLabel(
   status: HabitOccurrenceDto['status'],
-  locale?: Locale,
+  t: Translator,
 ): string {
-  const t = getTranslator(locale);
   switch (status) {
     case 'pending':
       return t('habit.occurrenceStatus.pending');

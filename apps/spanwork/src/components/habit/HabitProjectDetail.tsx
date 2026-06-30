@@ -3,11 +3,11 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { ArrowLeft, Archive, CalendarDays, Trash2 } from 'lucide-react';
+import { ArrowLeft, Archive, CalendarDays, CheckCircle2, Clock, Repeat2, Trash2 } from 'lucide-react';
 import type { ProjectDetailDto } from '@spanwork/shared-types';
 
 import { HabitTaskList } from '@/components/habit/HabitTaskList';
-import { ProjectOverviewStats } from '@/components/project/ProjectOverviewStats';
+import { OverviewStats } from '@/components/common/OverviewStats';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -150,16 +150,18 @@ export function HabitProjectDetail({
         </div>
       </div>
 
-      <ProjectOverviewStats
+      <OverviewStats
         items={[
           {
             label: t('projects.habitTasks'),
             shortLabel: t('projects.habitTasksShort'),
+            icon: Repeat2,
             value: rulesQuery.isLoading ? '—' : ruleCount,
           },
           {
             label: t('projects.todayProgress'),
             shortLabel: t('projects.todayProgressShort'),
+            icon: CheckCircle2,
             value: todayOccQuery.isLoading
               ? '—'
               : todaySummary.total > 0
@@ -169,6 +171,7 @@ export function HabitProjectDetail({
           {
             label: t('projects.totalTime'),
             shortLabel: t('projects.totalTimeShort'),
+            icon: Clock,
             value: project.totalTimeSeconds
               ? formatDuration(project.totalTimeSeconds)
               : '0s',

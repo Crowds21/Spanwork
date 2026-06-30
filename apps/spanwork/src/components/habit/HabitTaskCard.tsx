@@ -143,7 +143,7 @@ export function HabitTaskCard({
               </div>
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <TodayStatusIcon status={todayStatus} />
-                <span>{todayStatusLabel(todayStatus)}</span>
+                <span>{todayStatusLabel(todayStatus, t)}</span>
               </div>
             </div>
             <div

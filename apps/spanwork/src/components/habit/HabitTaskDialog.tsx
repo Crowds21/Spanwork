@@ -134,7 +134,7 @@ export function HabitTaskDialog({
                   <section className="space-y-3 rounded-lg border bg-muted/20 p-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <HabitFrequencyBadge rule={rule} />
-                      <Badge variant="outline">{todayStatusLabel(todayStatus)}</Badge>
+                      <Badge variant="outline">{todayStatusLabel(todayStatus, t)}</Badge>
                       <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
                         <Flame className="size-4 text-orange-500" aria-hidden />
                         {streakQuery.isLoading ? '—' : streakLabel}
@@ -323,7 +323,7 @@ export function HabitTaskDialog({
                                         {formatShortDate(occ.scheduledDate)}
                                       </td>
                                       <td className="px-3 py-2.5">
-                                        <Badge variant="outline">{occurrenceStatusLabel(occ.status)}</Badge>
+                                        <Badge variant="outline">{occurrenceStatusLabel(occ.status, t)}</Badge>
                                       </td>
                                       <td className="px-3 py-2.5 font-mono tabular-nums">
                                         {occ.totalTimeSeconds

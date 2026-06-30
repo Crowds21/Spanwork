@@ -1,5 +1,27 @@
 /**
- * 习惯实例待办行（完成 / 跳过 / 计时 / 补录）
+ * 单条习惯 occurrence 待办行（完成 / 跳过 / 计时 / 补录 / 改期）
+ *
+ * 用于聚合展示「某日待处理的习惯实例」，与 `HabitTaskCard`（按规则维度的卡片）
+ * 互补：本组件以 occurrence 为粒度，适合列表场景。
+ *
+ * ## 使用场景
+ * - **TodayPage**：今日习惯待办（`compact` 紧凑布局）
+ * - **CalendarDayAgenda**：日历日视图待办区
+ *
+ * ## 职责边界
+ * - **本组件**：行布局、标题展示、操作按钮与确认/补录/改期 Dialog
+ * - **useHabitOccurrenceActions**：打卡 / 计时 mutation 与 Query 失效
+ * - **habitOccurrenceUtils**：纯函数判断能否打卡、计时、补录（不含副作用）
+ *
+ * ## 操作区显示逻辑
+ * ```
+ * isTimingThis → TimerSessionControls（暂停 / 结束计时）
+ * 否则按权限展示：开始计时 | 补录 | 完成 | 跳过 | 改期
+ * ```
+ * 「改期」仅 pending / missed 且 `showReschedule !== false` 时出现。
+ *
+ * @see useHabitOccurrenceActions — 本行绑定的 mutation 与计时器状态
+ * @see HabitTaskCard — 项目详情页按规则维度的习惯卡片
  */
 import { Check, CalendarClock, Clock, Play, SkipForward } from 'lucide-react';
 import { useState } from 'react';
@@ -29,6 +51,7 @@ import {
 } from '@/lib/touchTargets';
 import { cn } from '@/lib/utils';
 
+/** 左侧状态圆点内的简易符号（非 i18n，仅作视觉区分） */
 const statusIcon: Record<HabitOccurrenceDto['status'], string> = {
   pending: '○',
   done: '✓',
@@ -36,10 +59,15 @@ const statusIcon: Record<HabitOccurrenceDto['status'], string> = {
   missed: '!',
 };
 
+/** {@link HabitOccurrenceRow} 入参 */
 interface HabitOccurrenceRowProps {
+  /** 后端物化的习惯实例；含 ruleTitle / projectName 等展示字段 */
   occurrence: HabitOccurrenceDto;
+  /** 当前行所属日期（YYYY-MM-DD），传给 mutation 与 Dialog 用于精准 invalidate */
   dateKey: string;
+  /** 紧凑行高，今日页列表使用 */
   compact?: boolean;
+  /** 是否展示「改期」按钮；默认 true */
   showReschedule?: boolean;
 }
 
@@ -68,6 +96,7 @@ export function HabitOccurrenceRow({
     dateKey,
   });
 
+  // 操作权限与展示文案派生（规则见 habitOccurrenceUtils）
   const canAct = canUpdateHabitCheckIn(occurrence);
   const canStartTimer = canStartHabitTimer(occurrence);
   const canManualEntry = canManualHabitTimeEntry(occurrence);
@@ -95,6 +124,7 @@ export function HabitOccurrenceRow({
           compact && 'py-2',
         )}
       >
+        {/* 左侧：状态圆点 + 标题 / 计时提示 / 已记录时长 */}
         <div className={ROW_STACK_BODY_CLASS}>
           <span
             className={cn(
@@ -124,6 +154,8 @@ export function HabitOccurrenceRow({
             )}
           </div>
         </div>
+
+        {/* 右侧：计时控件或快捷操作按钮组 */}
         {showActions && (
           <div className={ROW_STACK_ACTIONS_CLASS}>
             <div className={ACTION_GROUP_CLASS}>
@@ -217,6 +249,7 @@ export function HabitOccurrenceRow({
         )}
       </div>
 
+      {/* 跳过确认 */}
       <ConfirmDialog
         open={skipConfirmOpen}
         onOpenChange={setSkipConfirmOpen}
@@ -231,6 +264,7 @@ export function HabitOccurrenceRow({
         }}
       />
 
+      {/* 补录时长 */}
       <HabitTimeEntryDialog
         open={entryOpen}
         onOpenChange={setEntryOpen}
@@ -239,6 +273,7 @@ export function HabitOccurrenceRow({
         dateKey={dateKey}
       />
 
+      {/* 改期到其他日期 */}
       <HabitRescheduleDialog
         open={rescheduleOpen}
         onOpenChange={setRescheduleOpen}
