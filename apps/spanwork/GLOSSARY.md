@@ -219,7 +219,7 @@
 | **Repo** | `db/repos/*.rs`，封装某表的 SQL CRUD，不含 UI 逻辑 |
 | **Command** | `commands/*.rs`，Tauri 暴露给前端的 IPC 入口 |
 | **Domain** | `domain/*.rs`，纯业务规则（树深度、习惯日期计算、确定性 id 等） |
-| **Migration** | `migrations/*.sql` + `migrate.rs`，schema 版本递增 |
+| **Migration** | `migrations/versions/*.sql` + `migrate.rs`；全貌见 `migrations/schema/current.sql` |
 | **shared-types** | `packages/shared-types`，TS 与 Rust DTO 字段对齐（camelCase JSON） |
 | **Monorepo** | 根目录 pnpm workspace：`apps/spanwork` + `packages/*` |
 

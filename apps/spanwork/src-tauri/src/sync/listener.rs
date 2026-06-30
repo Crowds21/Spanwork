@@ -18,7 +18,8 @@ use crate::sync::probe::is_probe_device_id;
 use crate::sync::session::run_server_session;
 use crate::sync::versions::{SyncVersionCache, SyncVersions};
 
-use tauri::{AppHandle, Emitter};
+use crate::sync::ui_emit;
+use tauri::AppHandle;
 
 const LISTENER_POLL_MS: u64 = 100;
 
@@ -122,7 +123,7 @@ impl SyncListener {
                                         result.acked_change_seq,
                                     );
                                     if let Some(app) = app.as_ref() {
-                                        let _ = app.emit("sync://completed", &dto);
+                                        ui_emit::emit_sync_completed(app, &dto);
                                     }
                                 }
                                 Err(failure) => {
@@ -155,7 +156,7 @@ impl SyncListener {
                                         )
                                     };
                                     if let Some(app) = app.as_ref() {
-                                        let _ = app.emit("sync://completed", &dto);
+                                        ui_emit::emit_sync_completed(app, &dto);
                                     }
                                 }
                             }

@@ -5,41 +5,53 @@ import type { SyncResultDto } from '@spanwork/shared-types';
 import { toast } from 'sonner';
 
 import { getTranslator } from '@/lib/i18n/translate';
+import {
+  logSyncToast,
+  probeSonnerDomAfterToast,
+  summarizeSyncResult,
+} from '@/lib/sync/syncToastDebug';
 
 function peerLabel(result: SyncResultDto): string | undefined {
   return result.peerDeviceName?.trim() || undefined;
 }
 
-export function notifySyncCompleted(result: SyncResultDto): void {
+export function notifySyncCompleted(result: SyncResultDto, source: string): void {
+  logSyncToast('notifySyncCompleted called', { source, ...summarizeSyncResult(result) });
+
   const t = getTranslator();
   const status = result.status ?? 'success';
 
   if (status === 'cancelled') {
-    toast.info(t('sync.cancelled'), { id: 'sync-cancelled', duration: 3000 });
+    toast.info(t('sync.notifyCancelled'), { id: 'sync-cancelled', duration: 3000 });
+    probeSonnerDomAfterToast(`${source}:cancelled`);
     return;
   }
 
   if (status === 'failed') {
-    toast.error(result.errorMessage?.trim() || t('sync.failed'), {
+    toast.error(result.errorMessage?.trim() || t('sync.notifyFailed'), {
       id: 'sync-failed',
       duration: 5000,
     });
+    probeSonnerDomAfterToast(`${source}:failed`);
     return;
   }
 
   const label = peerLabel(result);
   const hasChanges = result.recordsSent > 0 || result.recordsReceived > 0;
-  const peerPart = label ? t('sync.withPeer', { peer: label }) : '';
+  const peerPart = label ? t('sync.notifyWithPeer', { peer: label }) : '';
 
-  toast.success(t('sync.completed'), {
+  toast.success(t('sync.notifyComplete'), {
     id: 'sync-completed',
     description: hasChanges
-      ? t('sync.recordsSummary', {
+      ? t('sync.notifySentReceived', {
           peerPart,
           sent: result.recordsSent,
           received: result.recordsReceived,
         })
-      : t('sync.upToDate', { peerPart }),
+      : t('sync.notifyUpToDate', { peerPart }),
     duration: 5000,
   });
+
+  logSyncToast('toast.success invoked', { source, toastId: 'sync-completed', hasChanges });
+  probeSonnerDomAfterToast(`${source}:success`);
 }

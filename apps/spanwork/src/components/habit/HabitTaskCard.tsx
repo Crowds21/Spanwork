@@ -1,7 +1,8 @@
 /**
  * 单条习惯任务进展卡片
+ *
+ * 业务逻辑见 `useHabitTaskCard`；本文件仅负责卡片布局、操作按钮与浮动菜单渲染。
  */
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
   AlertCircle,
@@ -18,7 +19,6 @@ import {
   SkipForward,
   Trash2,
 } from 'lucide-react';
-import { useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { HabitOccurrenceDto, HabitRuleDto, ProjectDetailDto } from '@spanwork/shared-types';
 
@@ -31,35 +31,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Tooltip } from '@/components/ui/tooltip';
-import { useHabitOccurrenceActions } from '@/hooks/useHabitOccurrenceActions';
+import { useHabitTaskCard } from '@/hooks/useHabitTaskCard';
 import { formatDuration } from '@/lib/format';
 import { useT } from '@/lib/i18n/useT';
-import {
-  canManualHabitTimeEntry,
-  canStartHabitTimer,
-  canUpdateHabitCheckIn,
-} from '@/lib/habitOccurrenceUtils';
 import {
   ACTION_GROUP_CLASS,
   CARD_ACTIONS_ROW_CLASS,
   CARD_CONTENT_CLASS,
   ROW_ICON_BUTTON_CLASS,
 } from '@/lib/touchTargets';
-import {
-  computePeriodProgress,
-  findTodayOccurrence,
-  formatShortDate,
-  formatStreakLabel,
-  getProgressPeriod,
-  lastCompletedDate,
-  sumRuleTimeSeconds,
-  todayStatusLabel,
-} from '@/lib/habitUtils';
-import { todayDateKey } from '@/lib/calendarUtils';
+import { formatShortDate, todayStatusLabel } from '@/lib/habitUtils';
 import { habitRuleElementId } from '@/lib/timer/timerFocus';
-import { isTauri } from '@/lib/tauri/env';
-import { getHabitStreak } from '@/lib/tauri/habit';
-import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
 
 interface HabitTaskCardProps {
@@ -103,68 +85,40 @@ export function HabitTaskCard({
   onDelete,
 }: HabitTaskCardProps) {
   const t = useT();
-  const queryClient = useQueryClient();
-  const [entryOpen, setEntryOpen] = useState(false);
-  const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
-  const menuButtonRef = useRef<HTMLDivElement>(null);
-  const inTauri = isTauri();
-  const today = todayDateKey();
-
-  const todayOcc = findTodayOccurrence(todayOccurrences, rule.id, today);
-  const todayStatus: HabitOccurrenceDto['status'] | 'none' = todayOcc?.status ?? 'none';
-
-  const streakQuery = useQuery({
-    queryKey: queryKeys.habitStreak(rule.id),
-    queryFn: () => getHabitStreak(rule.id),
-    enabled: inTauri,
-  });
-
   const {
+    today,
+    todayOcc,
+    todayStatus,
+    streakQuery,
+    streakLabel,
+    progress,
+    totalSeconds,
+    lastDone,
     activeTimer,
     isTimingThis,
     isTimingOther,
     invalidate,
     statusMutation,
     startMutation,
-  } = useHabitOccurrenceActions({
-    projectId: project.id,
-    ruleId: rule.id,
-    occurrenceId: todayOcc?.id ?? '',
-    dateKey: today,
-    onInvalidate: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.timeEntries({
-          projectId: project.id,
-          targetType: 'habit_occurrence',
-        }),
-      });
-    },
+    canAct,
+    canStartTimer,
+    canManualEntry,
+    entryOpen,
+    setEntryOpen,
+    skipConfirmOpen,
+    setSkipConfirmOpen,
+    menuOpen,
+    setMenuOpen,
+    menuPos,
+    menuButtonRef,
+  } = useHabitTaskCard({
+    rule,
+    project,
+    periodOccurrences,
+    historyOccurrences,
+    todayOccurrences,
+    readOnly,
   });
-
-  const period = getProgressPeriod(rule);
-  const progress = computePeriodProgress(periodOccurrences, rule.id, rule, period);
-  const totalSeconds = sumRuleTimeSeconds(historyOccurrences, rule.id);
-  const lastDone = lastCompletedDate(historyOccurrences, rule.id);
-  const streakLabel = formatStreakLabel(streakQuery.data?.currentStreak ?? 0, rule.frequency);
-
-  useLayoutEffect(() => {
-    if (!menuOpen || !menuButtonRef.current) {
-      setMenuPos(null);
-      return;
-    }
-    const rect = menuButtonRef.current.getBoundingClientRect();
-    const menuWidth = 144;
-    setMenuPos({
-      top: rect.bottom + 4,
-      left: Math.max(8, rect.right - menuWidth),
-    });
-  }, [menuOpen]);
-
-  const canAct = !readOnly && todayOcc && canUpdateHabitCheckIn(todayOcc);
-  const canStartTimer = !readOnly && todayOcc && canStartHabitTimer(todayOcc);
-  const canManualEntry = !readOnly && todayOcc && canManualHabitTimeEntry(todayOcc);
 
   const titleId = `habit-task-${rule.id}`;
 

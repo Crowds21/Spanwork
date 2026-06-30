@@ -1,5 +1,15 @@
 /**
- * 习惯实例：计时、打卡、缓存失效
+ * 单条习惯 occurrence 的操作 Hook（计时、打卡、缓存失效）
+ *
+ * 供 HabitTaskCard、HabitOccurrenceRow 等组件复用。封装三类能力：
+ * 1. **状态变更**：done / skipped 等打卡状态 mutation
+ * 2. **启动计时**：startTimer 并检测是否与其他目标冲突
+ * 3. **缓存失效**：变更后统一 invalidate 习惯项目相关 Query
+ *
+ * ## 计时器冲突
+ * `isTimingOther` 为 true 时表示有其他目标正在计时，应禁用本卡片的「开始计时」按钮。
+ *
+ * @see useHabitTaskCard — 卡片级统计与 UI 状态，内部调用本 Hook
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { HabitOccurrenceDto } from '@spanwork/shared-types';

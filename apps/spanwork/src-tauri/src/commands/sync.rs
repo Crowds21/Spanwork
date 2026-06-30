@@ -10,8 +10,8 @@ use tauri::{AppHandle, Emitter, State};
 
 use crate::db::repos::{device, sync_peer, sync_session};
 use crate::dto::{
-    PeerInfoDto, SyncDiscoveryStatusDto, SyncPairingDto, SyncProgressDto, SyncResultDto,
-    SyncSessionLogDto, SyncStartParams,
+    PeerInfoDto, SyncDiscoveryStatusDto, SyncPairingDto, SyncResultDto, SyncSessionLogDto,
+    SyncStartParams,
 };
 use crate::error::{new_id, AppError, AppResult};
 use crate::logging::LogLevel;
@@ -25,6 +25,7 @@ use crate::sync::net_addr::{
 };
 use crate::sync::probe::tcp_reachability_label;
 use crate::sync::session::{configure_sync_stream, run_client_session};
+use crate::sync::ui_emit::{self, emit_sync_progress};
 use crate::sync::versions::SyncVersions;
 
 fn acquire_session_lock(state: &AppState) -> AppResult<()> {
@@ -86,21 +87,6 @@ fn map_session_error(state: &AppState, err: AppError) -> AppError {
     } else {
         err
     }
-}
-
-fn emit_progress(app: &AppHandle, phase: &str, percent: u8, message: Option<&str>) {
-    let _ = app.emit(
-        "sync://progress",
-        SyncProgressDto {
-            phase: phase.into(),
-            percent,
-            message: message.map(str::to_string),
-        },
-    );
-}
-
-fn emit_sync_completed(app: &AppHandle, dto: &SyncResultDto) {
-    let _ = app.emit("sync://completed", dto);
 }
 
 fn discovery_active(state: &AppState) -> bool {
@@ -406,7 +392,7 @@ pub fn sync_cancel(state: State<'_, AppState>, app: AppHandle) -> AppResult<()> 
     state.sync_abort.store(true, Ordering::Release);
     shutdown_active_stream(&state);
 
-    emit_progress(&app, "cancelled", 0, Some("正在取消同步…"));
+    emit_sync_progress(&app, "cancelled", 0, Some("正在取消同步…"));
     Ok(())
 }
 
@@ -415,7 +401,7 @@ fn run_sync_inner(
     app: &AppHandle,
     params: &SyncStartParams,
 ) -> AppResult<SyncResultDto> {
-    emit_progress(app, "connecting", 10, Some("正在连接对端…"));
+    emit_sync_progress(app, "connecting", 10, Some("正在连接对端…"));
 
     let trace_id = new_id();
     let (initiator_device_id, initiator_platform) = state.with_db("sync_start", |conn| {
@@ -544,8 +530,8 @@ fn run_sync_inner(
         let _ = state.with_db("sync_start", |conn| {
             sync_session::finish(conn, &session_log_id, "cancelled", 0, 0, 0, Some("用户取消"))
         });
-        emit_progress(app, "cancelled", 0, Some("同步已取消"));
-        emit_sync_completed(
+        emit_sync_progress(app, "cancelled", 0, Some("同步已取消"));
+        ui_emit::emit_sync_completed(
             app,
             &SyncResultDto::cancelled(
                 params.peer_device_id.clone(),
@@ -558,7 +544,7 @@ fn run_sync_inner(
         });
     }
 
-    emit_progress(app, "exchanging", 40, Some("正在交换数据…"));
+    emit_sync_progress(app, "exchanging", 40, Some("正在交换数据…"));
 
     let versions = resolve_sync_versions(state)?;
     let session_result = state.with_db("sync_start", |conn| {
@@ -575,8 +561,8 @@ fn run_sync_inner(
         let _ = state.with_db("sync_start", |conn| {
             sync_session::finish(conn, &session_log_id, "cancelled", 0, 0, 0, Some("用户取消"))
         });
-        emit_progress(app, "cancelled", 0, Some("同步已取消"));
-        emit_sync_completed(
+        emit_sync_progress(app, "cancelled", 0, Some("同步已取消"));
+        ui_emit::emit_sync_completed(
             app,
             &SyncResultDto::cancelled(
                 params.peer_device_id.clone(),
@@ -591,7 +577,7 @@ fn run_sync_inner(
 
     match session_result {
         Ok(result) => {
-            emit_progress(app, "merging", 80, Some("正在合并变更…"));
+            emit_sync_progress(app, "merging", 80, Some("正在合并变更…"));
             let _ = state.logger.write(
                 LogLevel::Info,
                 "sync_start",
@@ -623,8 +609,8 @@ fn run_sync_inner(
                 result.records_received,
                 result.acked_change_seq,
             );
-            emit_sync_completed(app, &dto);
-            emit_progress(app, "done", 100, Some("同步完成"));
+            ui_emit::emit_sync_completed(app, &dto);
+            emit_sync_progress(app, "done", 100, Some("同步完成"));
             Ok(dto)
         }
         Err(err) => {
@@ -667,9 +653,9 @@ fn run_sync_inner(
                     body.message.clone(),
                 )
             };
-            emit_sync_completed(app, &completed);
+            ui_emit::emit_sync_completed(app, &completed);
             if status == "cancelled" {
-                emit_progress(app, "cancelled", 0, Some("同步已取消"));
+                emit_sync_progress(app, "cancelled", 0, Some("同步已取消"));
             }
             Err(err)
         }

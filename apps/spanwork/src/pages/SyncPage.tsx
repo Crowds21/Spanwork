@@ -20,6 +20,8 @@ import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useT } from '@/lib/i18n/useT';
+import { notifySyncCompleted } from '@/lib/syncNotifications';
+import { logSyncToast, summarizeSyncResult } from '@/lib/sync/syncToastDebug';
 import { applyDiscoveryStatus } from '@/lib/sync/discoveryRuntime';
 import {
   cancelSync,
@@ -96,8 +98,9 @@ export function SyncPage() {
           applyDiscoveryStatusToPage({ active: false, port: 0, peers: [] });
         }
       }),
-      onSyncCompleted(() => {
-        // 进度 UI 兜底；Sonner 由 AppShell SyncNotifications 全局处理
+      onSyncCompleted((result) => {
+        logSyncToast('SyncPage event received', { ...summarizeSyncResult(result) });
+        notifySyncCompleted(result, 'SyncPage:event');
         setSyncingDeviceId(undefined);
         setProgress((current) => {
           if (current?.phase === 'cancelled') {
@@ -165,6 +168,10 @@ export function SyncPage() {
   };
 
   const handleSyncError = (error: ErrorBody) => {
+    logSyncToast('SyncPage mutation error', {
+      code: error.code,
+      message: error.message,
+    });
     if (error.code === 'SYNC_CANCELLED') {
       setProgress({ phase: 'cancelled', percent: 0, message: t('sync.syncCancelled') });
       window.setTimeout(() => {
@@ -197,7 +204,11 @@ export function SyncPage() {
       setCodeDialogPeer(null);
       setPairingCodeInput('');
     },
-    onSuccess: () => finishSyncUi(),
+    onSuccess: (result) => {
+      logSyncToast('SyncPage mutation onSuccess', { ...summarizeSyncResult(result) });
+      notifySyncCompleted(result, 'SyncPage:onSuccess');
+      finishSyncUi();
+    },
     onSettled: () => setSyncingDeviceId(undefined),
     onError: handleSyncError,
   });
@@ -206,7 +217,11 @@ export function SyncPage() {
     mutationFn: connectSyncManual,
     meta: { errorSource: t('errors.manualSync') },
     onMutate: (params) => beginSyncUi(params),
-    onSuccess: () => finishSyncUi(),
+    onSuccess: (result) => {
+      logSyncToast('SyncPage manual onSuccess', { ...summarizeSyncResult(result) });
+      notifySyncCompleted(result, 'SyncPage:manualOnSuccess');
+      finishSyncUi();
+    },
     onSettled: () => setSyncingDeviceId(undefined),
     onError: handleSyncError,
   });

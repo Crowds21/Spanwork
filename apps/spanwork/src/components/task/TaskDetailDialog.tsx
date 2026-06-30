@@ -1,12 +1,9 @@
 /**
  * 任务详情弹窗：查看/编辑任务、子任务导航、计时会话列表
  *
- * 支持复制任务 ID、内联改状态；timeEntries 按 taskId 拉取并展示每次 timer/manual 记录。
+ * 业务逻辑见 `useTaskDetailDialog`；本文件仅负责布局与交互控件渲染。
  */
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight, ChevronLeft, ChevronRight as ChevronRightIcon, Copy, Flag, Loader2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import type { TaskStatus, UpdateTaskInput } from '@spanwork/shared-types';
 
 import { Dialog } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -23,29 +20,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TaskStatusBadge, TaskStatusSelect } from '@/components/task/TaskStatusSelect';
 import { TimeEntryList } from '@/components/task/TimeEntryList';
-import {
-  TaskBehaviorDesignFields,
-  taskBehaviorDesignFromTask,
-  taskBehaviorDesignPatchFromForm,
-  type TaskBehaviorDesignFormState,
-} from '@/components/task/TaskBehaviorDesignFields';
+import { TaskBehaviorDesignFields } from '@/components/task/TaskBehaviorDesignFields';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip } from '@/components/ui/tooltip';
+import { useTaskDetailDialog } from '@/hooks/useTaskDetailDialog';
 import {
   formatDateTime,
   formatDuration,
 } from '@/lib/format';
 import { useT } from '@/lib/i18n/useT';
-import { isTauri } from '@/lib/tauri/client';
-import { getActiveTimer } from '@/lib/tauri/timer';
-import { listTimeEntries } from '@/lib/tauri/time_entry';
-import { getTask, updateTask } from '@/lib/tauri/task';
-import { useActiveTimerElapsed } from '@/lib/timer/useActiveTimerElapsed';
-import { queryKeys } from '@/queries/keys';
 import { cn } from '@/lib/utils';
-
-const TIME_ENTRIES_PAGE_SIZE = 5;
 
 interface TaskDetailDialogProps {
   taskId: string;
@@ -63,108 +48,33 @@ export function TaskDetailDialog({
   readOnly,
 }: TaskDetailDialogProps) {
   const t = useT();
-  const queryClient = useQueryClient();
-  const inTauri = isTauri();
+  const {
+    taskQuery,
+    entriesQuery,
+    task,
+    title,
+    setTitle,
+    status,
+    setStatus,
+    behaviorDesign,
+    setBehaviorDesign,
+    isMilestone,
+    setIsMilestone,
+    isSubtask,
+    hasSubtasks,
+    isMilestoneContainer,
+    canToggleMilestone,
+    milestoneDisabledReason,
+    activeTimer,
+    activeElapsed,
+    showActiveOnPage,
+    totalRecords,
+    recordsPagination,
+    saveMutation,
+    canSave,
+  } = useTaskDetailDialog({ taskId, projectId, open, onOpenChange, readOnly });
 
-  const [title, setTitle] = useState('');
-  const [status, setStatus] = useState<TaskStatus>('todo');
-  const [behaviorDesign, setBehaviorDesign] = useState<TaskBehaviorDesignFormState>(
-    taskBehaviorDesignFromTask(),
-  );
-  const [isMilestone, setIsMilestone] = useState(false);
-  const [recordsOpen, setRecordsOpen] = useState(true);
-  const [recordsPage, setRecordsPage] = useState(0);
-
-  const taskQuery = useQuery({
-    queryKey: queryKeys.task(taskId),
-    queryFn: () => getTask(taskId),
-    enabled: open && inTauri,
-  });
-
-  const entriesQuery = useQuery({
-    queryKey: queryKeys.timeEntries({ targetType: 'task', targetId: taskId }),
-    queryFn: () =>
-      listTimeEntries({ targetType: 'task', targetId: taskId, limit: 200 }),
-    enabled: open && inTauri,
-  });
-
-  const activeTimerQuery = useQuery({
-    queryKey: queryKeys.activeTimer,
-    queryFn: getActiveTimer,
-    enabled: open && inTauri,
-  });
-
-  const task = taskQuery.data;
-  const isSubtask = Boolean(task?.parentId);
-  const isMilestoneRoot = Boolean(task?.isMilestone && !task?.parentId);
-  const isActiveTask = activeTimerQuery.data?.targetId === taskId;
-  const activeTimer = isActiveTask ? activeTimerQuery.data : null;
-  const activeElapsed = useActiveTimerElapsed(activeTimer);
-
-  const hasSubtasks = (task?.childCount ?? 0) > 0;
-  const isMilestoneContainer = isMilestoneRoot && hasSubtasks;
-  const canToggleMilestone = !isSubtask && !(task?.isMilestone && hasSubtasks);
-  const milestoneDisabledReason = isSubtask
-    ? t('task.milestoneChildCannotBeMilestone')
-    : hasSubtasks
-      ? t('task.milestoneWithChildrenCannotDemote')
-      : null;
-
-  useEffect(() => {
-    if (!open) return;
-    setRecordsPage(0);
-    setRecordsOpen(true);
-  }, [open, taskId]);
-
-  useEffect(() => {
-    if (!task) return;
-    setTitle(task.title);
-    setStatus(task.status);
-    setBehaviorDesign(taskBehaviorDesignFromTask(task));
-    setIsMilestone(task.isMilestone);
-  }, [task]);
-
-  const entries = entriesQuery.data ?? [];
-  const totalRecords = entries.length + (activeTimer ? 1 : 0);
-  const totalPages = Math.max(1, Math.ceil(entries.length / TIME_ENTRIES_PAGE_SIZE));
-  const safePage = Math.min(recordsPage, totalPages - 1);
-  const pagedEntries = useMemo(
-    () =>
-      entries.slice(
-        safePage * TIME_ENTRIES_PAGE_SIZE,
-        (safePage + 1) * TIME_ENTRIES_PAGE_SIZE,
-      ),
-    [entries, safePage],
-  );
-  const showActiveOnPage = activeTimer != null && safePage === 0;
-
-  useEffect(() => {
-    if (recordsPage > totalPages - 1) {
-      setRecordsPage(Math.max(0, totalPages - 1));
-    }
-  }, [recordsPage, totalPages]);
-
-  const saveMutation = useMutation({
-    mutationFn: () => {
-      const patch: UpdateTaskInput = {
-        title: title.trim(),
-        status,
-        ...taskBehaviorDesignPatchFromForm(behaviorDesign),
-      };
-      if (canToggleMilestone) patch.isMilestone = isMilestone;
-      return updateTask(taskId, patch);
-    },
-    meta: { errorSource: t('errors.saveTask') },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.task(taskId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.todayDashboard });
-      onOpenChange(false);
-    },
-  });
-
-  const canSave = !readOnly && title.trim().length > 0 && !saveMutation.isPending;
+  const { recordsOpen, setRecordsOpen, safePage, totalPages, pagedItems } = recordsPagination;
 
   return (
     <Dialog
@@ -323,14 +233,14 @@ export function TaskDetailDialog({
                       </div>
                     ) : (
                       <TimeEntryList
-                        entries={pagedEntries}
+                        entries={pagedItems}
                         activeTimer={activeTimer}
                         activeElapsed={activeElapsed}
                         showActiveOnPage={showActiveOnPage}
                       />
                     )}
 
-                    {!isMilestoneContainer && entries.length > TIME_ENTRIES_PAGE_SIZE && (
+                    {!isMilestoneContainer && totalPages > 1 && (
                       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                         <span>
                           {t('common.pageOf', { current: safePage + 1, total: totalPages })}
@@ -342,7 +252,7 @@ export function TaskDetailDialog({
                             variant="outline"
                             className="h-7 px-2"
                             disabled={safePage <= 0}
-                            onClick={() => setRecordsPage((p) => Math.max(0, p - 1))}
+                            onClick={() => recordsPagination.setRecordsPage((p) => Math.max(0, p - 1))}
                             aria-label={t('common.prevPage')}
                           >
                             <ChevronLeft className="size-3.5" />
@@ -354,7 +264,7 @@ export function TaskDetailDialog({
                             className="h-7 px-2"
                             disabled={safePage >= totalPages - 1}
                             onClick={() =>
-                              setRecordsPage((p) => Math.min(totalPages - 1, p + 1))
+                              recordsPagination.setRecordsPage((p) => Math.min(totalPages - 1, p + 1))
                             }
                             aria-label={t('common.nextPage')}
                           >

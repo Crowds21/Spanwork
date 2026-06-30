@@ -1,24 +1,25 @@
-//! 版本化 schema 迁移，按序执行 migrations/*.sql 并记录 schema_migrations。
+//! 版本化 schema 迁移，按序执行 `migrations/versions/*.sql` 并记录 schema_migrations。
+//! 当前全貌见 `migrations/schema/current.sql`（只读参考，不参与升级）。
 //! 当前版本 SCHEMA_VERSION = 14，对外暴露 schema_version 供 app_get_info 使用。
 
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::error::{now_ms, AppResult};
 
-const MIGRATION_001: &str = include_str!("../../migrations/001_initial.sql");
-const MIGRATION_002: &str = include_str!("../../migrations/002_task_is_milestone.sql");
-const MIGRATION_003: &str = include_str!("../../migrations/003_fix_subtask_milestone_flag.sql");
-const MIGRATION_004: &str = include_str!("../../migrations/004_project_categories.sql");
-const MIGRATION_005: &str = include_str!("../../migrations/005_active_timer_pause.sql");
-const MIGRATION_006: &str = include_str!("../../migrations/006_habit_rules_multi.sql");
-const MIGRATION_007: &str = include_str!("../../migrations/007_habit_fogg_fields.sql");
-const MIGRATION_008: &str = include_str!("../../migrations/008_behavior_design_enabled.sql");
-const MIGRATION_009: &str = include_str!("../../migrations/009_habit_schedule_multi.sql");
-const MIGRATION_010: &str = include_str!("../../migrations/010_task_behavior_design.sql");
-const MIGRATION_011: &str = include_str!("../../migrations/011_sync_flm.sql");
-const MIGRATION_012: &str = include_str!("../../migrations/012_sync_triggers.sql");
-const MIGRATION_013: &str = include_str!("../../migrations/013_project_type_aim.sql");
-const MIGRATION_014: &str = include_str!("../../migrations/014_project_type_aim_cleanup.sql");
+const MIGRATION_001: &str = include_str!("../../migrations/versions/001_initial.sql");
+const MIGRATION_002: &str = include_str!("../../migrations/versions/002_task_is_milestone.sql");
+const MIGRATION_003: &str = include_str!("../../migrations/versions/003_fix_subtask_milestone_flag.sql");
+const MIGRATION_004: &str = include_str!("../../migrations/versions/004_project_categories.sql");
+const MIGRATION_005: &str = include_str!("../../migrations/versions/005_active_timer_pause.sql");
+const MIGRATION_006: &str = include_str!("../../migrations/versions/006_habit_rules_multi.sql");
+const MIGRATION_007: &str = include_str!("../../migrations/versions/007_habit_fogg_fields.sql");
+const MIGRATION_008: &str = include_str!("../../migrations/versions/008_behavior_design_enabled.sql");
+const MIGRATION_009: &str = include_str!("../../migrations/versions/009_habit_schedule_multi.sql");
+const MIGRATION_010: &str = include_str!("../../migrations/versions/010_task_behavior_design.sql");
+const MIGRATION_011: &str = include_str!("../../migrations/versions/011_sync_flm.sql");
+const MIGRATION_012: &str = include_str!("../../migrations/versions/012_sync_triggers.sql");
+const MIGRATION_013: &str = include_str!("../../migrations/versions/013_project_type_aim.sql");
+const MIGRATION_014: &str = include_str!("../../migrations/versions/014_project_type_aim_cleanup.sql");
 const SCHEMA_VERSION: i32 = 14;
 
 pub fn run_migrations(conn: &Connection) -> AppResult<()> {

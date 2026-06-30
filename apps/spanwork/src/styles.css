@@ -158,6 +158,18 @@
   --toast-offset-top: calc(var(--safe-top) + 12px);
 }
 
+/* 桌面 / macOS：顶栏（计时条等）下方留白，toast 居中靠上 */
+@media (min-width: 768px) {
+  :root {
+    --toast-offset-top: calc(var(--safe-top) + 3rem);
+  }
+
+  /* Mac 桌面 WebView：确保 top-center toaster 落在可视区内 */
+  [data-sonner-toaster][data-x-position='center'][data-y-position='top'] {
+    top: var(--toast-offset-top) !important;
+  }
+}
+
 @media (max-width: 767px) {
   :root {
     --toast-offset-top: calc(var(--safe-top) + 28px);
