@@ -86,7 +86,7 @@ function ProjectNavItem({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const active = pathname === `/projects/${project.id}`;
   const Icon = project.projectType === 'habit' ? Repeat2 : ListTodo;
-  const color = project.color ?? undefined;
+  const color = project.color ?? project.categoryColor ?? undefined;
 
   return (
     <Link
@@ -100,8 +100,8 @@ function ProjectNavItem({
       )}
     >
       <span
-        className="flex size-5 shrink-0 items-center justify-center rounded-sm border border-sidebar-border bg-background"
-        style={color ? { borderColor: color, color } : undefined}
+        className="flex size-5 shrink-0 items-center justify-center rounded-sm bg-background"
+        style={color ? { color } : undefined}
       >
         <Icon className="size-3" />
       </span>

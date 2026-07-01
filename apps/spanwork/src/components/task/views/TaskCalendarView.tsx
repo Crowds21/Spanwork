@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
-import type { TaskDto } from '@spanwork/shared-types';
+import type { TaskDto, TaskStatus } from '@spanwork/shared-types';
 
 import { TaskCreateDialog } from '@/components/task/TaskCreateDialog';
 import { TaskDetailDialog } from '@/components/task/TaskDetailDialog';
@@ -9,12 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
 import { getWeekdayLabels, todayDateKey } from '@/lib/calendarUtils';
+import { TASK_STATUSES } from '@/lib/format';
 import { useT } from '@/lib/i18n/useT';
+import { filterTasksByStatuses } from '@/lib/taskUtils';
 import { cn } from '@/lib/utils';
 
 interface TaskCalendarViewProps {
   projectId: string;
   readOnly?: boolean;
+  statusFilter?: readonly TaskStatus[];
 }
 
 function pad(n: number): string {
@@ -79,7 +82,7 @@ function CalendarTaskChip({
   );
 }
 
-export function TaskCalendarView({ projectId, readOnly }: TaskCalendarViewProps) {
+export function TaskCalendarView({ projectId, readOnly, statusFilter }: TaskCalendarViewProps) {
   const t = useT();
   const weekdayLabels = getWeekdayLabels();
   const today = new Date();
@@ -89,6 +92,14 @@ export function TaskCalendarView({ projectId, readOnly }: TaskCalendarViewProps)
   const [createDueDate, setCreateDueDate] = useState<string | null>(null);
 
   const { tasksByDueDate, isLoading } = useProjectTasks(projectId);
+  const effectiveStatuses = statusFilter ?? TASK_STATUSES;
+  const filteredTasksByDueDate = useMemo(() => {
+    const map = new Map<string, TaskDto[]>();
+    for (const [dateKey, dayTasks] of tasksByDueDate) {
+      map.set(dateKey, filterTasksByStatuses(dayTasks, effectiveStatuses));
+    }
+    return map;
+  }, [tasksByDueDate, effectiveStatuses]);
   const cells = useMemo(() => buildMonthGrid(year, month), [year, month]);
   const todayKey = todayDateKey();
 
@@ -147,7 +158,7 @@ export function TaskCalendarView({ projectId, readOnly }: TaskCalendarViewProps)
             }
 
             const dayTasks = calendarTasksForDay(
-              tasksByDueDate.get(cell.dateKey) ?? [],
+              filteredTasksByDueDate.get(cell.dateKey) ?? [],
               Boolean(readOnly),
               todayKey,
             );

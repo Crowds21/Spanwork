@@ -1,16 +1,12 @@
 /**
  * 项目列表页的编排 Hook
  *
- * 封装分类筛选状态、listProjects 查询参数派生、分类列表拉取，
- * 以及空态文案选择。ProjectList 组件仅负责渲染筛选 Chips 与卡片列表。
- *
- * ## 筛选与查询参数映射
- * - `all`：不按分类过滤
- * - `uncategorized`：categoryId = 'uncategorized'（后端约定）
- * - 具体分类 id：按 categoryId 过滤
+ * 封装状态/分类/排序筛选、listProjects 查询参数派生、分类列表拉取，
+ * 以及空态文案选择。ProjectList 组件仅负责渲染工具栏与卡片网格。
  */
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import type { ProjectStatus } from '@spanwork/shared-types';
 
 import { useT } from '@/lib/i18n/useT';
 import { listProjects } from '@/lib/tauri/project';
@@ -18,23 +14,24 @@ import { listProjectCategories } from '@/lib/tauri/project_category';
 import { queryKeys } from '@/queries/keys';
 
 export type ProjectCategoryFilter = string | 'all' | 'uncategorized';
+export type ProjectStatusFilter = ProjectStatus | 'all';
+export type ProjectListSortBy = 'updated' | 'created' | 'name';
 
 export function useProjectList() {
   const t = useT();
   const [categoryFilter, setCategoryFilter] = useState<ProjectCategoryFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<ProjectStatusFilter>('active');
+  const [sortBy, setSortBy] = useState<ProjectListSortBy>('updated');
 
-  const listParams = useMemo(
-    () =>
-      categoryFilter === 'all'
-        ? { status: 'all' as const, sortBy: 'updated' as const, sortOrder: 'desc' as const }
-        : {
-            status: 'all' as const,
-            sortBy: 'updated' as const,
-            sortOrder: 'desc' as const,
-            categoryId: categoryFilter,
-          },
-    [categoryFilter],
-  );
+  const listParams = useMemo(() => {
+    const base = {
+      status: statusFilter,
+      sortBy,
+      sortOrder: (sortBy === 'name' ? 'asc' : 'desc') as 'asc' | 'desc',
+    };
+    if (categoryFilter === 'all') return base;
+    return { ...base, categoryId: categoryFilter };
+  }, [categoryFilter, statusFilter, sortBy]);
 
   const projectsQuery = useQuery({
     queryKey: queryKeys.projects(listParams),
@@ -49,6 +46,12 @@ export function useProjectList() {
   const categories = categoriesQuery.data ?? [];
 
   const emptyMessage = useMemo(() => {
+    if (statusFilter === 'archived') {
+      return {
+        title: t('projects.emptyArchivedTitle'),
+        description: t('projects.emptyArchivedDesc'),
+      };
+    }
     if (categoryFilter === 'all') {
       return { title: t('projects.emptyAllTitle'), description: t('projects.emptyAllDesc') };
     }
@@ -62,9 +65,13 @@ export function useProjectList() {
       title: t('projects.emptyCategoryTitle'),
       description: t('projects.emptyCategoryDesc'),
     };
-  }, [categoryFilter, t]);
+  }, [categoryFilter, statusFilter, t]);
 
   return {
+    statusFilter,
+    setStatusFilter,
+    sortBy,
+    setSortBy,
     categoryFilter,
     setCategoryFilter,
     projects: projectsQuery.data,

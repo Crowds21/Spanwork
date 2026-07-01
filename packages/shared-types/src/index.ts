@@ -62,6 +62,15 @@ export interface ProjectDetailDto extends ProjectDto {
   openMilestoneCount?: number;
 }
 
+/** 项目列表项：含进度与统计摘要（单次 list 查询聚合） */
+export interface ProjectListItemDto extends ProjectDto {
+  taskCount?: number;
+  doneTaskCount?: number;
+  totalTimeSeconds?: number;
+  openMilestoneCount?: number;
+  habitRuleCount?: number;
+}
+
 export interface CreateHabitRuleInput {
   title?: string;
   sortOrder?: number;

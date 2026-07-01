@@ -10,17 +10,15 @@ import type { TaskDto, TaskStatus } from '@spanwork/shared-types';
 import { TaskCreateTrigger } from '@/components/task/TaskCreateDialog';
 import { TaskDetailDialog } from '@/components/task/TaskDetailDialog';
 import { TaskTaskCard } from '@/components/task/TaskTaskCard';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TimeEntryForm } from '@/components/timer/TimeEntryForm';
-import { getTaskStatusMeta, TASK_STATUSES } from '@/lib/format';
+import { isAllTaskStatusesSelected, TASK_STATUSES } from '@/lib/format';
 import { useT } from '@/lib/i18n/useT';
 import { buildTaskTree } from '@/lib/taskTree';
 import {
-  filterTasksForTree,
+  filterTasksByStatuses,
   isManualTimeEntryAllowed,
   canStartTimer,
-  type TaskStatusFilter,
 } from '@/lib/taskUtils';
 import { celebrateTaskCompletion } from '@/lib/taskCelebration';
 import { deleteTask, listTasks, updateTask } from '@/lib/tauri/task';
@@ -31,6 +29,8 @@ import { cn } from '@/lib/utils';
 interface TaskTreeProps {
   projectId: string;
   readOnly?: boolean;
+  /** 展示方案传入的状态集合；缺省为全部 */
+  statusFilter?: readonly TaskStatus[];
 }
 
 function TaskRow({
@@ -125,10 +125,9 @@ function TaskRow({
   );
 }
 
-export function TaskTree({ projectId, readOnly }: TaskTreeProps) {
+export function TaskTree({ projectId, readOnly, statusFilter }: TaskTreeProps) {
   const t = useT();
-  const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('all');
-  const taskStatusMeta = getTaskStatusMeta();
+  const effectiveStatuses = statusFilter ?? TASK_STATUSES;
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.tasks(projectId),
@@ -136,8 +135,8 @@ export function TaskTree({ projectId, readOnly }: TaskTreeProps) {
   });
 
   const filteredTasks = useMemo(
-    () => filterTasksForTree(data ?? [], statusFilter),
-    [data, statusFilter],
+    () => filterTasksByStatuses(data ?? [], effectiveStatuses),
+    [data, effectiveStatuses],
   );
   const byParent = useMemo(() => buildTaskTree(filteredTasks), [filteredTasks]);
   const roots = byParent.get(null) ?? [];
@@ -167,40 +166,15 @@ export function TaskTree({ projectId, readOnly }: TaskTreeProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant={statusFilter === 'all' ? 'default' : 'outline'}
-          onClick={() => setStatusFilter('all')}
-        >
-          {t('common.all')}
-        </Button>
-        {TASK_STATUSES.map((status) => {
-          const meta = taskStatusMeta[status];
-          return (
-            <Button
-              key={status}
-              type="button"
-              size="sm"
-              variant={statusFilter === status ? 'default' : 'outline'}
-              className="gap-1.5"
-              onClick={() => setStatusFilter(status)}
-            >
-              <span className={cn('size-2 rounded-full', meta.dot)} />
-              {meta.label}
-            </Button>
-          );
-        })}
-      </div>
-
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{t('task.rootSubtaskHint')}</p>
         {!readOnly && <TaskCreateTrigger projectId={projectId} size="default" />}
       </div>
       {roots.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          {statusFilter === 'all' ? t('task.emptyAll') : t('task.emptyFiltered')}
+          {isAllTaskStatusesSelected(effectiveStatuses)
+            ? t('task.emptyAll')
+            : t('task.emptyFiltered')}
         </p>
       ) : (
         <ul className="space-y-3">

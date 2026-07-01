@@ -5,7 +5,7 @@ use tauri::State;
 
 use crate::db::repos::project as project_repo;
 use crate::dto::{
-    CreateProjectInput, ProjectDetailDto, ProjectDto, ProjectListParams, ProjectReorderParams,
+    CreateProjectInput, ProjectDetailDto, ProjectListItemDto, ProjectListParams, ProjectReorderParams,
     ProjectUpdateParams,
 };
 use crate::error::AppResult;
@@ -15,7 +15,7 @@ use crate::state::AppState;
 pub fn project_list(
     state: State<'_, AppState>,
     params: Option<ProjectListParams>,
-) -> AppResult<Vec<ProjectDto>> {
+) -> AppResult<Vec<ProjectListItemDto>> {
     let params = params.unwrap_or_default();
     state.with_db("project_list", |conn| project_repo::list(conn, &params))
 }

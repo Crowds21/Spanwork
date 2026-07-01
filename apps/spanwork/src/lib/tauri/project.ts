@@ -6,15 +6,15 @@
 import type {
   CreateProjectInput,
   ProjectDetailDto,
-  ProjectDto,
+  ProjectListItemDto,
   ProjectListParams,
   UpdateProjectInput,
 } from '@spanwork/shared-types';
 
 import { tauriInvoke } from './client';
 
-export function listProjects(params?: ProjectListParams): Promise<ProjectDto[]> {
-  return tauriInvoke<ProjectDto[]>('project_list', { params: params ?? {} });
+export function listProjects(params?: ProjectListParams): Promise<ProjectListItemDto[]> {
+  return tauriInvoke<ProjectListItemDto[]>('project_list', { params: params ?? {} });
 }
 
 export function getProject(id: string): Promise<ProjectDetailDto> {

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { TaskDto } from '@spanwork/shared-types';
 
-import { canStartTimer, filterTasksForTree, isManualTimeEntryAllowed } from '@/lib/taskUtils';
+import { canStartTimer, filterTasksByStatuses, filterTasksForTree, isManualTimeEntryAllowed } from '@/lib/taskUtils';
 
 describe('canStartTimer', () => {
   it('disallows done tasks', () => {
@@ -56,5 +56,23 @@ describe('filterTasksForTree', () => {
   it('keeps ancestors of matching nodes', () => {
     const filtered = filterTasksForTree(tasks, 'done');
     expect(filtered.map((t) => t.id)).toEqual(['root', 'child']);
+  });
+});
+
+describe('filterTasksByStatuses', () => {
+  it('keeps ancestors of matching nodes', () => {
+    const tasks = [
+      { id: 'a', parentId: undefined, status: 'todo' as const, sortOrder: 0 },
+      { id: 'b', parentId: 'a', status: 'done' as const, sortOrder: 0 },
+    ] as TaskDto[];
+    expect(filterTasksByStatuses(tasks, ['done'])).toHaveLength(2);
+  });
+
+  it('filters to selected statuses only', () => {
+    const tasks = [
+      { id: 'a', parentId: undefined, status: 'todo' as const, sortOrder: 0 },
+      { id: 'b', parentId: undefined, status: 'cancelled' as const, sortOrder: 0 },
+    ] as TaskDto[];
+    expect(filterTasksByStatuses(tasks, ['todo', 'in_progress'])).toHaveLength(1);
   });
 });

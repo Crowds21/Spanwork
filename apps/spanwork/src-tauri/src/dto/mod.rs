@@ -121,6 +121,23 @@ pub struct ProjectDetailDto {
     pub open_milestone_count: Option<i64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectListItemDto {
+    #[serde(flatten)]
+    pub project: ProjectDto,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub task_count: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub done_task_count: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_time_seconds: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub open_milestone_count: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub habit_rule_count: Option<i64>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateProjectInput {

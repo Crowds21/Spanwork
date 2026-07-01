@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { TaskDto, TaskStatus } from '@spanwork/shared-types';
 
 import { TaskDetailDialog } from '@/components/task/TaskDetailDialog';
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 interface TaskKanbanViewProps {
   projectId: string;
   readOnly?: boolean;
+  statusFilter?: readonly TaskStatus[];
 }
 
 function KanbanCard({
@@ -52,11 +53,19 @@ function KanbanCard({
   );
 }
 
-export function TaskKanbanView({ projectId, readOnly }: TaskKanbanViewProps) {
+export function TaskKanbanView({ projectId, readOnly, statusFilter }: TaskKanbanViewProps) {
   const t = useT();
   const { tasksByStatus, taskById, isLoading } = useProjectTasks(projectId);
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
   const taskStatusMeta = getTaskStatusMeta();
+
+  const visibleStatuses = useMemo(
+    () =>
+      TASK_STATUSES.filter(
+        (status) => !statusFilter || statusFilter.includes(status),
+      ),
+    [statusFilter],
+  );
 
   if (isLoading) {
     return (
@@ -71,7 +80,7 @@ export function TaskKanbanView({ projectId, readOnly }: TaskKanbanViewProps) {
   return (
     <>
       <div className="flex gap-4 overflow-x-auto pb-2">
-        {TASK_STATUSES.map((status) => {
+        {visibleStatuses.map((status) => {
           const meta = taskStatusMeta[status];
           const columnTasks = tasksByStatus[status as TaskStatus];
           return (

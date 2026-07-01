@@ -3,8 +3,18 @@
 
 use rusqlite::{Connection, OptionalExtension};
 
-use crate::dto::{CreateProjectInput, ProjectDetailDto, ProjectDto, ProjectListParams, ProjectType, ProjectStatus, UpdateProjectInput};
+use crate::dto::{
+    CreateProjectInput, ProjectDetailDto, ProjectDto, ProjectListItemDto, ProjectListParams,
+    ProjectType, ProjectStatus, UpdateProjectInput,
+};
 use crate::error::{new_id, now_ms, validate_project_name, AppError, AppResult};
+
+const PROJECT_COLUMNS: &str = "p.id, p.name, p.description, p.project_type, p.status, p.color, p.icon,
+        p.start_date, p.target_end_date, p.sort_order, p.category_id,
+        c.name, c.color, p.created_at, p.updated_at";
+
+const PROJECT_FROM: &str = "FROM projects p
+ LEFT JOIN project_categories c ON c.id = p.category_id AND c.deleted_at IS NULL";
 
 const PROJECT_SELECT: &str = "SELECT p.id, p.name, p.description, p.project_type, p.status, p.color, p.icon,
         p.start_date, p.target_end_date, p.sort_order, p.category_id,
@@ -12,7 +22,22 @@ const PROJECT_SELECT: &str = "SELECT p.id, p.name, p.description, p.project_type
  FROM projects p
  LEFT JOIN project_categories c ON c.id = p.category_id AND c.deleted_at IS NULL";
 
-pub fn list(conn: &Connection, params: &ProjectListParams) -> AppResult<Vec<ProjectDto>> {
+fn project_list_select() -> String {
+    let habit_visible = crate::db::repos::time_entry::visible_habit_target_sql("te");
+    format!(
+        "SELECT {PROJECT_COLUMNS},
+        (SELECT COUNT(*) FROM tasks WHERE project_id = p.id AND deleted_at IS NULL) AS task_count,
+        (SELECT COUNT(*) FROM tasks WHERE project_id = p.id AND deleted_at IS NULL AND status = 'done') AS done_task_count,
+        (SELECT COALESCE(SUM(te.duration_seconds), 0) FROM time_entries te
+         WHERE te.project_id = p.id AND te.deleted_at IS NULL{habit_visible}) AS total_time_seconds,
+        (SELECT COUNT(*) FROM tasks WHERE project_id = p.id AND deleted_at IS NULL
+           AND is_milestone = 1 AND status != 'done') AS open_milestone_count,
+        (SELECT COUNT(*) FROM habit_rules WHERE project_id = p.id AND deleted_at IS NULL) AS habit_rule_count
+         {PROJECT_FROM}"
+    )
+}
+
+pub fn list(conn: &Connection, params: &ProjectListParams) -> AppResult<Vec<ProjectListItemDto>> {
     let status = params.status.as_deref().unwrap_or("active");
     let sort_by = params.sort_by.as_deref().unwrap_or("updated");
     let sort_order = params.sort_order.as_deref().unwrap_or("desc");
@@ -25,8 +50,8 @@ pub fn list(conn: &Connection, params: &ProjectListParams) -> AppResult<Vec<Proj
     let order_dir = if sort_order == "asc" { "ASC" } else { "DESC" };
 
     let mut sql = format!(
-        "{PROJECT_SELECT}
-         WHERE p.deleted_at IS NULL"
+        "{} WHERE p.deleted_at IS NULL",
+        project_list_select()
     );
     let mut bind_values: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
 
@@ -47,7 +72,7 @@ pub fn list(conn: &Connection, params: &ProjectListParams) -> AppResult<Vec<Proj
     sql.push_str(&format!(" ORDER BY {order_col} {order_dir}"));
 
     let mut stmt = conn.prepare(&sql)?;
-    let rows = stmt.query_map(rusqlite::params_from_iter(bind_values.iter()), map_project_row)?;
+    let rows = stmt.query_map(rusqlite::params_from_iter(bind_values.iter()), map_list_item_row)?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
 
@@ -253,6 +278,17 @@ fn map_project_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<ProjectDto> {
         category_color: row.get(12)?,
         created_at: row.get(13)?,
         updated_at: row.get(14)?,
+    })
+}
+
+fn map_list_item_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<ProjectListItemDto> {
+    Ok(ProjectListItemDto {
+        project: map_project_row(row)?,
+        task_count: Some(row.get(15)?),
+        done_task_count: Some(row.get(16)?),
+        total_time_seconds: Some(row.get(17)?),
+        open_milestone_count: Some(row.get(18)?),
+        habit_rule_count: Some(row.get(19)?),
     })
 }
 

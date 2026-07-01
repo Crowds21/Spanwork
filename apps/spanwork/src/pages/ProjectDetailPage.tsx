@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 
 import { HabitProjectDetail } from '@/components/habit/HabitProjectDetail';
 import { OverviewStats } from '@/components/common/OverviewStats';
+import { ProjectDisplayPresetDialog } from '@/components/project/ProjectDisplayPresetDialog';
+import { ProjectDisplayPresetSwitcher } from '@/components/project/ProjectDisplayPresetSwitcher';
 import { TaskCalendarView } from '@/components/task/views/TaskCalendarView';
 import { TaskKanbanView } from '@/components/task/views/TaskKanbanView';
 import { TaskViewSwitcher } from '@/components/task/views/TaskViewSwitcher';
@@ -15,6 +17,7 @@ import { TaskTree } from '@/components/task/TaskTree';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useProjectDisplayPresets } from '@/hooks/useProjectDisplayPresets';
 import { projectTypeLabelI18n } from '@/lib/i18n/projectType';
 import { useT } from '@/lib/i18n/useT';
 import { deleteProject, getProject, updateProject } from '@/lib/tauri/project';
@@ -40,6 +43,14 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
     if (initialView) return initialView;
     return readStoredViewMode(projectId);
   });
+  const [presetDialogOpen, setPresetDialogOpen] = useState(false);
+  const {
+    presets,
+    activePreset,
+    activePresetId,
+    setActivePresetId,
+    replaceStore,
+  } = useProjectDisplayPresets(projectId);
 
   useEffect(() => {
     if (search.view === 'list' || search.view === 'kanban' || search.view === 'calendar') {
@@ -120,6 +131,9 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
       />
     );
   }
+
+  // 展示方案（看什么）与 viewMode（怎么看）独立：statuses 下发给三种任务视图
+  const statusFilter = activePreset.statuses;
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -208,18 +222,48 @@ export function ProjectDetailPage({ projectId, initialView }: ProjectDetailPageP
       />
 
       <section className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold">{t('projects.tasksSection')}</h2>
           <TaskViewSwitcher value={viewMode} onChange={handleViewChange} />
         </div>
-        {viewMode === 'list' && <TaskTree projectId={projectId} readOnly={project.status === 'archived'} />}
+
+        <ProjectDisplayPresetSwitcher
+          presets={presets}
+          activePresetId={activePresetId}
+          onSelect={setActivePresetId}
+          onManage={() => setPresetDialogOpen(true)}
+        />
+
+        {viewMode === 'list' && (
+          <TaskTree
+            projectId={projectId}
+            readOnly={project.status === 'archived'}
+            statusFilter={statusFilter}
+          />
+        )}
         {viewMode === 'kanban' && (
-          <TaskKanbanView projectId={projectId} readOnly={project.status === 'archived'} />
+          <TaskKanbanView
+            projectId={projectId}
+            readOnly={project.status === 'archived'}
+            statusFilter={statusFilter}
+          />
         )}
         {viewMode === 'calendar' && (
-          <TaskCalendarView projectId={projectId} readOnly={project.status === 'archived'} />
+          <TaskCalendarView
+            projectId={projectId}
+            readOnly={project.status === 'archived'}
+            statusFilter={statusFilter}
+          />
         )}
       </section>
+
+      <ProjectDisplayPresetDialog
+        open={presetDialogOpen}
+        onOpenChange={setPresetDialogOpen}
+        store={{ version: 1, presets, activePresetId }}
+        readOnly={project.status === 'archived'}
+        onSave={replaceStore}
+      />
     </div>
   );
 }

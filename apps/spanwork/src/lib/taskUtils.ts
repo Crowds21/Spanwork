@@ -6,6 +6,8 @@
  */
 import type { TaskDto, TaskStatus } from '@spanwork/shared-types';
 
+import { isAllTaskStatusesSelected } from '@/lib/format';
+
 /** 是否允许补录时间（有子任务的里程碑根任务不可） */
 export function isManualTimeEntryAllowed(
   task: Pick<TaskDto, 'isMilestone' | 'parentId' | 'childCount' | 'timeTrackable'>,
@@ -29,15 +31,24 @@ export function isTrackableTask(task: TaskDto): boolean {
 
 export type TaskStatusFilter = TaskStatus | 'all';
 
-/** 按状态筛选任务树：保留匹配节点及其祖先以维持层级 */
-export function filterTasksForTree(tasks: TaskDto[], statusFilter: TaskStatusFilter): TaskDto[] {
-  if (statusFilter === 'all') return tasks;
+/**
+ * 按多个状态过滤任务树/列表/日历数据。
+ * 匹配节点及其所有祖先保留，避免子任务可见时父里程碑被隐藏。
+ * statuses 为全量时直接返回 tasks（见 isAllTaskStatusesSelected）。
+ */
+export function filterTasksByStatuses(
+  tasks: TaskDto[],
+  statuses: readonly TaskStatus[],
+): TaskDto[] {
+  if (statuses.length === 0) return [];
+  if (isAllTaskStatusesSelected(statuses)) return tasks;
 
+  const allowed = new Set(statuses);
   const byId = new Map(tasks.map((task) => [task.id, task]));
   const visibleIds = new Set<string>();
 
   for (const task of tasks) {
-    if (task.status !== statusFilter) continue;
+    if (!allowed.has(task.status)) continue;
     visibleIds.add(task.id);
     let parentId = task.parentId;
     while (parentId) {
@@ -47,6 +58,13 @@ export function filterTasksForTree(tasks: TaskDto[], statusFilter: TaskStatusFil
   }
 
   return tasks.filter((task) => visibleIds.has(task.id));
+}
+
+
+/** 单状态路径兼容旧调用；新代码直接用 filterTasksByStatuses */
+export function filterTasksForTree(tasks: TaskDto[], statusFilter: TaskStatusFilter): TaskDto[] {
+  if (statusFilter === 'all') return tasks;
+  return filterTasksByStatuses(tasks, [statusFilter]);
 }
 
 export type ProjectViewMode = 'list' | 'kanban' | 'calendar';
@@ -64,3 +82,5 @@ export function readStoredViewMode(projectId: string): ProjectViewMode {
 export function storeViewMode(projectId: string, mode: ProjectViewMode): void {
   localStorage.setItem(projectViewStorageKey(projectId), mode);
 }
+
+

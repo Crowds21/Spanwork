@@ -35,6 +35,10 @@ export function formatDurationLive(seconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+/**
+ * 
+ *
+ */
 export const TASK_STATUSES: TaskStatus[] = ['todo', 'in_progress', 'done', 'cancelled'];
 
 const taskStatusOutlineTrigger =
@@ -132,4 +136,34 @@ export function formatDateTime(ms: number, locale?: Locale): string {
     minute: '2-digit',
     second: '2-digit',
   });
+}
+
+/** 相对时间，用于列表卡片「3 小时前」等 */
+export function formatRelativeTime(ms: number, locale?: Locale): string {
+  const resolved = locale ?? getLocale();
+  const diffSec = Math.round((Date.now() - ms) / 1000);
+  const rtf = new Intl.RelativeTimeFormat(resolved, { numeric: 'auto' });
+  if (Math.abs(diffSec) < 60) return rtf.format(-diffSec, 'second');
+  const diffMin = Math.round(diffSec / 60);
+  if (Math.abs(diffMin) < 60) return rtf.format(-diffMin, 'minute');
+  const diffHour = Math.round(diffMin / 60);
+  if (Math.abs(diffHour) < 24) return rtf.format(-diffHour, 'hour');
+  const diffDay = Math.round(diffHour / 24);
+  if (Math.abs(diffDay) < 30) return rtf.format(-diffDay, 'day');
+  const diffMonth = Math.round(diffDay / 30);
+  if (Math.abs(diffMonth) < 12) return rtf.format(-diffMonth, 'month');
+  const diffYear = Math.round(diffDay / 365);
+  return rtf.format(-diffYear, 'year');
+}
+
+export function isAllTaskStatusesSelected(statuses: readonly TaskStatus[]): boolean {
+  return statuses.length >= TASK_STATUSES.length;
+}
+
+/** 
+ * 从 TASK_STATUSES 按声明顺序取出子集（看板列顺序与 UI 一致） 
+ */
+export function pickTaskStatuses(...picked: TaskStatus[]): TaskStatus[] {
+  const set = new Set(picked);
+  return TASK_STATUSES.filter((s) => set.has(s));
 }
