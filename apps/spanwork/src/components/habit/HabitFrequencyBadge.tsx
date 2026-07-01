@@ -5,6 +5,7 @@ import type { HabitRuleDto } from '@spanwork/shared-types';
 
 import { Badge } from '@/components/ui/badge';
 import { formatFrequencyLabel, formatFrequencyLabelVerbose } from '@/lib/habitUtils';
+import { useLocale, useT } from '@/lib/i18n/useT';
 
 interface HabitFrequencyBadgeProps {
   rule: Pick<
@@ -14,8 +15,10 @@ interface HabitFrequencyBadgeProps {
 }
 
 export function HabitFrequencyBadge({ rule }: HabitFrequencyBadgeProps) {
-  const label = formatFrequencyLabel(rule);
-  const detail = formatFrequencyLabelVerbose(rule);
+  const t = useT();
+  const locale = useLocale();
+  const label = formatFrequencyLabel(rule, t);
+  const detail = formatFrequencyLabelVerbose(rule, t, locale);
 
   return (
     <Badge

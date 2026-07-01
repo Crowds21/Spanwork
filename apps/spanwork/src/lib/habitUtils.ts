@@ -40,36 +40,38 @@ function weekdayShort(isoWeekday: number, locale?: Locale): string {
   return t(`calendar.weekdayShort.${isoWeekday}`);
 }
 
-function listSeparator(locale?: Locale): string {
-  return getTranslator(locale)('habit.listSeparator');
-}
-
-export function formatFrequencyLabelVerbose(rule: FrequencyRuleInput, locale?: Locale): string {
-  const t = getTranslator(locale);
+export function formatFrequencyLabelVerbose(
+  rule: FrequencyRuleInput,
+  t: Translator,
+  locale?: Locale,
+): string {
+  const sep = t('habit.listSeparator');
   switch (rule.frequency) {
     case 'daily':
       return t('habit.frequency.daily');
     case 'weekly': {
       const days = weeklyDays(rule);
       if (days.length === 0) return t('habit.frequency.weekly');
-      const dayLabels = days.map((d) => weekdayShort(d, locale)).join(listSeparator(locale));
+      const dayLabels = days.map((d) => weekdayShort(d, locale)).join(sep);
       return t('habit.frequency.weeklyDays', { days: dayLabels });
     }
     case 'monthly': {
       const days = monthlyDays(rule);
       if (days.length === 0) return t('habit.frequency.monthly');
-      return t('habit.frequency.monthlyDays', { days: days.join(listSeparator(locale)) });
+      return t('habit.frequency.monthlyDays', { days: days.join(sep) });
     }
     case 'yearly': {
       const dates = yearlyDates(rule);
       if (dates.length === 0) return t('habit.frequency.yearly');
-      return t('habit.frequency.yearlyDates', { dates: dates.join(listSeparator(locale)) });
+      return t('habit.frequency.yearlyDates', { dates: dates.join(sep) });
     }
   }
 }
 
-export function formatFrequencyLabel(rule: FrequencyRuleInput, locale?: Locale): string {
-  const t = getTranslator(locale);
+export function formatFrequencyLabel(
+  rule: FrequencyRuleInput,
+  t: Translator,
+): string {
   switch (rule.frequency) {
     case 'daily':
       return t('habit.frequency.daily');
