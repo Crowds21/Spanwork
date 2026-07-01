@@ -1,7 +1,7 @@
 {
   "name": "spanwork",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Spanwork — personal long-term project management",
   "scripts": {
     "dev": "pnpm --filter @spanwork/app dev",

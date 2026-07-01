@@ -1,6 +1,6 @@
 [package]
 name = "spanwork"
-version = "0.1.0"
+version = "0.2.0"
 description = "Spanwork personal project management"
 authors = ["Spanwork"]
 edition = "2024"
